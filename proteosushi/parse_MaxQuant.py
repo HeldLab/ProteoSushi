@@ -1,0 +1,197 @@
+#!/usr/bin/env python
+
+"""parse_MaxQuant.py: using helper functions, the script parses MaxQuant result files"""
+
+from collections import defaultdict
+import csv
+import os.path
+from re import match
+from time import sleep
+
+from ps_utilities import load_pepdict, parse_maxquant_summary
+
+def parse_evidence(filename: str) -> dict:
+    """parses the evidence file and builds a dictionary for PTMs
+    Arguments:
+        filename {str} -- name of the evidence file with the location
+    Returns:
+        dict -- a dictionary of the PTMs with sequence as key and a list of tuples with 
+        PTM/location as value
+        list -- a list of the PTMs we can use for the analysis
+    """
+    mod_dict = dict()
+    PTMs = list()
+    with open(filename, 'r') as evidence_file:
+        tsv_reader = csv.reader(evidence_file, delimiter='\t', quotechar='"')
+        header = next(tsv_reader)
+        seq_index = header.index("Sequence")
+        #modIndices = [i for i, s in enumerate(header) if "Probabilities" in s]
+        modified_index = header.index("Modified sequence")
+        mods_index = header.index("Modifications")
+        #PTMs = [ptm.split(" Probabilities")[0] for ptm in header if "Probabilities" in ptm]
+        start_index = header.index([ptm for ptm in header if "Score Diffs" in ptm][-1]) + 1
+        end_index = header.index("Missed cleavages")
+        PTMs = header[start_index:end_index]
+        for row in tsv_reader:
+            pep_mods = dict()
+            sequence = row[seq_index].replace('L', 'I')
+            #if sequence == "MAPACQIIR":
+            #    print("peptide found")
+            for PTM in PTMs:
+                modified_sequence = row[modified_index].strip('_')
+                mods_B4_mod = 0
+                # Grabs the first two letters of PTM that maxquant uses in mod_seq
+                abr_ptm = PTM[:2].lower()  # NOTE: I could possibly imagine this not working in certain circumstances...
+                # while this PTM is in the sequence we are looking at and listed among the PTMs for this peptide
+                while PTM in row[mods_index] and abr_ptm in modified_sequence:  # This seems a little sketchy. What if there are two different PTMs with the same first 2 letters?
+                    other_PTMs = PTMs.copy()
+                    other_PTMs.remove(PTM)
+                    # Gets the index of the PTM within the sequence (that is right here XX(|ptm)XX)
+                    for other_ptm in other_PTMs:
+                        mod_index = modified_sequence.index(abr_ptm)
+                        abr_other_ptm = other_ptm[:2].lower()
+                        while (abr_other_ptm in modified_sequence and 
+                               modified_sequence.index(abr_other_ptm) < mod_index):
+                            #This takes the ptms, one by one, until each before is removed
+                            mods_B4_mod += 1
+                            ptm_index = modified_sequence.index(abr_other_ptm)
+                            modified_sequence = (modified_sequence[:ptm_index]
+                                               + modified_sequence[ptm_index + len(abr_other_ptm):])  # NOTE: removes the mod, but not the parenthesis
+                    mod_index = modified_sequence.index(abr_ptm)
+                    pep_mods[modified_sequence.index(abr_ptm) - (mods_B4_mod * 2)] = PTM
+                    modified_sequence = (modified_sequence[:mod_index]
+                                       + modified_sequence[mod_index + len(abr_ptm):])
+                    mods_B4_mod += 1
+            for loc in sorted(pep_mods):
+                try:
+                    if not tuple((pep_mods[loc], loc - 2)) in mod_dict[sequence]:
+                        mod_dict[sequence].append(tuple((pep_mods[loc],
+                                                        loc - 2)))
+                except KeyError:
+                    mod_dict[sequence] = [tuple((pep_mods[loc],
+                                                loc - 2))]
+    return mod_dict, PTMs
+
+def __prompt_dir() -> str:
+    """Prompts the user for the directory with the MaxQuant files
+    Returns:
+        str -- the path to the directory
+    """
+    print("\033[96m {}\033[00m".format("Please provide the path to the MaxQuant files."))
+    print("\033[96m {}\033[00m".format("For example: C:/experiment1/Combined/combined/txt/, or"))
+    MQ_dir = input("\033[96m {}\033[00m".format("/home/[user]/Documents/experiment1/txt/\n"))
+    if not os.path.exists(f"{MQ_dir}evidence.txt"):
+        print("\033[91m {}\033[00m".format("Invalid path, try again!\n"))
+        sleep(.5)
+        return __prompt_dir()
+    return MQ_dir
+
+def __prompt_PTMs(PTMs: list) -> list:
+    """prompts the user for which PTMs should be used
+    Arguments:
+        PTMs {list} -- a list of PTM names
+    Returns:
+        list -- a list of PTMs specified by the user
+    """
+    print("\033[96m {}\033[00m".format("Possible PTMs for analysis include:"))
+    print("\033[93m {}\033[00m".format("\n ".join([f"[{i}] {ptm}" for i, ptm in enumerate(PTMs)])))
+    print("\033[96m {}\033[00m".format("Enter the number for each of the PTMs of interest separated by a comma."))
+    ptm_indices = input("\033[96m {}\033[00m".format("For example: 0,1,2\n"))
+    if match(r"{^0-9|,}", ptm_indices):  # r"[0-9](?:,[0-9])*"
+        print("\033[91m {}\033[00m".format("Invalid input, try again!\n"))
+        sleep(.5)
+        return __prompt_PTMs(PTMs)  # NOTE: the end of this recursion is getting it right
+    try:
+        mod_PTMs = [PTMs[int(x.strip())] for x in ptm_indices.strip().split(',')]
+    except (ValueError, IndexError):
+        print("\033[91m {}\033[00m".format("Invalid input, try again!\n"))
+        sleep(.5)
+        return __prompt_PTMs(PTMs)
+    return mod_PTMs
+
+def compile_data(search_engine_filepath: str, user_PTMs: list) -> list:
+    """Takes the lists and dictionaries needed to parse files
+    Returns:
+        int -- index of unmodified sequence
+        int -- index of modified sequence
+        dict -- mod_dict
+        int -- intensity_start (maybe just skyline)
+        str -- evidence_filename
+        list -- PTMs the user has chosen to be used
+    """
+    MQ_dir = search_engine_filepath #__prompt_dir()
+    sum_file = os.path.join(MQ_dir, "summary.txt")
+    enzyme, max_missed_cleaves = parse_maxquant_summary(sum_file)
+    evidence_filename = os.path.join(MQ_dir, "evidence.txt")
+    mod_dict, PTMs = parse_evidence(evidence_filename)  # This grabs the PTMs from the evidence file
+    PTMs = user_PTMs#__prompt_PTMs(PTMs)
+    evidence_file = open(evidence_filename, 'r')
+    tsv_reader = csv.reader(evidence_file, delimiter='\t', quotechar='"')
+    header = next(tsv_reader)
+    sequence = header.index("Sequence")
+    mod_seq = header.index("Modified sequence")
+    reporter_intensities = ["intensity" in h for h in header]
+    reporter_intensity = header.index("Intensity")
+    evidence_file.close()
+    return sequence, mod_seq, mod_dict, reporter_intensity, evidence_filename, PTMs
+
+    '''
+    for row in tsvReader:
+        totalSeqs += 1
+        if float(row[falseDisc]) < threshold:
+            pep_seq = row[sequence].replace('L','I')
+            #if pep_seq == "MDPNCSCAAGDSCTCAGSCK":
+            #    print("testing")
+            genes_positions = pep_dict.get(pep_seq)
+            if genes_positions and len(genes_positions) == 1: #Gene Specific; maybe don't do this?
+                mods = row[varMods].split(',')
+                gene, start_pos, unpid = list(genes_positions)[0]
+                if any(mods) and set(mods) & set(PTMs):  # If no modifications, skip the peptide
+                    # NOTE: Consider changing if you care about unmodified sequences
+                    if not pep_seq in mod_dict:
+                        print("\033[91m {}\033[00m".format(f"{pep_seq} not in mod_dict!"))
+                        missingPTM += 1
+                        continue
+                    for mod in set(mod_dict[pep_seq]):  # NOTE: I'm not sure if it will be problematic using pep_seq
+                        if mod[0] in PTMs:
+                            gene_true_pos = f"{gene}|{start_pos+mod[1]}"
+                            newQvals = list()
+                            try:
+                                newQvals = [float(row[i]) for i in reporterIntensity]  # This grabs the new values in the table
+                                if not any(newQvals) or any([float(x) < 0 for x in newQvals]):  # If all values are zero, skip the line
+                                    missingVals += 1
+                                    continue
+                            except ValueError:
+                                missingVals += 1
+                                continue
+                            # This grabs the existing values in the dictionary (if there are any)
+                            oldQvals = gene_results.get(gene_true_pos, [0.00 for x in range(len(reporterIntensity))])
+                            combinedQvals = [x + y for x, y in zip(oldQvals, newQvals)]  # This sums them together
+                            gene_results[gene_true_pos] = combinedQvals  # Having combined qvals, this puts them back in the dictionary
+                            psm_contributions[gene_true_pos] += 1  # This adds one to the number of PTMs (I think)
+                            lociDict[gene_true_pos] = pep_seq
+                else:
+                    missingPTM += 1
+            else:
+                failedSeqs += 1
+        else:
+            underThreshold += 1
+    print(f"Unmatched Peptides: {failedSeqs}\nMissing PTMs: {missingPTM}\nZero Values: {missingVals}\nTotal Peptides: {totalSeqs}")
+    with open("MQrollup.csv",'w', newline = '') as w1:
+        out_writer = csv.writer(w1)
+        header = ["Genes", "PSMs", "Intensity"]
+        if len(reporterIntensity) > 1:
+            header.extend([f"Sample Quant {x % ((reporterIntensity[-1] + 1 - reporterIntensity[1])//3) + 1}"\
+                            for x in range((((reporterIntensity[-1] + 1 - reporterIntensity[1])*2)//3))])
+            header.extend([f"Sample Count {x + 1}" for x in range(((reporterIntensity[-1] + 1 
+                                                        - reporterIntensity[1])//3))])
+            header.extend(["sequence"])
+        out_writer.writerow(header)
+        for i in gene_results:
+            writable_row = [i]
+            writable_row.extend([psm_contributions[i]])
+            writable_row.extend(gene_results[i])
+            writable_row.extend([lociDict[i]])
+            out_writer.writerow(writable_row)
+            '''
+#EOF
