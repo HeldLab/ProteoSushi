@@ -12,6 +12,7 @@ from re import findall
 import requests
 import sys  # Remove later
 from time import sleep
+import urllib
 
 
 # Global constants
@@ -130,15 +131,8 @@ WHERE {
 } ORDER BY DESC(?entry) ASC(?position)
 """
 
-
-
-    # <a id='exampleB'></a>
-    # ### Example B: CSV Format
-    # Try the same thing, but much more easily with the csv format. 
-    # Unfortunately UniProt has trouble with returning int based fields for this.
-
     headers = {"user-agent": "rseymour@wustl.edu"}
-    time_to_sleep = 10
+    time_to_sleep = 3
     try:
         r = requests.post(ENDPOINT, data = {"format": "csv", "query": query}, headers = headers)
         if "<!DOCTYPE html SYSTEM \"about:legacy-compat\">" in r.text:  # This just means it returned a 500 error
@@ -160,19 +154,6 @@ WHERE {
         else:
             return None  # TODO: remove this once Uniprot fixes their stuff
             raise pd.errors.ParserError("Ran out of Uniprot accession attempts")
-
-    # Note that position, begin, and end have the wrong format so we need to fix this 
-    # (returned this way from UniProt)
-    #trim some stuff too
-    #sparql_from_csv_df['type'] = sparql_from_csv_df['type'].str.replace('http://purl.uniprot.org/core/','')
-    #sparql_from_csv_df['entry'] = sparql_from_csv_df['entry'].str.replace('http://purl.uniprot.org/uniprot/','')
-    #sparql_from_csv_df = sparql_from_csv_df.rename({'entry':'UniprotID'}, axis='columns') ## rename entry column
-    #sparql_from_csv_df.head()
-    #print(sparql_from_csv_df.keys())
-
-    # Fix the integer fields
-    #for col in (" position", " begin", " end"):  # NOTE: I suspect that these might change in the future.
-    #    sparql_from_csv_df[col] = sparql_from_csv_df[col].str.split("^").str[0]
     
     return sparql_from_csv_df
 
@@ -204,6 +185,9 @@ def process_sparql_output(output_str: str, sparql_dict: dict) -> list:
             elif isinstance(chunk, str) and "http://purl.uniprot.org/locations/" in chunk:
                 new_chunk = chunk.replace("http://purl.uniprot.org/locations/", "")
                 new_str.append(subcellular_location_dict[new_chunk.zfill(4)])  # Converts the number location to descriptor
+            elif isinstance(chunk, str) and "http://purl.uniprot.org/enzyme/" in chunk:
+                new_chunk = chunk.replace("http://purl.uniprot.org/enzyme/", "")
+                new_str.append(ec_id_to_description_dict[new_chunk])
             elif isinstance(chunk, str) and "^^<http://www.w3.org/2001/XMLSchema#int>" in chunk:
                 new_str.append(findall(r"(\d+?)\^", chunk)[0])
             else:
@@ -231,7 +215,18 @@ def process_sparql_output(output_str: str, sparql_dict: dict) -> list:
     
     subcellular_location_df = retrieve_uniprot_subcellular_location()
     subcellular_location_dict = dict(subcellular_location_df[["location_id_reformatted", "Alias"]].values.tolist())
-    #print(subcellular_location_dict)
+
+    # Fetches a file from expasy to deal with the 'ec' column
+    r = urllib.request.urlopen("ftp://ftp.expasy.org/databases/enzyme/enzyme.dat", "enzyme.dat")
+    enzyme_dat_list = r.read().decode("utf-8").split('\n')
+
+    # Turn enzyme.dat into a dictionary for mapping
+    ec_id_to_description_dict = dict()
+    for line_number, line in enumerate(enzyme_dat_list):
+        if line.startswith("ID "):
+            current_id = line[5:]
+            current_description = enzyme_dat_list[line_number + 1][5:]
+            ec_id_to_description_dict[current_id] = current_description
 
     #entry,lengthOfSequence,catalyicActivity,location,ec,rhea,type,comment,position,begin,end,regionOfInterest
     #header = output_lines.colnames()

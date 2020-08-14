@@ -16,3 +16,5 @@ proteosushi/__pycache__/parse_generic.cpython-37.pyc
 proteosushi/__pycache__/parse_MaxQuant.cpython-37.pyc
 proteosushi/__pycache__/sparql.cpython-37.pyc
 proteosushi/mascot_rollup.csv
+proteosushi/__pycache__/sparql.cpython-37.pyc
+proteosushi/.~lock.mascot_rollup.csv#
