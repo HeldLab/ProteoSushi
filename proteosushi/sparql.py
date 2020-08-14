@@ -10,6 +10,7 @@ import csv
 import pandas as pd
 from re import findall
 import requests
+import sys  # Remove later
 from time import sleep
 
 
@@ -150,9 +151,7 @@ WHERE {
                 raise pd.errors.ParserError("Ran out of Uniprot accession attempts")
         #print(r.text)
         csv_file = StringIO(r.text)
-        #print(csv_file.getvalue())
         sparql_from_csv_df = pd.read_csv(csv_file)
-        #print(sparql_from_csv_df)
     except pd.errors.ParserError:
         if attempts_left > 0:
             sleep(time_to_sleep)
@@ -197,17 +196,15 @@ def process_sparql_output(output_str: str, sparql_dict: dict) -> list:
         """
         #entry,lengthOfSequence,catalyicActivity,location,ec,rhea,type,comment,position,begin,end,regionOfInterest
         new_str = list()
-        #print(line)
-        for chunk in line[1]:#.split():
-            #print(str(chunk))
+        for chunk in line[1]:
             if isinstance(chunk, str) and "http://purl.uniprot.org/uniprot/" in chunk:
                 new_str.append(chunk.replace("http://purl.uniprot.org/uniprot/", ""))
             elif isinstance(chunk, str) and "http://purl.uniprot.org/core/" in chunk:
                 new_str.append(chunk.replace("http://purl.uniprot.org/core/", ""))
             elif isinstance(chunk, str) and "http://purl.uniprot.org/locations/" in chunk:
-                new_str.append(chunk.replace("http://purl.uniprot.org/locations/", ""))
+                new_chunk = chunk.replace("http://purl.uniprot.org/locations/", "")
+                new_str.append(subcellular_location_dict[new_chunk.zfill(4)])  # Converts the number location to descriptor
             elif isinstance(chunk, str) and "^^<http://www.w3.org/2001/XMLSchema#int>" in chunk:
-                #new_str.append(chunk.findall(r"\"(\d+?)\"")[0])
                 new_str.append(findall(r"(\d+?)\^", chunk)[0])
             else:
                 new_str.append(str(chunk))
@@ -216,10 +213,26 @@ def process_sparql_output(output_str: str, sparql_dict: dict) -> list:
     output_list = list()
     comments_dict = dict()
     #sparql_dict = dict()  # This gets used by the main program to connect these annotations to the rest of the data.
-    output_lines = output_str#.split('\n')
+    output_lines = output_str
     if len(output_lines) == 1:
         print("Failed to get annotations")
         return output_list
+
+    # get the subcellular location from UniProt
+    def retrieve_uniprot_subcellular_location():
+        '''Retrieve subcellular location information from UniProt directly'''
+        r = requests.get('https://www.uniprot.org/locations/?format=tab')
+        subcellular_location_df = pd.read_csv(StringIO(r.text), sep = '\t')
+        subcellular_location_df["location_id_reformatted"] = (subcellular_location_df["Subcellular location ID"]
+                                                             .str.split("-")
+                                                             .str[1]
+                                                             )
+        return subcellular_location_df
+    
+    subcellular_location_df = retrieve_uniprot_subcellular_location()
+    subcellular_location_dict = dict(subcellular_location_df[["location_id_reformatted", "Alias"]].values.tolist())
+    #print(subcellular_location_dict)
+
     #entry,lengthOfSequence,catalyicActivity,location,ec,rhea,type,comment,position,begin,end,regionOfInterest
     #header = output_lines.colnames()
     #print(output_lines.columns)
@@ -227,10 +240,10 @@ def process_sparql_output(output_str: str, sparql_dict: dict) -> list:
     #entry_index = header.index("entry")
     #length_index = header.index("lengthOfSequence")
     #i = 1
-    repeat_index = 2 
+    repeat_index = 2
     #while i < len(output_lines):
     for output_line in output_lines.iterrows():  # TODO: optimize by vectorizing
-        output_line = __parse_sparql_line(output_line) 
+        output_line = __parse_sparql_line(output_line)
         #print(output_split)
         # This should only have 1 iteration and is used to properly split the csv type line
         for output_split in csv.reader([output_line], delimiter=',', quotechar='"'):
