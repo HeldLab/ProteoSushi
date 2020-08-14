@@ -1,10 +1,48 @@
 # ProteoSushi
 
 ProteoSushi is designed to be simple to use and easy to access. 
+
+## Requirements
+
 Prior to using ProteoSushi, there are some common, minor requirements so it will work correctly. 
-The machine running ProteoSushi must have stable internet access and at least 4GB of RAM (note here explaining that 8GB or higher is recommended, but truly depends on how the user uses the machine. More is better up to a certain point). 
-In addition, the computer being used must have Python version 3.8 or higher installed (note here explaining that earlier versions of python may work, but nothing as early as 2.7 will work). 
-Install from [here](https://www.python.org/downloads/).
+The machine running ProteoSushi must have: 
+
+- stable internet access 
+
+- at least 4GB of RAM
+
+  - 8GB or higher is recommended, but truly depends on how the user uses the machine. More is better up to a certain point.
+  
+- Python version 3.8 or higher installed 
+
+  - earlier versions of python may work, but nothing as early as 2.7 will work
+  
+## Installation
+
+Download python from [here](https://www.python.org/downloads/) and install if needed.
+
+There are two ways to install ProteoSushi: 
+
+~~The (likely) easier way is by opening the terminal (or command prompt in Windows) and running the command~~
+
+~~`pip install proteosushi`~~
+
+~~While in the terminal, run python with the command 
+`python` 
+(or start python in Windows) and run the next two commands to import the module and run the GUI:~~
+
+```
+from run_proteosushi import run_proteosushi
+run_proteosushi()
+```
+
+Alternatively, download the files directly from [GitHub](https://github.com/heldlab/proteosushi). 
+
+Once unpacked, start the terminal in the proteosushi folder and run the command
+`python run_proteosushi.py`
+to start the GUI.
+
+## Files Needed
 
 In order to run ProteoSushi, there are some required files in specific formats:
 
@@ -36,26 +74,9 @@ In order to run ProteoSushi, there are some required files in specific formats:
 
     - This file can be used to prioritize the provided genes whenever there are multiple matches once ProteoSushi performs a search
 
-Once you have the required files, there are two ways to install ProteoSushi. 
-~~The (likely) easier way is by opening the terminal (or command prompt in Windows) and running the command~~
+## Using ProteoSushi
 
-~~`pip install proteosushi`~~
-
-~~While in the terminal, run python with the command 
-`python` 
-(or start python in Windows) and run the next two commands to import the module and run the GUI:~~
-
-```
-from run_proteosushi import run_proteosushi
-run_proteosushi()
-```
-
-Alternatively, download the files directly from [GitHub](https://github.com/heldlab/proteosushi). 
-Once unpacked, start the terminal in the proteosushi folder and run the command
-`python run_proteosushi.py`
-to start the GUI.
-
-At this point, the GUI should pop up and look like this:
+Run ProteoSushi and the GUI should pop up and look like this:
 
 ![Blank GUI](empty_gui.png)
 
@@ -114,6 +135,8 @@ These include:
 Specify the threshold for FDR, if using Mascot or Maxquant. This value can be left blank if you do not want to specify a threshold.
 
 Once all of the necessary options are included, click on the **“Rollup!”** button to start the analysis.
+
+## Results
 
 Results will be returned as a CSV spreadsheet with one of the following filenames depending on the search engine used:
 
