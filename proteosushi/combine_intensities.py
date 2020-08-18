@@ -172,19 +172,25 @@ def __add_intensity(intensity_dict: dict, pep_seq: str, pep_mod_seq: str, gene: 
     if key in intensity_dict:
         old_intensities = intensity_dict[key]
         new_intensities = list()
+        new_ints = list()
         i = 0
         # Combines the new values for the peak
         while i < len(intensities):
             old_int = old_intensities[i]
-            if "#N/A" == old_int:
+            if not old_int or "#N/A" == old_int or "NaN" == old_int:
                 old_int = 0
             new_int = intensities[i]
-            if "#N/A" == new_int:
+            if not new_int or "#N/A" == new_int or "NaN" == new_int:
                 new_int = 0
+            new_ints.append(new_int)
+            print(f"values {str(old_int)}, {str(new_int)}")
             new_intensities.append(float(old_int) + float(new_int))
             i += 1
         # Adds to the number of combined peptides for averaging later (if needed)
-        new_intensities.append(int(old_intensities[i]) + 1)  # NOTE: what does it mean if this is out of range?
+        if any(new_ints):
+            new_intensities.append(int(old_intensities[i]) + 1)  # NOTE: what does it mean if this is out of range?
+        else:
+            new_intensities.append(int(old_intensities[i]))
         # Replaces the combined numbers in the dictionary
         intensity_dict[key] = new_intensities
         return intensity_dict, False
@@ -402,7 +408,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             continue
         total_seqs += 1
         raw_seq = row[sequence_index]
-        #if raw_seq == "FACAVVCIQK":
+        #if raw_seq == "FRCPEALFQPSFLGMESCGIHETTFNSIMK":
         #    print("start")
         pep_mod_seq = row[modified_sequence_index]
         pep_seq = row[sequence_index].replace("L","I")
@@ -417,11 +423,12 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             pep_mod_seq = pep_mod_seq.strip('_')
 
             if use_intensities:
-                intensities = row[intensity_start]
-                if intensities == '':
+                #intensities = row[intensity_start]
+                intensities = [e for i, e in enumerate(row) if i in intensity_start]
+                if intensities == '' or intensities[0] == '':
                     continue
-                intensities = [intensities]
-                intensity_header = [header[intensity_start]]
+                #intensities = [intensities]
+                intensity_header = [e for i, e in enumerate(header) if i in intensity_start]
         elif rollup_file == "mascot":
             if pep_mod_seq == "":
                 continue
@@ -458,8 +465,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                 continue
             for mod in list(set(mods)):
                 site = start_pos + mod[1]
-                #if gene.upper() == "ADAMTS10":
-                #    print("ADAMTS10")
+                #if gene.upper() == "ACTL6A":
+                #    print("ACTL6A")
                 if use_intensities:
                     intensity_dict, to_add = __add_intensity(intensity_dict, pep_seq, pep_mod_seq, gene, site, intensities, cleave_rules[enzyme])
                 else:
@@ -493,8 +500,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                     mods = mod_dict[pep_seq]
                     for mod in list(set(mods)):
                         site = match[1] + mod[1]
-                        #if gene.upper() == "ADAMTS10":
-                        #    print("ADAMTS10")
+                        #if gene.upper() == "ACTL6A":
+                        #    print("ACTL6A")
                         to_add = None
                         if use_intensities:
                             intensity_dict, to_add = __add_intensity(intensity_dict, pep_seq, pep_mod_seq, match[0], site, intensities, cleave_rules[enzyme])
@@ -541,12 +548,13 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                 for gene in additGenes:
                                     intensity_dict[f"{pep_mod_seq}|{gene.upper()}|{str(site)}"] = 0
                         if to_add:
+                            additGenes.remove(match[0][0])
                             if isTarget:
-                                gene_results.append([match[0][0], site, ' '.join(additGenes[1:]), ' '.join([i[0] for i in match]), raw_seq, pep_mod_seq, ' '.join([i[2] for i in match])])
+                                gene_results.append([match[0][0], site, ' '.join(additGenes), ' '.join([i[0] for i in match]), raw_seq, pep_mod_seq, ' '.join([i[2] for i in match])])
                                 if len(match[0][2]) >= 5:
                                     sparql_input.append(tuple((match[0][2], site)))
                             else:
-                                gene_results.append([match[0][0], site, ' '.join(additGenes[1:]), "", raw_seq, pep_mod_seq, ' '.join([i[2] for i in match])])
+                                gene_results.append([match[0][0], site, ' '.join(additGenes), "", raw_seq, pep_mod_seq, ' '.join([i[2] for i in match])])
                                 if len(match[0][2]) >= 5:
                                     sparql_input.append(tuple((match[0][2], site)))
             else:
