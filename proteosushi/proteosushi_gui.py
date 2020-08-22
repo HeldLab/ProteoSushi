@@ -468,6 +468,7 @@ class App(QMainWindow):
                                     species_id)
                     self.statusBar().showMessage("Analysis Complete!")
                     self.statusBar().setStyleSheet("background-color : green")
+                    print("\033[92m {}\033[00m".format("Analysis Complete!"))
                 elif self.mascot_RB.isChecked() and os.path.exists(self.mascotFilepath.text()):
                     rollup("mascot", 
                                     self.mascotFilepath.text(), 
@@ -484,6 +485,7 @@ class App(QMainWindow):
                                     species_id)
                     self.statusBar().showMessage("Analysis Complete!")
                     self.statusBar().setStyleSheet("background-color : green")
+                    print("\033[92m {}\033[00m".format("Analysis Complete!"))
                 elif self.generic_RB.isChecked() and os.path.exists(self.genericFilepath.text()):
                     rollup("generic", 
                                     self.genericFilepath.text(), 
@@ -500,6 +502,7 @@ class App(QMainWindow):
                                     species_id)
                     self.statusBar().showMessage("Analysis Complete!")
                     self.statusBar().setStyleSheet("background-color : green")
+                    print("\033[92m {}\033[00m".format("Analysis Complete!"))
                 else:
                     self.statusBar().showMessage("ERROR: Missing Search Engine Output!")
                     self.statusBar().setStyleSheet("background-color : red")
