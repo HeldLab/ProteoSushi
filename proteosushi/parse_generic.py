@@ -57,6 +57,9 @@ def parse_file(sky_filename: str) -> dict:
             sequence = row[seq_index].replace("L","I")
             mod_seq = row[mod_index]
             mods = findall(r"(\w?\[.+?\])|(\w?\(.+?\))", mod_seq)
+            #print(row)
+            if len(mods) < 1:
+                raise ValueError("A sequence in the Peptide Modified Sequence column is missing PTMs")
             for mod in mods[0]:
                 if mod == '':
                     continue
@@ -80,9 +83,9 @@ def parse_file(sky_filename: str) -> dict:
             i = 0
             while i < len(cut_sites):
                 try:
-                    mod_dict[sequence].append(tuple((mods[i], fixed_indices[i])))  # TODO: Check This!
+                    mod_dict[sequence].append(tuple((mods[i][0], fixed_indices[i])))  # TODO: Check This!
                 except KeyError:
-                    mod_dict[sequence] = [tuple((mods[i], fixed_indices[i]))]
+                    mod_dict[sequence] = [tuple((mods[i][0], fixed_indices[i]))]
                 i += 1
     return mod_dict, mod_list
 '''
@@ -254,7 +257,7 @@ def compile_data(search_engine_filepath: str, user_PTMs: list) -> list:
         int -- index of modified sequence
         dict -- pep_dict
         dict -- mod_dict
-        int -- intensity_start
+        int -- intensity_values
         file -- mito_genes (file)
         str -- sky_filename
         dict -- mascot var mod dict (blank)
@@ -290,111 +293,16 @@ def compile_data(search_engine_filepath: str, user_PTMs: list) -> list:
     #except ValueError:
     #    print("\033[91m {}\033[00m".format("No uniprot ID column detected in the Skyline output file."))
     #    print("Proceeding regardless.\n")
-    intensity_start = header.index("Precursor Charge") + 1  # NOTE: This makes the assumption that the intensity columns are directly after the charge column
+    intensity_values = [i for i, h in enumerate(header) if "intensit" in h.lower()]  # NOTE: This makes the assumption that the intensity columns are directly after the charge column
+    if len(intensity_values) == 0:
+        intensity_values = -1
     #psm_contributions = defaultdict(int)
     #unmatchedPeps = 0
     #missingPTM = 0
     #totalSeqs = 0
     #unmatchedSequences = []
     #intensity_dict = dict()
-    return sequence, pms, mod_dict, intensity_start, sky_filename, None
-
-
-    '''
-    for row in tsv_reader:
-        totalSeqs += 1
-        raw_seq = row[sequence]
-        pep_mod_seq = row[pms]
-        #if pep_mod_seq == "LGYILTC[+57]PSNLGTGLR":
-        #    print(f"found {pep_mod_seq}")
-        pep_seq = row[sequence].replace("L","I")
-        if pep_seq is None:
-            break
-        genes_positions = pep_dict.get(pep_seq)
-        if genes_positions and len(genes_positions) == 1:
-            gene, start_pos, unpid = list(genes_positions)[0]
-            if not pep_seq in mod_dict:
-                print("\033[91m {}\033[00m".format(f"{pep_seq} not in mod_dict!"))
-                missingPTM += 1
-                continue
-            mods = mod_dict[pep_seq]
-            for mod in list(set(mods)):
-                site = start_pos + mod[1]
-                intensity_dict, to_add = __addIntensity(intensity_dict, pep_seq, pep_mod_seq, gene, site, row[intensityStart:], cleave_rules[cleave_rule])
-                #gene_true_pos = f"{gene}|{start_pos+mod[1]}"
-                if to_add:  # TODO: make it check if this is a target gene: if so, put it in the target gene column
-                    if gene.upper() + '\n' in mitoGenes:  # TODO: fetch the uniprot ID from the match
-                        gene_results.append([gene, site, "", gene, raw_seq, pep_mod_seq, unpid])
-                    else:
-                        gene_results.append([gene, site, "", "", raw_seq, pep_mod_seq, unpid])  # NOTE: I changed this from a tuple, so things might be different
-        elif genes_positions and len(genes_positions) > 1:
-            isTarget, match = __chooseHit(genes_positions, mitoGenes, annotDict)
-            if match is None:
-                print(row)
-                continue
-            if not match[0] is None:  # Checks to see that there has been a match
-                if isinstance(match, tuple):  # Checks if this is just a single match.
-                    if not pep_seq in mod_dict:
-                        print("\033[91m {}\033[00m".format(f"{pep_seq} not in mod_dict!"))
-                        missingPTM += 1
-                        continue
-                    mods = mod_dict[pep_seq]
-                    for mod in list(set(mods)):
-                        site = match[1] + mod[1]
-                        intensity_dict, to_add = __addIntensity(intensity_dict, pep_seq, pep_mod_seq, match[0], site, row[intensityStart:], cleave_rules[cleave_rule])
-                        #gene_true_pos = f"{match[0]}|{match[1]+mod[1]}"
-                        if to_add:  # NOTE: Wait, what does this do if it is not supposed to add the intensity? Isn't it supposed to make its own row
-                            if isTarget:
-                                gene_results.append([match[0], site, "", match[0], raw_seq, pep_mod_seq, match[2]])
-                            else:
-                                gene_results.append([match[0], site, "", "", raw_seq, pep_mod_seq, match[2]])
-                else:  # There are multiple matches
-                    if not pep_seq in mod_dict:
-                        print("\033[91m {}\033[00m".format(f"{pep_seq} not in mod_dict!"))
-                        missingPTM += 1
-                        continue
-                    mods = mod_dict[pep_seq]
-                    # NOTE: I am starting to think whether handling modifications like this is the right way.
-                    # The mods are associated with the peptide sequence, but I wonder whether that necessarily 
-                    # Applies to each of the database matches :/
-                    for mod in list(set(mods)):  # TODO: this is where I add in the intensity columns
-                        additGenes = list()
-                        for tup in match:
-                            additGenes.append(tup[0])
-                        assert len(additGenes) > 1, "The # of matches should be >1, but isn't"
-                        #gene_true_pos = f"{match[0][0]}|{match[0][1]+mod[1]}"
-                        site = match[0][1] + mod[1]
-                        intensity_dict, to_add = __addIntensity(intensity_dict, pep_seq, pep_mod_seq, match[0][0], site, row[intensityStart:], cleave_rules[cleave_rule])
-                        if to_add:
-                            if isTarget:
-                                gene_results.append([match[0][0], site, ' '.join(additGenes[1:]), ' '.join([i[0] for i in match]), raw_seq, pep_mod_seq, ' '.join([i[2] for i in match])])
-                            else:
-                                gene_results.append([match[0][0], site, ' '.join(additGenes[1:]), "", raw_seq, pep_mod_seq, ' '.join([i[2] for i in match])])
-            else:
-                unmatchedPeps += 1
-                unmatchedSequences.append(tuple([raw_seq, pep_mod_seq]))
-        else:
-            unmatchedPeps += 1
-            unmatchedSequences.append(tuple([raw_seq, pep_mod_seq]))
-    skyFile.close()
-    print(f"Unmatched Peptides: {unmatchedPeps}\nMissing PTMs: {missingPTM}\nTotal Peptides: {totalSeqs}")
-    with open("SkylineRollup.csv", 'w', newline = '') as w1:
-        #new_key = f"{build_seq}|{gene.upper()}|{str(site)}"
-        out_writer = csv.writer(w1)
-        header2 = ["Gene", "Site", "Additional Genes", "Target Genes", "Peptide Sequence", "Peptide Modified Sequence", "Uniprot Accession ID"] + header[intensityStart:]
-        out_writer.writerow(header2)
-        #for i in sorted(list(set([i for i in gene_results])), key=lambda r: r[0]):
-        for i in sorted(gene_results, key=lambda r: r[0]):
-            writable_row = i + intensity_dict[f"{i[5]}|{i[0].upper()}|{i[1]}"]
-            out_writer.writerow(writable_row)
-    with open("unmatchedSequences.csv", 'w', newline = '') as w2:
-        out_writer = csv.writer(w2)
-        header = ["Sequence", "Peptide Modified Sequence"]
-        out_writer.writerow(header)
-        for i in unmatchedSequences:
-            writable_row = list(i)
-            out_writer.writerow(writable_row)
-            '''
+    return sequence, pms, mod_dict, intensity_values, sky_filename, None
 #EOF
 
 #/home/rob/Documents/Held_Lab/191010_Rollup/SkylineOutput_GloCys055_EXP0107u_RED.csv

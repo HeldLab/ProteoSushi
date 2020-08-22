@@ -138,7 +138,7 @@ WHERE {
         if "<!DOCTYPE html SYSTEM \"about:legacy-compat\">" in r.text:  # This just means it returned a 500 error
             if attempts_left > 0:
                 sleep(time_to_sleep)
-                print(f"Attempts used: {11 - attempts_left}")
+                print("\033[93m {}\033[00m".format(f"Attempts used: {11 - attempts_left}"))
                 return sparql_request(unpid_site_list, attempts_left - 1)
             else:
                 return None  # TODO: remove this once Uniprot fixes their stuff
@@ -149,7 +149,7 @@ WHERE {
     except pd.errors.ParserError:
         if attempts_left > 0:
             sleep(time_to_sleep)
-            print(f"Attempts used: {11 - attempts_left}")
+            print("\033[93m {}\033[00m".format(f"Attempts used: {11 - attempts_left}"))
             return sparql_request(unpid_site_list, attempts_left - 1)
         else:
             return None  # TODO: remove this once Uniprot fixes their stuff

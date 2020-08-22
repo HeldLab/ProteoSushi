@@ -177,13 +177,13 @@ def __add_intensity(intensity_dict: dict, pep_seq: str, pep_mod_seq: str, gene: 
         # Combines the new values for the peak
         while i < len(intensities):
             old_int = old_intensities[i]
-            if not old_int or "#N/A" == old_int or "NaN" == old_int:
+            if not old_int or "#N/A" == old_int or "NaN" == old_int or not old_int:
                 old_int = 0
             new_int = intensities[i]
-            if not new_int or "#N/A" == new_int or "NaN" == new_int:
+            if not new_int or "#N/A" == new_int or "NaN" == new_int or not new_int:
                 new_int = 0
             new_ints.append(new_int)
-            print(f"values {str(old_int)}, {str(new_int)}")
+            #print(f"values {repr(old_int)}, {repr(new_int)}")
             new_intensities.append(float(old_int) + float(new_int))
             i += 1
         # Adds to the number of combined peptides for averaging later (if needed)
@@ -252,11 +252,13 @@ def __add_intensity(intensity_dict: dict, pep_seq: str, pep_mod_seq: str, gene: 
                 i = 0
                 while i < len(intensities):
                     old_int = old_intensities[i]
-                    if "#N/A" == old_int:
+                    if "#N/A" == old_int or "NaN" == old_int or not old_int:
                         old_int = 0
                     new_int = intensities[i]
-                    if "#N/A" == new_int:
+                    if "#N/A" == new_int or "NaN" == new_int or not new_int:
                         new_int = 0
+                    print(repr(old_int))
+                    print(repr(new_int))
                     new_intensities.append(float(old_int) + float(new_int))
                     i += 1
                 # Adds in the number of combined peptide peaks (1 so far)
@@ -403,6 +405,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     unmatched_sequences = []
 
     for row in tsv_reader:
+        # If a maxquant file is used and the false disc rate of this peptide is not below the threshold, skip it
         if rollup_file == "maxquant" and not threshold is None and float(row[false_disc]) > threshold:
             over_threshold += 1
             continue
@@ -417,8 +420,10 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             break
         genes_positions = pep_dict.get(pep_seq)
         if use_intensities and rollup_file == "skyline":
-            intensities = row[intensity_start:]
-            intensity_header = header[intensity_start:]
+            intensities = [e for i, e in enumerate(row) if i in intensity_start]
+            if intensities == '' or intensities[0] == '':
+                continue
+            intensity_header = [e for i, e in enumerate(header) if i in intensity_start]
         elif rollup_file == "maxquant":
             pep_mod_seq = pep_mod_seq.strip('_')
 
@@ -592,7 +597,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             sparql_output_list.append(sparql_output)
             i += batch
             results_annotated += batch
-            print(f"{round(float(results_annotated)/len(sparql_input)*100)}% of results annotated")
+            print("\033[96m {}\033[00m" .format(f"{round(float(results_annotated)/len(sparql_input)*100, 2)}% of results annotated"))
         batch_output = sparql.sparql_request(sparql_input[i:])
         if batch_output is None:
             print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+len(sparql_input[i:])+1} not annotated!"))
@@ -601,7 +606,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             sparql_output, sparql_dict = sparql.process_sparql_output(batch_output, sparql_dict)
             sparql_output_list.append(sparql_output)
             results_annotated += len(sparql_input[i:])
-        print(f"{round(float(results_annotated)/len(sparql_input)*100, 2)}% of results annotated")
+        print("\033[96m {}\033[00m" .format(f"{round(float(results_annotated)/len(sparql_input)*100, 2)}% of results annotated"))
         # Writes the annotations to a separate file in case the user wants to view those in a more vertical way
         with open("sparql_annotations.csv", 'w') as spql_annot:
             out_writer = csv.writer(spql_annot)
@@ -611,13 +616,16 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     # Prints out the completed rollup with annotations from Uniprot (if requested)
     with open(output_filename, 'w', newline = '') as w1:
         out_writer = csv.writer(w1)
-        header2 = ["Gene", "Site", "Additional Genes", "Target Genes", "Peptide Sequence", 
+        header2 = ["Gene", "Site", "Shared Genes", "Target Genes", "Peptide Sequence", 
             "Peptide Modified Sequence", "Uniprot Accession ID"]
         if use_intensities:
             header2 += intensity_header
         if add_annotation:
-            header2 += ["entry", "lengthOfSequence", "position", "catalyicActivity", "location", 
-                        "ec", "rhea", "type", "comment", "begin", "end", "regionOfInterest"]
+            annotations_length = max(len(v) for k, v in sparql_dict.items())
+            while annotations_length > 0:
+                header2 += ["entry", "lengthOfSequence", "position", "catalyicActivity", "location", 
+                            "ec", "rhea", "type", "comment", "begin", "end", "regionOfInterest"]
+                annotations_length -= 12
         out_writer.writerow(header2)
         # This builds the rollup output file depending on what the user chose
         for i in sorted(gene_results, key=lambda r: r[0]):
@@ -645,7 +653,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         #print(sparql_dict)
 
     # Puts all of the unmatched sequences into a new file
-    with open(f"unmatchedSequences{output_filename}", 'w', newline = '') as w2:
+    with open(f"unmatched_sequences_{rollup_file}", 'w', newline = '') as w2:
         out_writer = csv.writer(w2)
         header = ["Sequence", "Peptide Modified Sequence"]
         out_writer.writerow(header)
