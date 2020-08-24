@@ -54,3 +54,8 @@ maxquant_rollup.csv
 unmatched_sequencesmaxquant
 proteosushi/unmatched_sequencesgeneric
 proteosushi/sparql_annotations.csv
+proteosushi/sparql_annotations.csv
+proteosushi/.~lock.generic_combined_rollup.csv#
+proteosushi/.~lock.generic_rollup.csv#
+proteosushi/unmatched_sequences_generic
+proteosushi/sparql_annotations.csv

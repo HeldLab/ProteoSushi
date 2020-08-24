@@ -76,7 +76,7 @@ def parse_file(sky_filename: str) -> dict:
             fixed_indices = []
             num_of_mods = 0
             for site in cut_sites:
-                fixed_indices.append(site - correction - 1)  # TODO: Check this!
+                fixed_indices.append(site - correction)  # TODO: Check this!
                 correction += len(mods[num_of_mods])
                 num_of_mods += 1
             
