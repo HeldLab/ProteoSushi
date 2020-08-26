@@ -572,12 +572,12 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     # Prints the stats from the rollup
     print(f"Unmatched Peptides: {unmatched_peps}\nMissing PTMs: {missing_PTM}\nTotal Peptides: {total_seqs}")
     # TODO: Eventually make it so this file isn't made in the first place
-    os.remove("pepdict.pepdict")
+    #os.remove("pepdict.pepdict")
 
     # If the user chose, it combines the annotation onto the rollup results (eventually)
     if add_annotation:
         print("Querying Uniprot for Annotations!")
-        batch = 50
+        batch = 2#50
         i = 0
         results_annotated = 0
         sparql_output_list = list()
@@ -588,7 +588,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             # Makes the request and sends it to uniprot
             batch_output = sparql.sparql_request(sparql_input[i:i+batch])
             # If after all attempts to get annotations for this batch has failed, this is reported and the next batch will be sent
-            if batch_output is None:
+            if batch_output is None or batch_output.empty:
                 print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+batch+1} not annotated!"))
                 i += batch
                 continue
@@ -599,7 +599,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             results_annotated += batch
             print("\033[96m {}\033[00m" .format(f"{round(float(results_annotated)/len(sparql_input)*100, 2)}% of results annotated"))
         batch_output = sparql.sparql_request(sparql_input[i:])
-        if batch_output is None:
+        if batch_output is None or batch_output.empty:
             print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+len(sparql_input[i:])+1} not annotated!"))
             pass
         else:
