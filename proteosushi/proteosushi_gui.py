@@ -8,7 +8,7 @@ from PyQt5 import QtCore
 from PyQt5.QtWidgets import (QApplication, QWidget, QMainWindow, QPushButton, 
                              QMessageBox, QLineEdit, QLabel, QGroupBox, 
                              QGridLayout, QVBoxLayout, QFileDialog, QCheckBox,
-                             QRadioButton, QButtonGroup)
+                             QRadioButton, QButtonGroup, QComboBox)
 from PyQt5.QtCore import pyqtSlot, QSize
 from PyQt5.QtGui import QIcon
 
@@ -35,34 +35,34 @@ class App(QMainWindow):
         self.setGeometry(self.left, self.top, self.width, self.height)
 
 
-        self.fileChooserLabel = QLabel("Types of Files", self)
+        self.file_chooser_label = QLabel("Types of Files", self)
 
         self.maxquant_RB = QRadioButton("MaxQuant", self)
         self.maxquant_RB.toggled.connect(self.check_MQ_RB)
         self.maxquant_RB.setToolTip("Use the txt output folder from the MaxQuant Search Engine")
-        self.MQbutton = QPushButton("MaxQuant Output Folder")
-        self.MQbutton.setHidden(True)
-        self.MQbutton.clicked.connect(self.onClickMQbutton)
-        self.maxquantFilepath = QLabel("[Filepath]", self)
-        self.maxquantFilepath.setHidden(True)
+        self.maxquant_button = QPushButton("MaxQuant Output Folder")
+        self.maxquant_button.setHidden(True)
+        self.maxquant_button.clicked.connect(self.onClickMQbutton)
+        self.maxquant_filepath = QLabel("[Filepath]", self)
+        self.maxquant_filepath.setHidden(True)
 
         self.mascot_RB = QRadioButton("Mascot", self)
         self.mascot_RB.toggled.connect(self.check_mascot_RB)
         self.mascot_RB.setToolTip("Use the output from the Mascot Search Engine")
-        self.mascotButton = QPushButton("Mascot Output")
-        self.mascotButton.setHidden(True)
-        self.mascotButton.clicked.connect(self.onClickMascotButton)
-        self.mascotFilepath = QLabel("[Filepath]", self)
-        self.mascotFilepath.setHidden(True)
+        self.mascot_button = QPushButton("Mascot Output")
+        self.mascot_button.setHidden(True)
+        self.mascot_button.clicked.connect(self.onClickMascotButton)
+        self.mascot_filepath = QLabel("[Filepath]", self)
+        self.mascot_filepath.setHidden(True)
 
         self.generic_RB = QRadioButton("Generic", self)
         self.generic_RB.toggled.connect(self.check_generic_RB)
         self.generic_RB.setToolTip("Use the output from any other search engine")
-        self.genericButton = QPushButton("Generic Output")
-        self.genericButton.setHidden(True)
-        self.genericButton.clicked.connect(self.onClickGenericButton)
-        self.genericFilepath = QLabel("[Filepath]", self)
-        self.genericFilepath.setHidden(True)
+        self.generic_button = QPushButton("Generic Output")
+        self.generic_button.setHidden(True)
+        self.generic_button.clicked.connect(self.onClickGenericButton)
+        self.generic_filepath = QLabel("[Filepath]", self)
+        self.generic_filepath.setHidden(True)
 
         self.search_engine_group = QButtonGroup()
         self.search_engine_group.addButton(self.maxquant_RB)
@@ -77,14 +77,14 @@ class App(QMainWindow):
 
         self.options_label = QLabel("Options", self)
 
-        self.targetCB = QCheckBox("Use Target Genes", self)
-        self.targetCB.stateChanged.connect(self.checkTargetBox)
-        self.targetCB.setToolTip("Use a list of genes that will be prioritized given multiple matches")
-        self.targetButton = QPushButton("Target Gene List")
-        self.targetButton.setHidden(True)
-        self.targetButton.clicked.connect(self.onClickTargetButton)
-        self.targetFilepath = QLabel("[Filepath]", self)
-        self.targetFilepath.setHidden(True)
+        self.target_checkbox = QCheckBox("Use Target Genes", self)
+        self.target_checkbox.stateChanged.connect(self.checkTargetBox)
+        self.target_checkbox.setToolTip("Use a list of genes that will be prioritized given multiple matches")
+        self.target_button = QPushButton("Target Gene List")
+        self.target_button.setHidden(True)
+        self.target_button.clicked.connect(self.onClickTargetButton)
+        self.target_filepath = QLabel("[Filepath]", self)
+        self.target_filepath.setHidden(True)
 
         self.quant_CB = QCheckBox("Use Quantitation Values", self)
         self.quant_CB.stateChanged.connect(self.check_quant_CB)
@@ -110,22 +110,25 @@ class App(QMainWindow):
 
         self.max_missed_label = QLabel("Max Missed Cleavages", self)
         self.max_missed_label.setToolTip("The maximum allowed missed cleavages for a given peptide")
-        self.maxMissedEdit = QLineEdit(self)
-        self.maxMissedEdit.setToolTip("The maximum allowed missed cleavages for a given peptide")
+        self.max_missed_edit = QLineEdit(self)
+        self.max_missed_edit.setToolTip("The maximum allowed missed cleavages for a given peptide")
 
         self.fdr_label = QLabel("FDR Threshold", self)
-        self.fdr_label.setToolTip("The threshold for pep_expect column for Mascot or PEP column for Maxquant.\nMust be between 0 and 1")
-        self.fdrEdit = QLineEdit(self)  # TODO: Error check for a number
-        self.fdrEdit.setToolTip("The threshold for pep_expect column for Mascot or PEP column for Maxquant.\nMust be between 0 and 1")
+        self.fdr_label.setToolTip("[OPTIONAL] The threshold for pep_expect column for Mascot or PEP column for Maxquant.\nMust be between 0 and 1, but can be left blank.")
+        self.fdr_edit = QLineEdit(self)  # TODO: Error check for a number
+        self.fdr_edit.setToolTip("[OPTIONAL] The threshold for pep_expect column for Mascot or PEP column for Maxquant.\nMust be between 0 and 1, but can be left blank.")
 
         self.protease_label = QLabel("Protease used in sample digestion", self)
         self.protease_label.setToolTip("The protease used to digest the sample\nExamples include: trypsin/p, trypsin!p, lys-c, asp-n, asp-nc, lys-n")
-        self.protease_edit = QLineEdit(self)
-        self.protease_edit.setToolTip("The protease used to digest the sample\nExamples include: trypsin/p, trypsin!p, lys-c, asp-n, asp-nc, lys-n")
+        self.protease_combo_box = QComboBox()
+        self.protease_combo_box.setToolTip("The protease used to digest the sample\nExamples include: trypsin/p, trypsin!p, lys-c, asp-n, asp-nc, lys-n")
+        self.protease_combo_box.addItems(["trypsin/p", "trypsin!p", "lys-c", "asp-n", "asp-nc", "lys-n"])
+        self.protease_combo_box.setEditable(True)
 
-        self.runButton = QPushButton("Rollup!")
-        self.runButton.setHidden(False)
-        self.runButton.clicked.connect(self.onClickRunButton)
+
+        self.run_button = QPushButton("Rollup!")
+        self.run_button.setHidden(False)
+        self.run_button.clicked.connect(self.onClickRunButton)
 
         self.createGridLayout()
         windowLayout = QVBoxLayout(self.centralWidget)
@@ -136,35 +139,35 @@ class App(QMainWindow):
     
     def check_MQ_RB(self, state):
         if self.maxquant_RB.isChecked():
-            self.maxquantFilepath.setHidden(False)
-            self.MQbutton.setHidden(False)
+            self.maxquant_filepath.setHidden(False)
+            self.maxquant_button.setHidden(False)
         else:
-            self.maxquantFilepath.setHidden(True)
-            self.MQbutton.setHidden(True)
+            self.maxquant_filepath.setHidden(True)
+            self.maxquant_button.setHidden(True)
 
     def check_mascot_RB(self, state):
         if self.mascot_RB.isChecked():
-            self.mascotFilepath.setHidden(False)
-            self.mascotButton.setHidden(False)
+            self.mascot_filepath.setHidden(False)
+            self.mascot_button.setHidden(False)
         else:
-            self.mascotFilepath.setHidden(True)
-            self.mascotButton.setHidden(True)
+            self.mascot_filepath.setHidden(True)
+            self.mascot_button.setHidden(True)
     
     def check_generic_RB(self, state):
         if self.generic_RB.isChecked():
-            self.genericFilepath.setHidden(False)
-            self.genericButton.setHidden(False)
+            self.generic_filepath.setHidden(False)
+            self.generic_button.setHidden(False)
         else:
-            self.genericFilepath.setHidden(True)
-            self.genericButton.setHidden(True)
+            self.generic_filepath.setHidden(True)
+            self.generic_button.setHidden(True)
 
     def checkTargetBox(self, state):
         if state == QtCore.Qt.Checked:
-            self.targetFilepath.setHidden(False)
-            self.targetButton.setHidden(False)
+            self.target_filepath.setHidden(False)
+            self.target_button.setHidden(False)
         else:
-            self.targetFilepath.setHidden(True)
-            self.targetButton.setHidden(True)
+            self.target_filepath.setHidden(True)
+            self.target_button.setHidden(True)
     
     def check_quant_CB(self, state):
         if state == QtCore.Qt.Checked:
@@ -185,24 +188,24 @@ class App(QMainWindow):
             self.species_name_label.setText("Not a valid species ID")
             self.species_name_label.setStyleSheet("background-color : red")
 
-    def checkRunButton(self, MQcheckState, MQfilepath: str, mascotCheckState, mascotFilepath: str, genericCheckState, genericFilepath: str):
+    def checkRunButton(self, MQcheckState, MQfilepath: str, mascotCheckState, mascot_filepath: str, genericCheckState, generic_filepath: str):
         """Checks to see whether the run button is available. must have a search engine output and missed cleavages, etc
         Arguments:
             MQcheckState {QtCore.Qt.Checked} -- whether the box is checked
             MQfilepath {str} -- the filepath for maxquant output
             mascotCheckState {QtCore.Qt.Checked} -- whether the box is checked
-            mascotFilepath {str} -- the filepath for maxquant output
+            mascot_filepath {str} -- the filepath for maxquant output
             genericCheckState {QtCore.Qt.Checked} -- whether the box is checked
-            genericFilepath {str} -- the filepath for maxquant output
+            generic_filepath {str} -- the filepath for maxquant output
         """
         # TODO: update to require species, etc.
         if (((MQcheckState == QtCore.Qt.Checked and MQfilepath != "") or
-            (mascotCheckState == QtCore.Qt.Checked and mascotFilepath != "") or
-            (genericCheckState == QtCore.Qt.Checked and genericFilepath != "")) and
+            (mascotCheckState == QtCore.Qt.Checked and mascot_filepath != "") or
+            (genericCheckState == QtCore.Qt.Checked and generic_filepath != "")) and
             os.path.exists(self.proteome_filepath.text())):
-            self.runButton.setHidden(False)
+            self.run_button.setHidden(False)
         else:
-            self.runButton.setHidden(True)
+            self.run_button.setHidden(True)
 
 
     def __make_species_dict(self):
@@ -230,7 +233,6 @@ class App(QMainWindow):
     def open_directory_dialog(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        #dir_name, _ = QFileDialog.getExistingDirectory(self,"QFileDialog.getExistingDirectory()", "","TXT Files (*.txt);;All Files (*)", options=options)
         dir_name = str(QFileDialog.getExistingDirectory(self, "Select Directory", options=options))
         return dir_name
     
@@ -260,11 +262,11 @@ class App(QMainWindow):
         self.statusBar().showMessage("Choose the MaxQuant output FOLDER")
         self.statusBar().setStyleSheet("background-color : white")
         filename = self.open_directory_dialog()
-        if self.maxquantFilepath.text() != "":
-            self.maxquantFilepath.setText(filename)
+        if self.maxquant_filepath.text() != "":
+            self.maxquant_filepath.setText(filename)
             missed_cleavages, enzyme, PTMs = parse_output("maxquant", filename)
-            self.maxMissedEdit.setText(str(missed_cleavages))
-            self.protease_edit.setText(enzyme)
+            self.max_missed_edit.setText(str(missed_cleavages))
+            self.protease_combo_box.setEditText(enzyme)
             #Remove the previous PTM checkboxes (if there were any)
             if self.PTM_CBs != []:
                 for cb in self.PTM_CBs:
@@ -289,24 +291,17 @@ class App(QMainWindow):
                 i += 1
         self.statusBar().showMessage("")
             
-        '''
-        buttonReply = QMessageBox.warning(self, "ERROR", "Error detected", QMessageBox.Ok, QMessageBox.Ok)
-        if buttonReply == QMessageBox.Yes:
-            print('Yes clicked.')
-        else:
-            print('No clicked.')
-        '''
     
     @pyqtSlot()
     def onClickMascotButton(self):
         self.statusBar().showMessage("Choose the Mascot output file")
         self.statusBar().setStyleSheet("background-color : white")
         filename = self.openCSVFileNameDialog()
-        if self.mascotFilepath.text() != "":
-            self.mascotFilepath.setText(filename)
+        if self.mascot_filepath.text() != "":
+            self.mascot_filepath.setText(filename)
             missed_cleavages, enzyme, PTMs = parse_output("mascot", filename)
-            self.maxMissedEdit.setText(str(missed_cleavages))
-            self.protease_edit.setText(enzyme)
+            self.max_missed_edit.setText(str(missed_cleavages))
+            self.protease_combo_box.setEditText(enzyme)
             #Remove the previous PTM checkboxes (if there were any)
             if self.PTM_CBs != []:
                 for cb in self.PTM_CBs:
@@ -323,16 +318,12 @@ class App(QMainWindow):
                 label_to_remove = self.layout.itemAtPosition(5, i).widget()
                 self.layout.removeWidget(label_to_remove)
                 label_to_remove.deleteLater()
-            #self.horizontalGroupBox.setLayout(self.layout)
             
             # Inserts the new PTM checkboxes
             self.layout.addWidget(QLabel("PTMs for Analysis"), 5, i)
             for widget in self.PTM_CBs:
-                #if not self.layout.itemAtPosition(6, i) is None:
-                #    self.layout.removeWidget(self.layout.itemAtPosition(6, i).widget())
                 self.layout.addWidget(widget, 6, i)
                 i += 1
-            #self.horizontalGroupBox.setLayout(self.layout)
         self.statusBar().showMessage("")
     
     @pyqtSlot()
@@ -340,8 +331,8 @@ class App(QMainWindow):
         self.statusBar().showMessage("Choose the Search Engine output")
         self.statusBar().setStyleSheet("background-color : white")
         filename = self.openCSVFileNameDialog()
-        if self.genericFilepath.text() != "":
-            self.genericFilepath.setText(filename)
+        if self.generic_filepath.text() != "":
+            self.generic_filepath.setText(filename)
             missed_cleavages, enzyme, PTMs = parse_output("generic", filename)
             #Remove the previous PTM checkboxes (if there were any)
             if self.PTM_CBs != []:
@@ -389,22 +380,22 @@ class App(QMainWindow):
         self.statusBar().showMessage("Choose the Target Gene file")
         self.statusBar().setStyleSheet("background-color : white")
         filename = self.openTXTFileNameDialog()
-        if self.targetFilepath.text() != "":
-            self.targetFilepath.setText(filename)
+        if self.target_filepath.text() != "":
+            self.target_filepath.setText(filename)
         self.statusBar().showMessage("")
 
     @pyqtSlot()
     def onClickRunButton(self):
-        if ((self.maxquant_RB.isChecked() and os.path.exists(self.maxquantFilepath.text())) or
-            (self.mascot_RB.isChecked() and os.path.exists(self.mascotFilepath.text())) or
-            (self.generic_RB.isChecked() and os.path.exists(self.genericFilepath.text()))): 
+        if ((self.maxquant_RB.isChecked() and os.path.exists(self.maxquant_filepath.text())) or
+            (self.mascot_RB.isChecked() and os.path.exists(self.mascot_filepath.text())) or
+            (self.generic_RB.isChecked() and os.path.exists(self.generic_filepath.text()))): 
             if not os.path.exists(self.proteome_filepath.text()):
                 self.statusBar().showMessage("ERROR: Missing Proteome FASTA file!")
                 self.statusBar().setStyleSheet("background-color : red")
                 return
 
             try:  # Check to see if the provided number of allowed missed cleavages is legal
-                max_missed = int(self.maxMissedEdit.text())
+                max_missed = int(self.max_missed_edit.text())
                 if max_missed < 0:
                     self.statusBar().showMessage("ERROR: Number of max allowed missed cleavages cannot be less than 0!")
                     self.statusBar().setStyleSheet("background-color : red")
@@ -415,8 +406,8 @@ class App(QMainWindow):
                 return
             
             try:  # Checks to see if the provided FDR threshold is legal
-                if self.fdrEdit.text() != "":
-                    fdr = float(self.fdrEdit.text())
+                if self.fdr_edit.text() != "":
+                    fdr = float(self.fdr_edit.text())
                     if fdr < 0 or fdr > 1:
                         self.statusBar().showMessage("ERROR: FDR must be between 0 and 1!")
                         self.statusBar().setStyleSheet("background-color : red")
@@ -448,17 +439,15 @@ class App(QMainWindow):
                 return
 
                 
-            if self.protease_edit.text() in cleave_rules:
-                #self.statusBar().showMessage("Analysis Running!")  # TODO: consider running on a different thread
-                
+            if self.protease_combo_box.currentText() in cleave_rules:
                 # If the maxquant option was chosen, it sends that info to be run
-                if self.maxquant_RB.isChecked() and os.path.exists(self.maxquantFilepath.text()):
+                if self.maxquant_RB.isChecked() and os.path.exists(self.maxquant_filepath.text()):
                     rollup("maxquant", 
-                                    self.maxquantFilepath.text(), 
-                                    self.targetCB.isChecked(),  # Whether target will be used
-                                    self.targetFilepath.text(),
-                                    int(self.maxMissedEdit.text()),
-                                    self.protease_edit.text(),
+                                    self.maxquant_filepath.text(), 
+                                    self.target_checkbox.isChecked(),  # Whether target will be used
+                                    self.target_filepath.text(),
+                                    int(self.max_missed_edit.text()),
+                                    self.protease_combo_box.currentText(),
                                     fdr,
                                     self.quant_CB.isChecked(),
                                     self.convert_PTM_list(self.PTM_CBs),
@@ -469,13 +458,14 @@ class App(QMainWindow):
                     self.statusBar().showMessage("Analysis Complete!")
                     self.statusBar().setStyleSheet("background-color : green")
                     print("\033[92m {}\033[00m".format("Analysis Complete!"))
-                elif self.mascot_RB.isChecked() and os.path.exists(self.mascotFilepath.text()):
+                    sys.exit()
+                elif self.mascot_RB.isChecked() and os.path.exists(self.mascot_filepath.text()):
                     rollup("mascot", 
-                                    self.mascotFilepath.text(), 
-                                    self.targetCB.isChecked(),  # Whether target will be used
-                                    self.targetFilepath.text(),
-                                    int(self.maxMissedEdit.text()),
-                                    self.protease_edit.text(),
+                                    self.mascot_filepath.text(), 
+                                    self.target_checkbox.isChecked(),  # Whether target will be used
+                                    self.target_filepath.text(),
+                                    int(self.max_missed_edit.text()),
+                                    self.protease_combo_box.currentText(),
                                     fdr,
                                     self.quant_CB.isChecked(),
                                     self.convert_PTM_list(self.PTM_CBs),
@@ -486,13 +476,14 @@ class App(QMainWindow):
                     self.statusBar().showMessage("Analysis Complete!")
                     self.statusBar().setStyleSheet("background-color : green")
                     print("\033[92m {}\033[00m".format("Analysis Complete!"))
-                elif self.generic_RB.isChecked() and os.path.exists(self.genericFilepath.text()):
+                    sys.exit()
+                elif self.generic_RB.isChecked() and os.path.exists(self.generic_filepath.text()):
                     rollup("generic", 
-                                    self.genericFilepath.text(), 
-                                    self.targetCB.isChecked(),  # Whether target will be used
-                                    self.targetFilepath.text(),
-                                    int(self.maxMissedEdit.text()),
-                                    self.protease_edit.text(),
+                                    self.generic_filepath.text(), 
+                                    self.target_checkbox.isChecked(),  # Whether target will be used
+                                    self.target_filepath.text(),
+                                    int(self.max_missed_edit.text()),
+                                    self.protease_combo_box.currentText(),
                                     fdr,
                                     self.quant_CB.isChecked(),
                                     self.convert_PTM_list(self.PTM_CBs),
@@ -503,6 +494,7 @@ class App(QMainWindow):
                     self.statusBar().showMessage("Analysis Complete!")
                     self.statusBar().setStyleSheet("background-color : green")
                     print("\033[92m {}\033[00m".format("Analysis Complete!"))
+                    sys.exit()
                 else:
                     self.statusBar().showMessage("ERROR: Missing Search Engine Output!")
                     self.statusBar().setStyleSheet("background-color : red")
@@ -523,19 +515,19 @@ class App(QMainWindow):
         self.layout.setRowStretch(9, 1)
 
         row = 1
-        self.layout.addWidget(self.fileChooserLabel, row, 0)
+        self.layout.addWidget(self.file_chooser_label, row, 0)
         row += 1
         self.layout.addWidget(self.maxquant_RB, row, 0)
-        self.layout.addWidget(self.MQbutton, row, 1)
-        self.layout.addWidget(self.maxquantFilepath, row, 2)
+        self.layout.addWidget(self.maxquant_button, row, 1)
+        self.layout.addWidget(self.maxquant_filepath, row, 2)
         row += 1
         self.layout.addWidget(self.mascot_RB, row, 0)
-        self.layout.addWidget(self.mascotButton, row, 1)
-        self.layout.addWidget(self.mascotFilepath, row, 2)
+        self.layout.addWidget(self.mascot_button, row, 1)
+        self.layout.addWidget(self.mascot_filepath, row, 2)
         row += 1
         self.layout.addWidget(self.generic_RB, row, 0)
-        self.layout.addWidget(self.genericButton, row, 1)
-        self.layout.addWidget(self.genericFilepath, row, 2)
+        self.layout.addWidget(self.generic_button, row, 1)
+        self.layout.addWidget(self.generic_filepath, row, 2)
         row += 1
         # This is where the PTM label goes
         row += 1
@@ -547,9 +539,9 @@ class App(QMainWindow):
         row += 1
         self.layout.addWidget(self.options_label, row, 0)
         row += 1
-        self.layout.addWidget(self.targetCB, row, 0)
-        self.layout.addWidget(self.targetButton, row, 1)
-        self.layout.addWidget(self.targetFilepath, row, 2)
+        self.layout.addWidget(self.target_checkbox, row, 0)
+        self.layout.addWidget(self.target_button, row, 1)
+        self.layout.addWidget(self.target_filepath, row, 2)
         row += 1
         self.layout.addWidget(self.quant_CB, row, 0)
         self.layout.addWidget(self.sum_RB, row, 1)
@@ -562,15 +554,15 @@ class App(QMainWindow):
         self.layout.addWidget(self.species_name_label, row, 2)
         row += 1
         self.layout.addWidget(self.max_missed_label, row, 0)
-        self.layout.addWidget(self.maxMissedEdit, row, 1)
+        self.layout.addWidget(self.max_missed_edit, row, 1)
         row += 1
         self.layout.addWidget(self.fdr_label, row, 0)
-        self.layout.addWidget(self.fdrEdit, row, 1)
+        self.layout.addWidget(self.fdr_edit, row, 1)
         row += 1
         self.layout.addWidget(self.protease_label, row, 0)
-        self.layout.addWidget(self.protease_edit, row, 1)
+        self.layout.addWidget(self.protease_combo_box, row, 1)
         row += 1
-        self.layout.addWidget(self.runButton, row, 0)
+        self.layout.addWidget(self.run_button, row, 0)
 
         self.horizontalGroupBox.setLayout(self.layout)
 

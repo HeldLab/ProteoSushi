@@ -96,9 +96,11 @@ def load_pepdict(proteome_fasta_filepath: str, enzyme: str, missed_cleaves: int)
     """
     pep_dict = None
     wd = os.getcwd()
-    if not any([x.endswith('.pepdict') for x in os.listdir(wd)]):
-        print("No pepdict found in current directory. Trying to generate from FASTA")
+    pep_dict_file = f"{proteome_fasta_filepath.split('.')[0]}.pepdict"
+    if not any([x == pep_dict_file for x in os.listdir(wd)]):
+        print("Pepdict not found in current directory. Trying to generate from FASTA")
         digest_if_needed(proteome_fasta_filepath, enzyme, missed_cleaves)
+    '''
     pep_dicts = 0
     for f in os.listdir(wd):
         if f.endswith('.pepdict'):
@@ -106,6 +108,8 @@ def load_pepdict(proteome_fasta_filepath: str, enzyme: str, missed_cleaves: int)
             pep_dict_file = f
     assert pep_dicts == 1, \
         f"Found {pep_dicts} pepdict files. Need exactly 1 in {wd}."
+        '''
+    
     print(f"Loading {pep_dict_file} into memory")
     with open(pep_dict_file, 'rb') as f:
         pep_dict = pickle.load(f)
@@ -140,6 +144,6 @@ def digest_if_needed(proteome_fasta_filepath: str, enzyme: str, mcleave: bool, m
             peptide, position = result
             peptide = peptide.replace("L", "I")
             pep_dict[peptide].add((gene, position, unpid))  # careful with site specificity here
-    with open("pepdict.pepdict", "wb") as w1:
+    with open(f"{proteome_fasta_filepath.split('.')[0]}.pepdict", "wb") as w1:
         pickle.dump(pep_dict, w1)
     del pep_dict  # Free memory for later
