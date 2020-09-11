@@ -143,7 +143,6 @@ WHERE {
             else:
                 return None  # TODO: remove this once Uniprot fixes their stuff
                 raise pd.errors.ParserError("Ran out of Uniprot accession attempts")
-        #print(r.text)
         csv_file = StringIO(r.text)
         sparql_from_csv_df = pd.read_csv(csv_file)
     except pd.errors.ParserError:
@@ -157,11 +156,11 @@ WHERE {
     
     return sparql_from_csv_df
 
-def process_sparql_output(output_str: str, sparql_dict: dict) -> list:
+def process_sparql_output(output_str, sparql_dict: dict) -> list:
     """Process the output from uniprot to make it consistent with the rollup output
 
     Arguments:
-        output_str {str} -- the string output from uniprot, may have multiple
+        output_str {pandas.dataframe} -- the string output from uniprot, may have multiple
         sparql_dict {dict} -- the growing dictionary of uniprot annotations
     Returns:
         list -- a list of annotations with the data properly separated
@@ -192,7 +191,7 @@ def process_sparql_output(output_str: str, sparql_dict: dict) -> list:
                 new_str.append(findall(r"(\d+?)\^", chunk)[0])
             else:
                 new_str.append(str(chunk))
-        return ','.join(new_str)
+        return '\t'.join(new_str)
 
     output_list = list()
     comments_dict = dict()
@@ -238,8 +237,6 @@ def process_sparql_output(output_str: str, sparql_dict: dict) -> list:
     #header = output_lines.colnames()
     #print(output_lines.columns)
     
-    #entry_index = header.index("entry")
-    #length_index = header.index("lengthOfSequence")
     #i = 1
     repeat_index = 2
     #while i < len(output_lines):
@@ -247,7 +244,7 @@ def process_sparql_output(output_str: str, sparql_dict: dict) -> list:
         output_line = __parse_sparql_line(output_line)
         #print(output_split)
         # This should only have 1 iteration and is used to properly split the csv type line
-        for output_split in csv.reader([output_line], delimiter=',', quotechar='"'):
+        for output_split in csv.reader([output_line], delimiter='\t', quotechar='"'):
             key = ','.join([*output_split[:repeat_index], output_split[position_index]])
             try:
                 comments_dict[key] += output_split[repeat_index:position_index] + output_split[position_index + 1:]

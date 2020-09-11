@@ -4,6 +4,7 @@
 
 import csv
 import os
+import pandas as pd
 from re import finditer, match
 from time import sleep
 
@@ -257,8 +258,8 @@ def __add_intensity(intensity_dict: dict, pep_seq: str, pep_mod_seq: str, gene: 
                     new_int = intensities[i]
                     if "#N/A" == new_int or "NaN" == new_int or not new_int:
                         new_int = 0
-                    print(repr(old_int))
-                    print(repr(new_int))
+                    #print(repr(old_int))
+                    #print(repr(new_int))
                     new_intensities.append(float(old_int) + float(new_int))
                     i += 1
                 # Adds in the number of combined peptide peaks (1 so far)
@@ -469,11 +470,14 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             if not (any(mods) and set([m[0] for m in mods]) & set(user_PTMs)): 
                 continue
             for mod in list(set(mods)):
+                if not mod[0] in user_PTMs:
+                    continue
                 site = start_pos + mod[1]
                 #if gene.upper() == "ACTL6A":
                 #    print("ACTL6A")
                 if use_intensities:
-                    intensity_dict, to_add = __add_intensity(intensity_dict, pep_seq, pep_mod_seq, gene, site, intensities, cleave_rules[enzyme])
+                    intensity_dict, to_add = __add_intensity(intensity_dict, pep_seq, pep_mod_seq, 
+                                                             gene, site, intensities, cleave_rules[enzyme])
                 else:
                     key = f"{pep_mod_seq}|{gene.upper()}|{str(site)}"
                     if key in intensity_dict:
@@ -485,11 +489,11 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                     if use_target and gene.upper() + '\n' in target_genes:  # TODO: fetch the uniprot ID from the match
                         gene_results.append([gene, site, "", gene, raw_seq, pep_mod_seq, unpid])
                         if len(unpid) >= 5:
-                            sparql_input.append(tuple((unpid, site)))
+                            sparql_input.append(tuple((unpid, site, gene)))
                     else:
                         gene_results.append([gene, site, "", "", raw_seq, pep_mod_seq, unpid])  # NOTE: I changed this from a tuple, so things might be different
                         if len(unpid) >= 5:
-                            sparql_input.append(tuple((unpid, site)))
+                            sparql_input.append(tuple((unpid, site, gene)))
         elif genes_positions and len(genes_positions) > 1:
             isTarget, match = __chooseHit(genes_positions, target_genes, annotDict, use_target)
             # If there was > 1 target genes, non-target genes, or a combination, AND none was chosen
@@ -504,6 +508,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                         continue
                     mods = mod_dict[pep_seq]
                     for mod in list(set(mods)):
+                        if not mod[0] in user_PTMs:
+                            continue
                         site = match[1] + mod[1]
                         #if gene.upper() == "ACTL6A":
                         #    print("ACTL6A")
@@ -521,21 +527,20 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                             if isTarget:
                                 gene_results.append([gene, site, "", gene, raw_seq, pep_mod_seq, match[2]])
                                 if len(match[2]) >= 5:
-                                    sparql_input.append(tuple((match[2], site)))
+                                    sparql_input.append(tuple((match[2], site, gene)))
                             else:
                                 gene_results.append([gene, site, "", "", raw_seq, pep_mod_seq, match[2]])
                                 if len(match[2]) >= 5:
-                                    sparql_input.append(tuple((match[2], site)))
+                                    sparql_input.append(tuple((match[2], site, gene)))
                 else:  # There are multiple matches
                     if not pep_seq in mod_dict:
                         print("\033[91m {}\033[00m".format(f"{pep_seq} not in modDict!"))
                         missing_PTM += 1
                         continue
                     mods = mod_dict[pep_seq]
-                    # NOTE: I am starting to think whether handling modifications like this is the right way.
-                    # The mods are associated with the peptide sequence, but I wonder whether that necessarily 
-                    # Applies to each of the database matches :/
-                    for mod in list(set(mods)):  # TODO: this is where I add in the intensity columns
+                    for mod in list(set(mods)):
+                        if not mod[0] in user_PTMs:
+                            continue
                         additGenes = list()
                         for tup in match:
                             additGenes.append(tup[0])
@@ -557,11 +562,11 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                             if isTarget:
                                 gene_results.append([match[0][0], site, ' '.join(additGenes), ' '.join([i[0] for i in match]), raw_seq, pep_mod_seq, ' '.join([i[2] for i in match])])
                                 if len(match[0][2]) >= 5:
-                                    sparql_input.append(tuple((match[0][2], site)))
+                                    sparql_input.append(tuple((match[0][2], site, match[0][0])))
                             else:
                                 gene_results.append([match[0][0], site, ' '.join(additGenes), "", raw_seq, pep_mod_seq, ' '.join([i[2] for i in match])])
                                 if len(match[0][2]) >= 5:
-                                    sparql_input.append(tuple((match[0][2], site)))
+                                    sparql_input.append(tuple((match[0][2], site, match[0][0])))
             else:
                 unmatched_peps += 1
                 unmatched_sequences.append(tuple([raw_seq, pep_mod_seq]))
@@ -574,38 +579,68 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     # TODO: Eventually make it so this file isn't made in the first place
     #os.remove("pepdict.pepdict")
 
+    ########################
+    #Just to annotate EGFR #
+    ########################
+    if add_annotation and False:
+        sparql_dict = dict()
+        #with open("EGFR_annotation_uniprot_unfixed.csv", 'r') as annotation_file:
+        '''
+        with open("sparql-complete.csv", 'r') as annotation_file:
+            annotations_full = pd.DataFrame(columns=annotation_file.readline().split(','))
+            #print("here")
+            for line in annotation_file:
+                if line[:5] == "entry":
+                    continue
+                else:
+                    for line_split in csv.reader([line], delimiter=',', quotechar='"'):
+                        annotations_full = annotations_full.append(pd.Series(line_split, index=annotations_full.columns), ignore_index=True)
+        '''
+        annotations_full = pd.read_csv("sparql-complete.csv")
+        #annotations_full = pd.read_json("sparql-complete.srj")
+        annotations_full = annotations_full[annotations_full.entry != "entry"]
+        sparql_output, sparql_dict = sparql.process_sparql_output(annotations_full, sparql_dict)
+
     # If the user chose, it combines the annotation onto the rollup results (eventually)
-    if add_annotation:
+    if add_annotation and True:
         print("Querying Uniprot for Annotations!")
-        batch = 2#50
+        batch = 2
         i = 0
         results_annotated = 0
         sparql_output_list = list()
-        sparql_input = list(set(sparql_input))
+        sparql_input = sorted(list(set(sparql_input)), key=lambda x: x[2])
         sparql_dict = dict()
         # Separates the input into batches then sends those batches
         while i + batch <= len(sparql_input):
             # Makes the request and sends it to uniprot
             batch_output = sparql.sparql_request(sparql_input[i:i+batch])
             # If after all attempts to get annotations for this batch has failed, this is reported and the next batch will be sent
-            if batch_output is None or batch_output.empty:
+            if batch_output is None or (not isinstance(batch_output, str) and batch_output.empty):
                 print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+batch+1} not annotated!"))
                 i += batch
                 continue
             # This processes and combines the annotations to 1 per site
             sparql_output, sparql_dict = sparql.process_sparql_output(batch_output, sparql_dict)
+            if not sparql_output:
+                print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+batch+1} not annotated!"))
+                i += batch
+                continue
             sparql_output_list.append(sparql_output)
             i += batch
             results_annotated += batch
             print("\033[96m {}\033[00m" .format(f"{round(float(results_annotated)/len(sparql_input)*100, 2)}% of results annotated"))
         batch_output = sparql.sparql_request(sparql_input[i:])
-        if batch_output is None or batch_output.empty:
+        if batch_output is None or (not isinstance(batch_output, str) and batch_output.empty):
             print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+len(sparql_input[i:])+1} not annotated!"))
             pass
         else:
             sparql_output, sparql_dict = sparql.process_sparql_output(batch_output, sparql_dict)
-            sparql_output_list.append(sparql_output)
-            results_annotated += len(sparql_input[i:])
+            if not sparql_output:
+                print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+batch+1} not annotated!"))
+                pass
+            else:
+                sparql_output_list.append(sparql_output)
+                results_annotated += len(sparql_input[i:])
         print("\033[96m {}\033[00m" .format(f"{round(float(results_annotated)/len(sparql_input)*100, 2)}% of results annotated"))
         # Writes the annotations to a separate file in case the user wants to view those in a more vertical way
         with open("sparql_annotations.csv", 'w') as spql_annot:
@@ -613,6 +648,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             for line in sparql_output_list:
                 out_writer.writerow(line)
     print("Writing the rollup output file")
+
     # Prints out the completed rollup with annotations from Uniprot (if requested)
     with open(output_filename, 'w', newline = '') as w1:
         out_writer = csv.writer(w1)
@@ -622,8 +658,11 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             header2 += intensity_header
         if add_annotation:
             annotations_length = max(len(v) for k, v in sparql_dict.items())
+            if annotations_length > 0:
+                header2 += ["entry", "lengthOfSequence", "position"]
+                annotations_length -= 3
             while annotations_length > 0:
-                header2 += ["entry", "lengthOfSequence", "position", "catalyicActivity", "location", 
+                header2 += ["catalyicActivity", "location", 
                             "ec", "rhea", "type", "comment", "begin", "end", "regionOfInterest"]
                 annotations_length -= 12
         out_writer.writerow(header2)
@@ -660,6 +699,4 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         for i in unmatched_sequences:
             writable_row = list(i)
             out_writer.writerow(writable_row)
-
-
 #EOF
