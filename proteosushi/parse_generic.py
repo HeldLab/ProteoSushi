@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""parse_Skyline.py: parses and rolls up the results from Skyline"""
+"""parse_generic.py: parses and rolls up the results from any search engine"""
 
 from collections import defaultdict
 import csv
@@ -11,22 +11,8 @@ from time import sleep
 
 from proteoSushi_constants import cleave_rules
 from ps_utilities import load_pepdict
-'''
-def __prompt_file() -> str:
-    """Prompts the user for the file name
 
-    Returns:
-        str -- the filename
-    """
-    print("\033[96m {}\033[00m".format("Please provide the filename of the Skyline file"))
-    print("\033[96m {}\033[00m".format("For example: \nC:/experiment1/Combined/EXP01.csv, or"))
-    sky_filename = input("\033[96m {}\033[00m".format("/home/[user]/Documents/experiment1/EXP01.csv\n"))
-    if not os.path.exists(sky_filename):
-        print("\033[91m {}\033[00m".format("Invalid path, try again!\n"))
-        sleep(.5)
-        return __prompt_file()
-    return sky_filename
-'''
+
 def parse_file(sky_filename: str) -> dict:
     """Parses the generic output to retrieve the modification info
     Arguments:
@@ -88,46 +74,7 @@ def parse_file(sky_filename: str) -> dict:
                     mod_dict[sequence] = [tuple((mods[i][0], fixed_indices[i]))]
                 i += 1
     return mod_dict, mod_list
-'''
-def __promptCleavenMissed() -> list:
-    """Prompts the user for the cleavage rule and max missed cleavages
-    Returns:
-        str -- the filename
-        int -- number of allowed misses
-    """
-    cleave_rules = {
-        # C terminal proteases
-        'trypsin/p': (r'[RK]', 'c'),
-        'trypsin!p': (r'[RK](?!P)', 'c'),
-        'lys-c': (r'[K]', 'c'),
-        # N terminal proteases
-        'asp-n': (r'[D]', 'n'),
-        'asp-nc': (r'[DC]', 'n'),
-        'lys-n': (r'[K]', 'n')
-    }
-    print("\033[96m {}\033[00m".format("Please provide the cleavage rule."))
-    cleaveRule = input("\033[96m {}\033[00m".format("Examples include 'trypsin/p', 'trypsin!p', 'lys-c', 'asp-n', asp-nc', 'lys-n'\n"))
-    if not cleaveRule in cleave_rules:
-        print("\033[91m {}\033[00m".format("Not an accepted format; please try again.\n"))
-        sleep(.5)
-        return __promptCleavenMissed()
-    maxMissed = __promptMissed()
-    return cleaveRule, maxMissed
 
-def __promptMissed() -> int:
-    maxMissed = None
-    try:
-        maxMissed = int(input("\033[96m {}\033[00m".format("Please provide the number of allowed missed cleavages.\n")))
-    except Exception:
-        print("\033[91m {}\033[00m".format("Not an accepted format; please try again.\n"))
-        sleep(.5)
-        return __promptMissed()
-    if maxMissed < 0:
-        print("\033[91m {}\033[00m".format("Max missed cleavages must be a positive number; please try again.\n"))
-        sleep(.5)
-        return __promptMissed()
-    return maxMissed
-'''
 def __chooseHit(genes_positions: list, mito_genes: list, annotDict: dict) -> list:
     """chooses which of the matched sequences to use. If there is one mito gene, it will be that one.
     If there are more than one non-mito, annotation score decides. If there are more than one mito, annotation score decides.
