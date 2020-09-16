@@ -96,8 +96,9 @@ def load_pepdict(proteome_fasta_filepath: str, enzyme: str, missed_cleaves: int)
     """
     pep_dict = None
     wd = os.getcwd()
+    fasta_dir = os.path.dirname(os.path.abspath(proteome_fasta_filepath))
     pep_dict_file = f"{proteome_fasta_filepath.split('.')[0]}.pepdict"
-    if not any([x == pep_dict_file for x in os.listdir(wd)]):
+    if not any([x == pep_dict_file for x in os.listdir(fasta_dir)]):
         print("Pepdict not found in current directory. Trying to generate from FASTA")
         digest_if_needed(proteome_fasta_filepath, enzyme, missed_cleaves)
     '''

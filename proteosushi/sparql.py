@@ -70,16 +70,16 @@ PREFIX ec: <http://purl.uniprot.org/enzyme/>
 SELECT
     ?entry
     #?annotation # I don't see any need for this actually
-    ?lengthOfSequence
-    ?catalyicActivity
-    ?location
+    ?lengthOfSequence #
+    ?catalyicActivity #
+    ?location #
     ?ec
     ?rhea
     ?type
     ?comment
     ?position ### New the position of the C that was given in the values
-    ?begin
-    ?end
+    ?begin #
+    ?end #
     ?regionOfInterest ### subsequence of the annotation that had the C
 FROM <http://sparql.uniprot.org/uniprot>
 WHERE {
@@ -113,7 +113,7 @@ WHERE {
        [ faldo:position ?begin ; faldo:reference ?sequence ] ;
           faldo:end
        [ faldo:position ?end ; faldo:reference ?sequence ] .
-   FILTER (?begin <= ?position && ?position <= ?end)
+   FILTER (?begin <= ?position && ?position <= ?end) # position must be in canonical sequence
  
  
    # get the IUPAC AAs associated with the identifier
@@ -128,9 +128,134 @@ WHERE {
  
  
    #Order desc by entry and ascending by position afterwards
-} ORDER BY DESC(?entry) ASC(?position)
-"""
+} ORDER BY DESC(?entry) ASC(?position)"""
 
+    prefix="""PREFIX uniprotkb: <http://purl.uniprot.org/uniprot/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX faldo: <http://biohackathon.org/resource/faldo#>
+PREFIX up: <http://purl.uniprot.org/core/>
+PREFIX ec: <http://purl.uniprot.org/enzyme/>"""
+
+
+    query_entry_length_position = prefix + """
+SELECT
+    ?entry
+    ?position ### New the position of the C that was given in the values
+    ?lengthOfSequence
+    ?begin
+    ?end
+    ?regionOfInterest ### subsequence of the annotation that had the C
+FROM <http://sparql.uniprot.org/uniprot>
+WHERE {
+    VALUES (?entry ?position) {""" + unpid_site_list_str + """
+    }
+    ?entry up:sequence ?sequence .
+    ?annotation up:range ?range ;
+               a ?type .
+    ?range faldo:begin
+        [ faldo:position ?begin ; faldo:reference ?sequence ] ;
+            faldo:end
+        [ faldo:position ?end ; faldo:reference ?sequence ] .
+    FILTER (?begin <= ?position && ?position <= ?end)
+    # get the IUPAC AAs associated with the identifier
+    ?sequence rdf:value ?iupac .
+    # get the AA subsequence of the annotation as a new variable
+    BIND(SUBSTR(?iupac, ?begin, ?end - ?begin + 1) AS ?regionOfInterest)
+    # get length
+    ?sequence rdf:value ?iupac .
+    BIND(strlen(?iupac) AS ?lengthOfSequence)
+} ORDER BY DESC(?entry) ASC(?position)"""
+
+
+    query_entry_subcellular = prefix + """
+SELECT
+    ?entry 
+    ?location
+FROM <http://sparql.uniprot.org/uniprot>
+WHERE {
+    VALUES (?entry ?position) {""" + unpid_site_list_str + """
+    }
+    ?entry up:annotation ?subAnnotation .
+    ?subAnnotation a up:Subcellular_Location_Annotation .
+    ?subAnnotation up:locatedIn/up:cellularComponent ?location .
+} ORDER BY DESC(?entry)"""
+
+
+    query_catalytic = prefix + """
+SELECT
+    ?entry
+    ?position
+    ?catalyicActivity
+FROM <http://sparql.uniprot.org/uniprot>
+WHERE {
+    VALUES (?entry ?position) {""" + unpid_site_list_str + """
+    }
+   ?entry up:sequence ?sequence .
+    ?entry up:annotation ?caAnnotation .
+    ?caAnnotation a up:Catalytic_Activity_Annotation .
+    ?caAnnotation up:catalyticActivity ?ca .
+} ORDER BY DESC(?entry) ASC(?position)"""
+
+
+    query_ec_rhea_type = prefix + """
+SELECT
+    ?entry
+    ?position
+    ?ec
+    ?rhea
+    ?type
+    ?comment
+FROM <http://sparql.uniprot.org/uniprot>
+WHERE {
+    VALUES (?entry ?position) {""" + unpid_site_list_str + """
+    }
+
+    OPTIONAL {
+        ?ca up:enzymeClass ?ec .
+    }
+
+    OPTIONAL {
+    ?ca up:catalyzedReaction ?rhea .
+    }
+
+    OPTIONAL {
+        ?annotation rdfs:comment ?comment .
+    }
+
+#Order desc by entry and ascending by position afterwards
+} ORDER BY DESC(?entry) ASC(?position)"""
+    # Grabs the annotation by parts to maximize the amount we receive from the uniprot server
+    region_annot = request_annot(query_entry_length_position)
+    catalytic_annot = request_annot(query_catalytic)
+    subcell_annot = request_annot(query_entry_subcellular)
+    #extras_annot = request_annot(query_ec_rhea_type)
+    # Full outer joins the annotations to preserve all info possible
+    if region_annot is None:
+        region_annot = pd.DataFrame(columns=["entry", " position", " lengthOfSequence", " begin", " end", " regionOfInterest"])
+    if catalytic_annot is None:
+        catalytic_annot = pd.DataFrame(columns=["entry", " position", " catalyticActivity"])
+    if subcell_annot is None:
+        subcell_annot = pd.DataFrame(columns=["entry", " location"])
+    #if extras_annot is None:
+    #   extras_annot = pd.DataFrame(columns=["entry", " position", " ec", " rhea", " type", " comment"])
+    full_annot = region_annot
+    full_annot.merge(catalytic_annot, how="outer", on=["entry", " position"])
+    full_annot.merge(subcell_annot, how="outer", on=["entry"])
+    #full_annot.merge(extras_annot, how="outer", on=["entry", " position"])
+    
+    
+    return full_annot
+
+def request_annot(query: str, attempts_left=10):
+    """Sends the query to uniprot and checks the output
+
+    Arguments:
+        query {str} -- the query with the sites to annotate
+        attempts_left {int} -- the number of requests that can be sent out
+    Returns:
+        pandas.dataframe -- the returned annotation
+    """
     headers = {"user-agent": "rseymour@wustl.edu"}
     time_to_sleep = 3
     try:
@@ -139,7 +264,7 @@ WHERE {
             if attempts_left > 0:
                 sleep(time_to_sleep)
                 print("\033[93m {}\033[00m".format(f"Attempts used: {11 - attempts_left}"))
-                return sparql_request(unpid_site_list, attempts_left - 1)
+                return request_annot(query, attempts_left - 1)
             else:
                 return None  # TODO: remove this once Uniprot fixes their stuff
                 raise pd.errors.ParserError("Ran out of Uniprot accession attempts")
@@ -149,11 +274,10 @@ WHERE {
         if attempts_left > 0:
             sleep(time_to_sleep)
             print("\033[93m {}\033[00m".format(f"Attempts used: {11 - attempts_left}"))
-            return sparql_request(unpid_site_list, attempts_left - 1)
+            return request_annot(query, attempts_left - 1)
         else:
             return None  # TODO: remove this once Uniprot fixes their stuff
             raise pd.errors.ParserError("Ran out of Uniprot accession attempts")
-    
     return sparql_from_csv_df
 
 def process_sparql_output(output_str, sparql_dict: dict) -> list:
@@ -211,7 +335,7 @@ def process_sparql_output(output_str, sparql_dict: dict) -> list:
     def retrieve_uniprot_subcellular_location():
         '''Retrieve subcellular location information from UniProt directly'''
         r = requests.get('https://www.uniprot.org/locations/?format=tab')
-        subcellular_location_df = pd.read_csv(StringIO(r.text), sep = '\t')
+        subcellular_location_df = pd.read_csv(StringIO(r.text), sep = '\t')  # TODO: potential ParserError
         subcellular_location_df["location_id_reformatted"] = (subcellular_location_df["Subcellular location ID"]
                                                              .str.split("-")
                                                              .str[1]
@@ -222,7 +346,11 @@ def process_sparql_output(output_str, sparql_dict: dict) -> list:
     subcellular_location_dict = dict(subcellular_location_df[["location_id_reformatted", "Alias"]].values.tolist())
 
     # Fetches a file from expasy to deal with the 'ec' column
-    r = urllib.request.urlopen("ftp://ftp.expasy.org/databases/enzyme/enzyme.dat", "enzyme.dat")
+    try:
+        r = urllib.request.urlopen("ftp://ftp.expasy.org/databases/enzyme/enzyme.dat", "enzyme.dat")
+    except urllib.error.URLError:
+        sleep(10)
+        r = urllib.request.urlopen("ftp://ftp.expasy.org/databases/enzyme/enzyme.dat", "enzyme.dat")
     enzyme_dat_list = r.read().decode("utf-8").split('\n')
 
     # Turn enzyme.dat into a dictionary for mapping

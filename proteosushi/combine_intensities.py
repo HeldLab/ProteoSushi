@@ -604,7 +604,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     # If the user chose, it combines the annotation onto the rollup results (eventually)
     if add_annotation and True:
         print("Querying Uniprot for Annotations!")
-        batch = 2
+        batch = 5
         i = 0
         results_annotated = 0
         sparql_output_list = list()
@@ -659,11 +659,11 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         if add_annotation:
             annotations_length = max(len(v) for k, v in sparql_dict.items())
             if annotations_length > 0:
-                header2 += ["entry", "lengthOfSequence", "position"]
+                header2 += ["entry", "position", "lengthOfSequence"]
                 annotations_length -= 3
             while annotations_length > 0:
-                header2 += ["catalyicActivity", "location", 
-                            "ec", "rhea", "type", "comment", "begin", "end", "regionOfInterest"]
+                header2 += ["begin", "end", "regionOfInterest", "catalyicActivity", "location", 
+                            "ec", "rhea", "type", "comment"]
                 annotations_length -= 12
         out_writer.writerow(header2)
         # This builds the rollup output file depending on what the user chose

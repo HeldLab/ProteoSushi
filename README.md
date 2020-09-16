@@ -9,9 +9,9 @@ The machine running ProteoSushi must have:
 
 - stable internet access 
 
-- at least 4GB of RAM
+- at least 8GB of RAM
 
-  - 8GB or higher is recommended, but truly depends on how the user uses the machine. More is better up to a certain point.
+  - 16GB or higher is recommended, but truly depends on how the user uses the machine. More is better up to a certain point.
   
 - Python version 3.8 or higher installed 
 
@@ -36,7 +36,7 @@ from run_proteosushi import run_proteosushi
 run_proteosushi()
 ```
 
-Alternatively, download the files directly from [GitHub](https://github.com/heldlab/proteosushi). 
+Alternatively, download the files directly from [GitHub](https://github.com/heldlab/ProteoSushi). 
 
 Once unpacked, start the terminal in the proteosushi folder and run the command
 `python run_proteosushi.py`
