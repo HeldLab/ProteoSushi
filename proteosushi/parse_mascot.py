@@ -22,7 +22,7 @@ def __promptFile() -> str:
         return __promptFile()
     return filename
 
-def __parseFile(filename: str, mod_ids: list, var_mod_map: dict) -> dict:
+def __create_mod_dict(filename: str, mod_ids: list, var_mod_map: dict) -> dict:
     """Makes the PTM dictionary that connects a peptide sequence with its modifications
     Arguments:
         filename {str} -- the name of the output file
@@ -38,6 +38,7 @@ def __parseFile(filename: str, mod_ids: list, var_mod_map: dict) -> dict:
         file_reader = csv.reader(mascot_output, quotechar='"')
         header = next(file_reader)
         sequence = header.index("pep_seq")
+        pep_mod_seq_index = header.index("")
         var_mods = header.index("pep_var_mod_pos")
 
         for row in file_reader:
@@ -46,15 +47,28 @@ def __parseFile(filename: str, mod_ids: list, var_mod_map: dict) -> dict:
             pep_seq = row[sequence].replace("L","I")
                 
             mods = row[var_mods]
+
+            if not mods:
+                continue
+            new_seq = pep_seq
+            pep_mod_seq = mods.split('.')[1]
+            i = len(pep_mod_seq) - 1
+            inv_mod_dict = {v:k for k, v in var_mod_dict.items()}
+            while i >= 0:
+                if pep_mod_seq[i] != "0":  # If there is a mod
+                    new_seq = new_seq[:i+1] + '(' + inv_mod_dict[pep_mod_seq[i]] + ')' + new_seq[i+1:]
+                i -= 1
+            pep_mod_seq = new_seq
+
             if mods:
                 n, center, c = [x for x in mods.split(".")]
                 for i, aa in enumerate(list(center)): #split mods; note this excludes termini
                     if aa in mod_ids:
                         try:
-                            if not tuple((str(aa), i)) in modDict[pep_seq]:
-                                modDict[pep_seq].append(tuple((inv_mod_map[aa], i)))
+                            if not tuple((str(aa), i)) in modDict[pep_mod_seq]:
+                                modDict[pep_mod_seq].append(tuple((inv_mod_map[aa], i)))
                         except KeyError:
-                            modDict[pep_seq] = [tuple((inv_mod_map[aa], i))]
+                            modDict[pep_mod_seq] = [tuple((inv_mod_map[aa], i))]
     return modDict
 
 def __promptPTMs(PTMs: list) -> list:
@@ -141,69 +155,7 @@ def compile_data(search_engine_filepath: str, PTMs: list) -> list:
 
     #psm_contributions = defaultdict(int) #count number of psms that end up being rolled up
 
-    mod_dict = __parseFile(input_filename, [var_mod_map[mod] for mod in mods_for_quant], var_mod_map)
+    mod_dict = __create_mod_dict(input_filename, [var_mod_map[mod] for mod in mods_for_quant], var_mod_map)
 
     return sequence, var_mods, mod_dict, quant_range[0], input_filename, var_mod_map
-
-'''
-    for row in file_reader:
-        start, stop = quant_range
-        dup_check = '.'.join(row[start:stop+1]) #Mascot has duplicate rows; check for these
-        totalSeqs += 1
-        if dup_check not in dup_check_set and float(row[score]) < threshold:
-            dup_check_set.add(dup_check)
-            
-            pep_seq = row[sequence].replace("L","I")
-            genes_positions = pep_dict.get(pep_seq)
-            
-            if genes_positions and len(genes_positions) == 1: #Gene Specific; maybe don't do this?
-                mods = row[var_mods]
-                gene, start_pos = list(genes_positions)[0]
-                if mods: #Now only deal with mods...
-                    #Consider changing if you care about unmodified sequences
-                    n, center, c = [x for x in mods.split(".")]
-                    for i, aa in enumerate(list(center)): #split mods; note this excludes termini
-                        if aa == mod_for_quant_id:
-                            gene_true_pos = f"{gene}|{start_pos+i}" #find actual position based on offset
-                            qvals = row[quant_range[0]+1:quant_range[1]+2:2]
-                            try:
-                                #Skip the whole row if any negative values are found
-                                #Rationale is that negative values are low and near limit of detection
-                                #Can definitely handle this another way if you choose
-                                q_test = [float(x) for x in qvals]
-                                if any([x < 0 for x in q_test]):
-                                    failedSeqs += 1
-                                    continue
-                            except ValueError:
-                                failedSeqs += 1
-                                continue
-
-                            #Sum psms
-                            tmp_list = gene_results.get(gene_true_pos,
-                                                        [0.00 for x in range((quant_range[1]+1-quant_range[0])//2)])
-                            qvals = [float(x) if not any([y in x for y in ('-', '#')]) else 0.0 for x in qvals]
-                            combined = [x+y for x, y in zip(tmp_list, qvals)]
-                            gene_results[gene_true_pos] = combined
-                            psm_contributions[gene_true_pos] += 1
-                            lociDict[gene_true_pos] = pep_seq
-                else:
-                    failedSeqs += 1
-    print(f"Failed Peptides: {failedSeqs}\nTotal Peptides: {totalSeqs}")
-
-    with open('quantout.csv','w', newline = '') as w1:
-        out_writer = csv.writer(w1)
-
-        header = ["Genes","PSMs"]
-        start, stop = quant_range
-        header.extend(["Sample Quant" for x in range((stop + 1 - start) // 2)])
-        header.extend(["sequence"])
-        out_writer.writerow(header)
-
-        for i in gene_results:
-            writable_row = [i]
-            writable_row.extend([psm_contributions[i]])
-            writable_row.extend(gene_results[i])
-            writable_row.extend([lociDict[i]])
-            out_writer.writerow(writable_row)
-'''
 #EOF

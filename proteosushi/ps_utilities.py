@@ -6,6 +6,7 @@ __email__ = "rseymour@wustl.edu"
 import pickle
 import csv
 from collections import defaultdict
+import ntpath
 import os
 from ps_digest import digest, fasta_producer, cleave_rule_determination
 
@@ -95,11 +96,12 @@ def load_pepdict(proteome_fasta_filepath: str, enzyme: str, missed_cleaves: int)
         dict -- a dictionary that 
     """
     pep_dict = None
-    wd = os.getcwd()
+    #wd = os.getcwd()
     fasta_dir = os.path.dirname(os.path.abspath(proteome_fasta_filepath))
     pep_dict_file = f"{proteome_fasta_filepath.split('.')[0]}.pepdict"
-    if not any([x == pep_dict_file for x in os.listdir(fasta_dir)]):
-        print("Pepdict not found in current directory. Trying to generate from FASTA")
+    #print(os.listdir(fasta_dir))
+    if not any([x == ntpath.basename(pep_dict_file) for x in os.listdir(fasta_dir)]):
+        print("Pepdict not found in the FASTA directory. Trying to generate from the FASTA file")
         digest_if_needed(proteome_fasta_filepath, enzyme, missed_cleaves)
     '''
     pep_dicts = 0
@@ -114,7 +116,7 @@ def load_pepdict(proteome_fasta_filepath: str, enzyme: str, missed_cleaves: int)
     print(f"Loading {pep_dict_file} into memory")
     with open(pep_dict_file, 'rb') as f:
         pep_dict = pickle.load(f)
-    print("Pept Dictionary Loaded.")
+    print("Peptide Dictionary Loaded.")
     return pep_dict
 
 

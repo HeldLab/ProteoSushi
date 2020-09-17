@@ -315,7 +315,7 @@ def parse_output(search_engine: str, search_engine_filepath: str) -> list:
     if rollup_file == "generic":
         missed_cleavages = -1
         enzyme = ""
-        mod_dict, PTMs = parse_generic.parse_file(search_engine_filepath)
+        PTMs = parse_generic.get_PTMs(search_engine_filepath)
     elif rollup_file == "maxquant":
         MQ_dir = search_engine_filepath
         sum_file = os.path.join(MQ_dir, "summary.txt")
@@ -412,15 +412,15 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             continue
         total_seqs += 1
         raw_seq = row[sequence_index]
-        #if raw_seq == "FRCPEALFQPSFLGMESCGIHETTFNSIMK":
-        #    print("start")
+        if raw_seq == "FACAVVCIQK":
+            print("start")
         pep_mod_seq = row[modified_sequence_index]
         pep_seq = row[sequence_index].replace("L","I")
         if pep_seq is None:
             print("HALT!")  # A handled exception would be preferable here
             break
         genes_positions = pep_dict.get(pep_seq)
-        if use_intensities and rollup_file == "skyline":
+        if use_intensities and rollup_file == "generic":
             intensities = [e for i, e in enumerate(row) if i in intensity_start]
             if intensities == '' or intensities[0] == '':
                 continue
@@ -462,11 +462,11 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
 
         if genes_positions and len(genes_positions) == 1:
             gene, start_pos, unpid = list(genes_positions)[0]
-            if not pep_seq in mod_dict:
+            if not pep_mod_seq in mod_dict:
                 print("\033[91m {}\033[00m".format(f"{pep_seq} not in modDict!"))
                 missing_PTM += 1
                 continue
-            mods = mod_dict[pep_seq]
+            mods = mod_dict[pep_mod_seq]
             if not (any(mods) and set([m[0] for m in mods]) & set(user_PTMs)): 
                 continue
             for mod in list(set(mods)):
@@ -502,11 +502,11 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             if not match[0] is None:  # Checks to see that there has been a match
                 if isinstance(match, tuple):  # Checks if this is just a single match.
                     gene = match[0]
-                    if not pep_seq in mod_dict:
+                    if not pep_mod_seq in mod_dict:
                         print("\033[91m {}\033[00m".format(f"{pep_seq} not in modDict!"))
                         missing_PTM += 1
                         continue
-                    mods = mod_dict[pep_seq]
+                    mods = mod_dict[pep_mod_seq]
                     for mod in list(set(mods)):
                         if not mod[0] in user_PTMs:
                             continue
@@ -533,11 +533,11 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                 if len(match[2]) >= 5:
                                     sparql_input.append(tuple((match[2], site, gene)))
                 else:  # There are multiple matches
-                    if not pep_seq in mod_dict:
+                    if not pep_mod_seq in mod_dict:
                         print("\033[91m {}\033[00m".format(f"{pep_seq} not in modDict!"))
                         missing_PTM += 1
                         continue
-                    mods = mod_dict[pep_seq]
+                    mods = mod_dict[pep_mod_seq]
                     for mod in list(set(mods)):
                         if not mod[0] in user_PTMs:
                             continue

@@ -64,11 +64,11 @@ def parse_evidence(filename: str) -> dict:
                     mods_B4_mod += 1
             for loc in sorted(pep_mods):
                 try:
-                    if not tuple((pep_mods[loc], loc - 2)) in mod_dict[sequence]:
-                        mod_dict[sequence].append(tuple((pep_mods[loc],
+                    if not tuple((pep_mods[loc], loc - 2)) in mod_dict[row[modified_index].strip('_')]:
+                        mod_dict[row[modified_index].strip('_')].append(tuple((pep_mods[loc],
                                                         loc - 2)))
                 except KeyError:
-                    mod_dict[sequence] = [tuple((pep_mods[loc],
+                    mod_dict[row[modified_index].strip('_')] = [tuple((pep_mods[loc],
                                                 loc - 2))]
     return mod_dict, PTMs
 

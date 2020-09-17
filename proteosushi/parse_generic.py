@@ -13,15 +13,14 @@ from proteoSushi_constants import cleave_rules
 from ps_utilities import load_pepdict
 
 
-def parse_file(sky_filename: str) -> dict:
-    """Parses the generic output to retrieve the modification info
+def get_PTMs(sky_filename: str) -> list:
+    """Gets the list of PTMs available through parsing the generic output
+
     Arguments:
         sky_filename {str} -- the name of the generic output file
     Returns:
-        dict -- a dictionary of sequences with the type and location of modifications
-        list -- the list of mods in the file
+        list -- a list of PTMs in the output file
     """
-    mod_dict = {}
     with open(sky_filename, 'r') as sky_output:
         tsv_reader = csv.reader(sky_output, quotechar='"')
         header = next(tsv_reader)
@@ -49,9 +48,45 @@ def parse_file(sky_filename: str) -> dict:
             for mod in mods[0]:
                 if mod == '':
                     continue
-                stripped_mod = mod#.strip('(').strip(')').strip('[').strip(']')
+                stripped_mod = mod
                 if not stripped_mod in mod_list:
                     mod_list.append(stripped_mod)
+    return mod_list
+
+def create_mod_dict(sky_filename: str, user_PTMs: list) -> dict:
+    """Parses the generic output to retrieve the modification info
+
+    Arguments:
+        sky_filename {str} -- the name of the generic output file
+        user_PTMs {list} -- a list of PTMs that the user wants to analyze
+    Returns:
+        dict -- a dictionary of sequences with the type and location of modifications
+    """
+    mod_dict = {}
+    with open(sky_filename, 'r') as sky_output:
+        tsv_reader = csv.reader(sky_output, quotechar='"')
+        header = next(tsv_reader)
+        seq_index = header.index("Peptide Sequence")
+        mod_index = -1
+        try:
+            mod_index = header.index("Peptide Modified Sequence") #NOTE: apparently, this changes, so check here.
+        except ValueError:
+            try:
+                mod_index = header.index("Modified Sequence")
+            except ValueError:
+                print("\033[91m {}\033[00m".format("No peptide modified sequence column detected in the Skyline output file."))
+                print("\033[91m {}\033[00m".format("Please add or modify header with the name \"Peptide Modified Sequence\"\n"))
+                sys.exit()
+        
+        for row in tsv_reader:
+            # This grabs the PTMs in each sequence and builds a list of all of them
+            sequence = row[seq_index].replace("L","I")
+            #if sequence == "FACAVVCIQK":
+            #    print("here")
+            mod_seq = row[mod_index]
+            mods = findall(r"(\w?\[.+?\])|(\w?\(.+?\))", mod_seq)
+            if len(mods) < 1:
+                raise ValueError("A sequence in the Peptide Modified Sequence column is missing PTMs")
 
             breaks = finditer(r"(\w?\[.+?\])|(\w?\(.+?\))", mod_seq)
             cut_sites = []
@@ -63,17 +98,20 @@ def parse_file(sky_filename: str) -> dict:
             num_of_mods = 0
             for site in cut_sites:
                 fixed_indices.append(site - correction)  # TODO: Check this!
-                correction += len(mods[num_of_mods])
+                correction += len(mods[num_of_mods][0]) - 1
                 num_of_mods += 1
             
             i = 0
             while i < len(cut_sites):
+                if not mods[i][0] in user_PTMs:
+                    i += 1
+                    continue
                 try:
-                    mod_dict[sequence].append(tuple((mods[i][0], fixed_indices[i])))  # TODO: Check This!
+                    mod_dict[mod_seq].append(tuple((mods[i][0], fixed_indices[i])))  # TODO: Check This!
                 except KeyError:
-                    mod_dict[sequence] = [tuple((mods[i][0], fixed_indices[i]))]
+                    mod_dict[mod_seq] = [tuple((mods[i][0], fixed_indices[i]))]
                 i += 1
-    return mod_dict, mod_list
+    return mod_dict
 
 def __chooseHit(genes_positions: list, mito_genes: list, annotDict: dict) -> list:
     """chooses which of the matched sequences to use. If there is one mito gene, it will be that one.
@@ -210,7 +248,7 @@ def compile_data(search_engine_filepath: str, user_PTMs: list) -> list:
         dict -- mascot var mod dict (blank)
     """
     sky_filename = search_engine_filepath #__prompt_file()
-    mod_dict, mod_list = parse_file(sky_filename)
+    mod_dict = create_mod_dict(sky_filename, user_PTMs)
     PTMs = user_PTMs#__prompt_PTMs(mod_list)
     #Collecting the PTM analysis list from the user
     # NOTE: is it possible to not use PTMs for this analysis?
