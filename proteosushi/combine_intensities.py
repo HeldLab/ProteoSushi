@@ -412,8 +412,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             continue
         total_seqs += 1
         raw_seq = row[sequence_index]
-        if raw_seq == "FACAVVCIQK":
-            print("start")
+        #if raw_seq == "FACAVVCIQK":
+        #    print("start")
         pep_mod_seq = row[modified_sequence_index]
         pep_seq = row[sequence_index].replace("L","I")
         if pep_seq is None:
@@ -604,7 +604,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     # If the user chose, it combines the annotation onto the rollup results (eventually)
     if add_annotation and True:
         print("Querying Uniprot for Annotations!")
-        batch = 5
+        batch = 50
         i = 0
         results_annotated = 0
         sparql_output_list = list()
@@ -641,7 +641,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             else:
                 sparql_output_list.append(sparql_output)
                 results_annotated += len(sparql_input[i:])
-        print("\033[96m {}\033[00m" .format(f"{round(float(results_annotated)/len(sparql_input)*100, 2)}% of results annotated"))
+        print("\033[92m {}\033[00m" .format(f"{round(float(results_annotated)/len(sparql_input)*100, 2)}% of results annotated"))
         # Writes the annotations to a separate file in case the user wants to view those in a more vertical way
         with open("sparql_annotations.csv", 'w') as spql_annot:
             out_writer = csv.writer(spql_annot)

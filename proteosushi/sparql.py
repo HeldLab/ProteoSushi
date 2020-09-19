@@ -210,6 +210,18 @@ FROM <http://sparql.uniprot.org/uniprot>
 WHERE {
     VALUES (?entry ?position) {""" + unpid_site_list_str + """
     }
+    ?entry up:sequence ?sequence .
+    ?entry up:annotation ?annotation .
+    ?annotation up:range ?range ;
+               a ?type .
+    ?range faldo:begin
+        [ faldo:position ?begin ; faldo:reference ?sequence ] ;
+            faldo:end
+        [ faldo:position ?end ; faldo:reference ?sequence ] .
+    FILTER (?begin <= ?position && ?position <= ?end)
+    ?entry up:annotation ?caAnnotation .
+    ?caAnnotation a up:Catalytic_Activity_Annotation .
+    ?caAnnotation up:catalyticActivity ?ca .
 
     OPTIONAL {
         ?ca up:enzymeClass ?ec .
@@ -225,26 +237,39 @@ WHERE {
 
 #Order desc by entry and ascending by position afterwards
 } ORDER BY DESC(?entry) ASC(?position)"""
+
     # Grabs the annotation by parts to maximize the amount we receive from the uniprot server
     region_annot = request_annot(query_entry_length_position)
-    catalytic_annot = request_annot(query_catalytic)
+    catalytic_annot = request_annot(query_catalytic)  ####   TODO: Remove rows with na values
     subcell_annot = request_annot(query_entry_subcellular)
-    #extras_annot = request_annot(query_ec_rhea_type)
-    # Full outer joins the annotations to preserve all info possible
+    extras_annot = request_annot(query_ec_rhea_type)
+    # Creates blank dataframes if uniprot did not return that info
     if region_annot is None:
         region_annot = pd.DataFrame(columns=["entry", " position", " lengthOfSequence", " begin", " end", " regionOfInterest"])
+    else:
+        region_annot.dropna(how="any", inplace=True)
     if catalytic_annot is None:
         catalytic_annot = pd.DataFrame(columns=["entry", " position", " catalyticActivity"])
+    else:
+        catalytic_annot.dropna(how="any", inplace=True)
     if subcell_annot is None:
         subcell_annot = pd.DataFrame(columns=["entry", " location"])
-    #if extras_annot is None:
-    #   extras_annot = pd.DataFrame(columns=["entry", " position", " ec", " rhea", " type", " comment"])
+    else:
+        subcell_annot.dropna(how="any", inplace=True)
+    if extras_annot is None:
+       extras_annot = pd.DataFrame(columns=["entry", " position", " ec", " rhea", " type", " comment"])
+    else:
+        extras_annot.dropna(how="any", inplace=True)  # TODO: I will likely need to change this back to all later
+
+    # Full outer joins the annotations to preserve all info possible
     full_annot = region_annot
-    full_annot.merge(catalytic_annot, how="outer", on=["entry", " position"])
-    full_annot.merge(subcell_annot, how="outer", on=["entry"])
-    #full_annot.merge(extras_annot, how="outer", on=["entry", " position"])
-    
-    
+    del(region_annot)
+    full_annot = full_annot.merge(catalytic_annot, how="outer", on=["entry", " position"])
+    del(catalytic_annot)
+    full_annot = full_annot.merge(subcell_annot, how="outer", on="entry")
+    del(subcell_annot)
+    full_annot = full_annot.merge(extras_annot, how="outer", on=["entry", " position"])
+    del(extras_annot)
     return full_annot
 
 def request_annot(query: str, attempts_left=10):
@@ -370,8 +395,7 @@ def process_sparql_output(output_str, sparql_dict: dict) -> list:
     #while i < len(output_lines):
     for output_line in output_lines.iterrows():  # TODO: optimize by vectorizing
         output_line = __parse_sparql_line(output_line)
-        #print(output_split)
-        # This should only have 1 iteration and is used to properly split the csv type line
+        # This should only have 1 iteration and is used to properly split the tsv type line
         for output_split in csv.reader([output_line], delimiter='\t', quotechar='"'):
             key = ','.join([*output_split[:repeat_index], output_split[position_index]])
             try:

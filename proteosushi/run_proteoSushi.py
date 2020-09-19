@@ -1,6 +1,7 @@
 """run_proteoSushi.py: The starting point to run proteoSushi"""
 
 from proteosushi_gui import run_gui
+from combine_intensities import rollup
 '''
 def run_proteoSushi(search_engine: str, search_engine_filepath: str, use_target_list: bool, 
                     target_list_filepath: str, max_missed_cleavages: int, protease: str, fdr_threshold: float):
@@ -18,5 +19,20 @@ def run_proteoSushi(search_engine: str, search_engine_filepath: str, use_target_
     pass
 '''
 if __name__ == "__main__":
-    run_gui()
+    #run_gui()
+    rollup(
+        search_engine="generic",
+        search_engine_filepath="/home/rob/Documents/Held_Lab/ProteoSushi/proteosushi/examples/EGFR_Skyline_data.csv",
+        use_target_list=False,
+        target_list_filepath="",
+        max_missed_cleavages=3,
+        protease="trypsin/p",
+        fdr_threshold=.01,
+        use_quant=False,
+        user_PTMs=["C[+57]"],
+        proteome_fasta_filepath="/home/rob/Documents/Held_Lab/ProteoSushi/proteosushi/examples/fastas/Uni-Hum-Ref-20141022.fasta",
+        intensity_method="",
+        add_annotation=True,
+        species_id="9606"
+    )
 #EOF
