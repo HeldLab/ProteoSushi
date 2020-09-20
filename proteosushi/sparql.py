@@ -305,11 +305,11 @@ def request_annot(query: str, attempts_left=10):
             raise pd.errors.ParserError("Ran out of Uniprot accession attempts")
     return sparql_from_csv_df
 
-def process_sparql_output(output_str, sparql_dict: dict) -> list:
+def process_sparql_output(output_df, sparql_dict: dict) -> list:
     """Process the output from uniprot to make it consistent with the rollup output
 
     Arguments:
-        output_str {pandas.dataframe} -- the string output from uniprot, may have multiple
+        output_df {pandas.dataframe} -- the string output from uniprot, may have multiple
         sparql_dict {dict} -- the growing dictionary of uniprot annotations
     Returns:
         list -- a list of annotations with the data properly separated
@@ -345,7 +345,7 @@ def process_sparql_output(output_str, sparql_dict: dict) -> list:
     output_list = list()
     comments_dict = dict()
     #sparql_dict = dict()  # This gets used by the main program to connect these annotations to the rest of the data.
-    output_lines = output_str
+    output_lines = output_df
     if len(output_lines) == 1 or (not isinstance(output_lines, str) and output_lines.empty):
         print("Failed to get annotations")
         return output_list, sparql_dict
@@ -391,22 +391,22 @@ def process_sparql_output(output_str, sparql_dict: dict) -> list:
     #print(output_lines.columns)
     
     #i = 1
-    repeat_index = 2
+    repeat_index = 3
     #while i < len(output_lines):
     for output_line in output_lines.iterrows():  # TODO: optimize by vectorizing
         output_line = __parse_sparql_line(output_line)
         # This should only have 1 iteration and is used to properly split the tsv type line
         for output_split in csv.reader([output_line], delimiter='\t', quotechar='"'):
-            key = ','.join([*output_split[:repeat_index], output_split[position_index]])
+            key = ','.join([*output_split[:repeat_index]])
             try:
-                comments_dict[key] += output_split[repeat_index:position_index] + output_split[position_index + 1:]
+                comments_dict[key] += output_split[repeat_index:]
             except KeyError:
-                comments_dict[key] = output_split[repeat_index:position_index] + output_split[position_index + 1:]
+                comments_dict[key] = output_split[repeat_index:]
         #i += 1
     
     for key in comments_dict:
         output_list.append(key + ',' + ','.join(comments_dict[key]))
-        sparql_dict[ key.split(',')[0] + '|' + key.split(',')[2] ] = key.split(',') + comments_dict[key] #unpid, pos
+        sparql_dict[ key.split(',')[0] + '|' + key.split(',')[1] ] = key.split(',') + comments_dict[key] #unpid, pos
     #print(f"sparql_dict has {sparql_dict}")
     return output_list, sparql_dict
 #EOF
