@@ -412,7 +412,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             continue
         total_seqs += 1
         raw_seq = row[sequence_index]
-        #if raw_seq == "FACAVVCIQK":
+        #if raw_seq == "FRCPEALFQPSFLGMESCGIHETTFNSIMK":
         #    print("start")
         pep_mod_seq = row[modified_sequence_index]
         pep_seq = row[sequence_index].replace("L","I")
@@ -604,7 +604,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     # If the user chose, it combines the annotation onto the rollup results (eventually)
     if add_annotation and True:
         print("Querying Uniprot for Annotations!")
-        batch = 50
+        batch = 2
         i = 0
         results_annotated = 0
         sparql_output_list = list()
