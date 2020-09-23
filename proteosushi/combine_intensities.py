@@ -578,14 +578,14 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     print(f"Unmatched Peptides: {unmatched_peps}\nMissing PTMs: {missing_PTM}\nTotal Peptides: {total_seqs}")
     # TODO: Eventually make it so this file isn't made in the first place
     #os.remove("pepdict.pepdict")
-
+    '''
     ########################
     #Just to annotate EGFR #
     ########################
     if add_annotation and False:
         sparql_dict = dict()
         #with open("EGFR_annotation_uniprot_unfixed.csv", 'r') as annotation_file:
-        '''
+        
         with open("sparql-complete.csv", 'r') as annotation_file:
             annotations_full = pd.DataFrame(columns=annotation_file.readline().split(','))
             #print("here")
@@ -595,16 +595,16 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                 else:
                     for line_split in csv.reader([line], delimiter=',', quotechar='"'):
                         annotations_full = annotations_full.append(pd.Series(line_split, index=annotations_full.columns), ignore_index=True)
-        '''
+        
         annotations_full = pd.read_csv("sparql-complete.csv")
         #annotations_full = pd.read_json("sparql-complete.srj")
         annotations_full = annotations_full[annotations_full.entry != "entry"]
         sparql_output, sparql_dict = sparql.process_sparql_output(annotations_full, sparql_dict)
-
+    '''
     # If the user chose, it combines the annotation onto the rollup results (eventually)
     if add_annotation and True:
         print("Querying Uniprot for Annotations!")
-        batch = 2
+        batch = 50
         i = 0
         results_annotated = 0
         sparql_output_list = list()
