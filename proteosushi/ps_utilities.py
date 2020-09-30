@@ -116,7 +116,7 @@ def load_pepdict(proteome_fasta_filepath: str, enzyme: str, missed_cleaves: int)
     print(f"Loading {pep_dict_file} into memory")
     with open(pep_dict_file, 'rb') as f:
         pep_dict = pickle.load(f)
-    print("Peptide Dictionary Loaded.")
+    print("\033[95m {}\033[00m".format("Peptide Dictionary Loaded."))
     return pep_dict
 
 

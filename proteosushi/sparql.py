@@ -40,7 +40,7 @@ def sparql_json_to_df(sparql_json_dict: dict):
     return sparql_df
 
 
-def sparql_request(unpid_site_list: list, attempts_left=10):
+def sparql_request(unpid_site_list: list, attempts_left=5):
     """Sends the request to uniprot to get data on each of the sites
     Arguments:
         unpidSiteList {list} -- a list of tuples with uniprot ID and site of PTM
@@ -247,7 +247,7 @@ WHERE {
     if region_annot is None:
         region_annot = pd.DataFrame(columns=["entry", " position", " lengthOfSequence", " begin", " end", " regionOfInterest"])
     else:
-        region_annot.dropna(how="any", inplace=True)
+        region_annot.dropna(how="all", inplace=True)
     if catalytic_annot is None:
         catalytic_annot = pd.DataFrame(columns=["entry", " position", " catalyticActivity"])
     else:
@@ -259,7 +259,7 @@ WHERE {
     if extras_annot is None:
        extras_annot = pd.DataFrame(columns=["entry", " position", " ec", " rhea", " type", " comment"])
     else:
-        extras_annot.dropna(how="any", inplace=True)  # TODO: I will likely need to change this back to all later
+        extras_annot.dropna(how="all", inplace=True)  # TODO: I will likely need to change this back to all later
 
     # Full outer joins the annotations to preserve all info possible
     full_annot = region_annot

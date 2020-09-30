@@ -10,7 +10,7 @@ from time import sleep
 
 from download_uniprot_AS import download_AS_file
 import parse_mascot, parse_MaxQuant, parse_generic, sparql
-from proteoSushi_constants import cleave_rules
+from proteoSushi_constants import cleave_rules, annotation_type_dict
 #from ruputilities import load_pepdict, parse_mascot, parse_maxquant_summary
 import ps_utilities
 
@@ -330,6 +330,98 @@ def parse_output(search_engine: str, search_engine_filepath: str) -> list:
     return missed_cleavages, enzyme, PTMs
 
 
+def __compress_annotations(annotation_list: list) -> list:
+    """Takes a list of annotations and makes a single combined group
+
+    Arguments:
+        annotation_list {list} -- a list of annotations comprising 1 or more groups
+    Returns:
+        list -- the compressed list of annotations
+    """
+    begin_index = 3
+    end_index = 4
+    type_index = 10
+    comment_index = 11
+    length_uniprot_annotations = 9
+
+    new_annotations = annotation_list[:begin_index]
+    new_annotations.append(f"{annotation_list[begin_index]}-{annotation_list[end_index]}")
+    new_annotations += annotation_list[end_index+1:type_index]
+    new_annotations += [""]*len(annotation_type_dict)
+    try:  # Attempts to put the comment in the appropriate column using the type as reference
+        new_annotations[annotation_type_dict[annotation_list[type_index]] + length_uniprot_annotations] = annotation_list[comment_index]
+    except KeyError:
+        if annotation_list[type_index] == "nan":
+            pass
+        else:
+            new_annotations[annotation_type_dict["Other"] + length_uniprot_annotations] = annotation_list[comment_index]
+
+    new_begin_index = begin_index - 3
+    new_end_index = end_index - 3
+    range_index = 3
+    region_index = 4
+    catalytic_index = 5
+    location_index = 6
+    ec_index = 7
+    rhea_index = 8
+    new_type_index = 9
+    new_comment_index = 10
+    #index_fix = 1  # Fixes the index after I combine the begin and end into range
+    i = 1  # Basically which group it is on
+    while (i * length_uniprot_annotations) + 3 < len(annotation_list):  # Essentially, we are moving through the annotation list and compressing it to new annotations
+        if not f"{annotation_list[new_begin_index+(i*length_uniprot_annotations) + 3]}-{annotation_list[new_end_index+(i*length_uniprot_annotations)+3]}" in new_annotations[range_index].split(','):
+            new_annotations[range_index] += f",{annotation_list[new_begin_index+(i*length_uniprot_annotations) + 3]}-{annotation_list[new_end_index+(i*length_uniprot_annotations)+3]}"
+        if not f"{annotation_list[region_index-2+(i*length_uniprot_annotations) + 3]}" in new_annotations[region_index].split(','):
+            new_annotations[region_index] += f",{annotation_list[region_index-2+(i*length_uniprot_annotations) + 3]}"
+        if annotation_list[catalytic_index-2+(i*length_uniprot_annotations)+3] != new_annotations[catalytic_index]:
+            new_annotations[catalytic_index] += f",{annotation_list[catalytic_index-2+(i*length_uniprot_annotations)+3]}"
+        if not f"{annotation_list[location_index-2+(i*length_uniprot_annotations)+3]}" in new_annotations[location_index].split(','):
+            new_annotations[location_index] += f",{annotation_list[location_index-2+(i*length_uniprot_annotations)+3]}"
+        if not f"{annotation_list[ec_index-2+(i*length_uniprot_annotations)+3]}" in new_annotations[ec_index].split(','):
+            new_annotations[ec_index] += f",{annotation_list[ec_index-2+(i*length_uniprot_annotations)+3]}"
+        if not f"{annotation_list[rhea_index-2+(i*length_uniprot_annotations)+3]}" in new_annotations[rhea_index].split(','):
+            new_annotations[rhea_index] += f",{annotation_list[rhea_index-2+(i*length_uniprot_annotations)+3]}"
+
+        try:  # Attempts to put the comment in the appropriate column using the type as reference
+            current_comment = annotation_list[new_comment_index-2+(i*length_uniprot_annotations)+3]
+            current_type = annotation_list[new_type_index-2+(i*length_uniprot_annotations)+3]
+
+            if (not current_comment in new_annotations[annotation_type_dict[current_type] + length_uniprot_annotations] and
+                not current_type in new_annotations[annotation_type_dict[current_type] + length_uniprot_annotations]):
+                if new_annotations[annotation_type_dict[current_type]
+                                + length_uniprot_annotations]:
+                    if current_comment != "nan":
+                        new_annotations[annotation_type_dict[current_type]
+                                        + length_uniprot_annotations] += f",{current_comment}"
+                else:
+                    if current_comment == "nan":
+                        new_annotations[annotation_type_dict[current_type]
+                                        + length_uniprot_annotations] += f"{current_type}"
+                    else:
+                        new_annotations[annotation_type_dict[current_type]
+                                        + length_uniprot_annotations] += f"{current_comment}"
+        except KeyError:
+            if current_type == "nan":
+                pass
+            else:
+                # If the current comment is not in the Other cell
+                if (not current_comment in new_annotations[annotation_type_dict["Other"] + length_uniprot_annotations] and
+                    not current_type in new_annotations[annotation_type_dict["Other"] + length_uniprot_annotations]):
+                    if new_annotations[annotation_type_dict["Other"] + length_uniprot_annotations]:
+                        if current_comment != "nan":
+                            new_annotations[annotation_type_dict["Other"] 
+                                            + length_uniprot_annotations] = f",{current_type}: {current_comment}"
+                    else:
+                        if current_comment == "nan":
+                            new_annotations[annotation_type_dict["Other"] 
+                                            + length_uniprot_annotations] = f"{current_type}"
+                        else:
+                            new_annotations[annotation_type_dict["Other"] 
+                                            + length_uniprot_annotations] = f"{current_type}: {current_comment}"
+        i += 1
+    return new_annotations
+
+
 def rollup(search_engine: str, search_engine_filepath: str, use_target_list: bool, 
            target_list_filepath: str, max_missed_cleavages: int, protease: str, 
            fdr_threshold: float, use_quant: bool, user_PTMs: list, 
@@ -575,9 +667,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             unmatched_sequences.append(tuple([raw_seq, pep_mod_seq]))
     data_file.close()
     # Prints the stats from the rollup
-    print(f"Unmatched Peptides: {unmatched_peps}\nMissing PTMs: {missing_PTM}\nTotal Peptides: {total_seqs}")
-    # TODO: Eventually make it so this file isn't made in the first place
-    #os.remove("pepdict.pepdict")
+    print("\033[93m {}\033[00m".format(f"\nUnmatched Peptides: {unmatched_peps}\nMissing PTMs: {missing_PTM}\nTotal Peptides: {total_seqs}"))
     '''
     ########################
     #Just to annotate EGFR #
@@ -602,8 +692,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         sparql_output, sparql_dict = sparql.process_sparql_output(annotations_full, sparql_dict)
     '''
     # If the user chose, it combines the annotation onto the rollup results (eventually)
-    if add_annotation and True:
-        print("Querying Uniprot for Annotations!")
+    if add_annotation:
+        print("\033[95m {}\033[00m".format("\nQuerying Uniprot for Annotations!"))
         batch = 50
         i = 0
         results_annotated = 0
@@ -641,13 +731,13 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             else:
                 sparql_output_list.append(sparql_output)
                 results_annotated += len(sparql_input[i:])
-        print("\033[92m {}\033[00m" .format(f"{round(float(results_annotated)/len(sparql_input)*100, 2)}% of results annotated"))
+        print("\033[92m {}\033[00m" .format(f"\n{round(float(results_annotated)/len(sparql_input)*100, 2)}% of results annotated"))
         # Writes the annotations to a separate file in case the user wants to view those in a more vertical way
         with open("sparql_annotations.csv", 'w') as spql_annot:
             out_writer = csv.writer(spql_annot)
             for line in sparql_output_list:
                 out_writer.writerow(line)
-    print("Writing the rollup output file")
+    print("\033[95m {}\033[00m".format("\nWriting the rollup output file"))
 
     # Prints out the completed rollup with annotations from Uniprot (if requested)
     with open(output_filename, 'w', newline = '') as w1:
@@ -657,6 +747,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         if use_intensities:
             header2 += intensity_header
         if add_annotation:
+            # TODO: Change the header to be just one group of annotations
+            '''
             annotations_length = max(len(v) for k, v in sparql_dict.items())
             if annotations_length > 0:
                 header2 += ["entry", "position", "lengthOfSequence"]
@@ -664,7 +756,18 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             while annotations_length > 0:
                 header2 += ["begin", "end", "regionOfInterest", "catalyicActivity", "location", 
                             "ec", "rhea", "type", "comment"]
-                annotations_length -= 12
+                annotations_length -= 9
+            '''
+            header2 += ["position", "lengthOfSequence", "range", "regionOfInterest", 
+                        "catalyicActivity", "location", "ec", "rhea", 
+                        "Active_Site_Annotation", "Alternative_Sequence_Annotation", 
+                        "Chain_Annotation", "Compositional_Bias_Annotation", 
+                        "Disulfide_Bond_Annotation", "Domain_Extent_Annotation", 
+                        "Lipidation_Annotation", "Metal_Binding_Annotation", 
+                        "Modified_Residue_Annotation", "Motif_Annotation", 
+                        "Mutagenesis_Annotation", "Natural_Variant_Annotation", 
+                        "NP_Binding_Annotation", "Other", "Region_Annotation", "Repeat_Annotation", 
+                        "Topological_Domain_Annotation", "Zinc_Finger_Annotation"]
         out_writer.writerow(header2)
         # This builds the rollup output file depending on what the user chose
         for i in sorted(gene_results, key=lambda r: r[0]):
@@ -684,7 +787,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                     writable_row += [float(x)/N for x in intensities]
             if add_annotation:
                 try:
-                    writable_row += sparql_dict[i[6] + '|' + str(i[1])]
+                    writable_row += __compress_annotations(sparql_dict[i[6] + '|' + str(i[1])])[1:]
                 except KeyError:
                     #print(i[6] + '|' + str(i[1]) + " not in dict")
                     pass
