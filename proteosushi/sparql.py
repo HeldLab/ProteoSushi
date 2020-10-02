@@ -40,7 +40,7 @@ def sparql_json_to_df(sparql_json_dict: dict):
     return sparql_df
 
 
-def sparql_request(unpid_site_list: list, attempts_left=5):
+def sparql_request(unpid_site_list: list):
     """Sends the request to uniprot to get data on each of the sites
     Arguments:
         unpidSiteList {list} -- a list of tuples with uniprot ID and site of PTM
@@ -59,76 +59,6 @@ def sparql_request(unpid_site_list: list, attempts_left=5):
     #    sparqllist.write(unpid_site_list_str)
     #print(unpid_site_list_str)
 
-    query = """
-PREFIX uniprotkb: <http://purl.uniprot.org/uniprot/>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX faldo: <http://biohackathon.org/resource/faldo#>
-PREFIX up: <http://purl.uniprot.org/core/>
-PREFIX ec: <http://purl.uniprot.org/enzyme/>
- 
-SELECT
-    ?entry
-    #?annotation # I don't see any need for this actually
-    ?lengthOfSequence #
-    ?catalyicActivity #
-    ?location #
-    ?ec
-    ?rhea
-    ?type
-    ?comment
-    ?position ### New the position of the C that was given in the values
-    ?begin #
-    ?end #
-    ?regionOfInterest ### subsequence of the annotation that had the C
-FROM <http://sparql.uniprot.org/uniprot>
-WHERE {
-    VALUES (?entry ?position) {""" + unpid_site_list_str + """}
-   ?entry up:sequence ?sequence .
-   ?annotation up:range ?range ;
-               a ?type .
-    ?entry up:annotation ?caAnnotation .
-    ?caAnnotation a up:Catalytic_Activity_Annotation .
-    ?caAnnotation up:catalyticActivity ?ca .
-    
-    OPTIONAL {
-    ?entry up:annotation ?subAnnotation .
-    ?subAnnotation a up:Subcellular_Location_Annotation .
-    ?subAnnotation up:locatedIn/up:cellularComponent ?location .
-    }
- 
-    OPTIONAL {
-    ?ca up:enzymeClass ?ec .
-    }
-    
-    OPTIONAL {
-    ?ca up:catalyzedReaction ?rhea
-    }
- 
-    OPTIONAL {      #this breaks the query and also doesn't seem to add anything critical
-         ?annotation rdfs:comment ?comment .
-   }
-
-   ?range faldo:begin
-       [ faldo:position ?begin ; faldo:reference ?sequence ] ;
-          faldo:end
-       [ faldo:position ?end ; faldo:reference ?sequence ] .
-   FILTER (?begin <= ?position && ?position <= ?end) # position must be in canonical sequence
- 
- 
-   # get the IUPAC AAs associated with the identifier
-   ?sequence rdf:value ?iupac .
- 
-   # get the AA subsequence of the annotation as a new variable
-   BIND(SUBSTR(?iupac, ?begin, ?end - ?begin + 1) AS ?regionOfInterest)
- 
-   # get length
-   ?sequence rdf:value ?iupac .
-   BIND(strlen(?iupac) AS ?lengthOfSequence)
- 
- 
-   #Order desc by entry and ascending by position afterwards
-} ORDER BY DESC(?entry) ASC(?position)"""
 
     prefix="""PREFIX uniprotkb: <http://purl.uniprot.org/uniprot/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -136,6 +66,34 @@ PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX faldo: <http://biohackathon.org/resource/faldo#>
 PREFIX up: <http://purl.uniprot.org/core/>
 PREFIX ec: <http://purl.uniprot.org/enzyme/>"""
+
+
+    new_entry_length_pos_query = prefix + """
+SELECT
+    ?entry
+    ?position ### New the position of the C that was given in the values
+    (STRLEN(?iupac) AS ?lengthOfSequence)
+    ?begin
+    ?end
+    (SUBSTR(?iupac, ?begin, ?end - ?begin + 1) AS ?regionOfInterest)
+FROM <http://sparql.uniprot.org/uniprot>
+WHERE {
+    VALUES (?entry ?position) {""" + unpid_site_list_str + """}
+    ?entry up:sequence ?sequence .
+    ?annotation up:range ?range ;
+               a ?type .
+    ?range faldo:begin
+        [ faldo:position ?begin ; faldo:reference ?sequence ] ;
+            faldo:end
+        [ faldo:position ?end ; faldo:reference ?sequence ] .
+    FILTER (?begin <= ?position && ?position <= ?end)
+    # get the IUPAC AAs associated with the identifier
+    ?sequence rdf:value ?iupac .
+    # get the AA subsequence of the annotation as a new variable
+    FILTER (?begin <= ?position && ?position <= ?end)
+    # get the IUPAC AAs associated with the identifier
+    ?sequence rdf:value ?iupac .
+} ORDER BY DESC(?entry) ASC(?position)"""
 
 
     query_entry_length_position = prefix + """
@@ -239,8 +197,8 @@ WHERE {
 } ORDER BY DESC(?entry) ASC(?position)"""
 
     # Grabs the annotation by parts to maximize the amount we receive from the uniprot server
-    region_annot = request_annot(query_entry_length_position)
-    catalytic_annot = request_annot(query_catalytic)  ####   TODO: Remove rows with na values
+    region_annot = request_annot(new_entry_length_pos_query)
+    catalytic_annot = request_annot(query_catalytic)
     subcell_annot = request_annot(query_entry_subcellular)
     extras_annot = request_annot(query_ec_rhea_type)
     # Creates blank dataframes if uniprot did not return that info
@@ -264,12 +222,16 @@ WHERE {
     # Full outer joins the annotations to preserve all info possible
     full_annot = region_annot
     del(region_annot)
-    full_annot = full_annot.merge(catalytic_annot, how="outer", on=["entry", " position"])
-    del(catalytic_annot)
-    full_annot = full_annot.merge(subcell_annot, how="outer", on="entry")
-    del(subcell_annot)
-    full_annot = full_annot.merge(extras_annot, how="outer", on=["entry", " position"])
-    del(extras_annot)
+    try:
+        full_annot = full_annot.merge(catalytic_annot, how="outer", on=["entry", " position"])
+        del(catalytic_annot)
+        full_annot = full_annot.merge(subcell_annot, how="outer", on="entry")
+        del(subcell_annot)
+        full_annot = full_annot.merge(extras_annot, how="outer", on=["entry", " position"])
+        del(extras_annot)
+    except KeyError:
+        print(full_annot)
+        sys.exit()
     return full_annot
 
 def request_annot(query: str, attempts_left=10):
@@ -282,7 +244,7 @@ def request_annot(query: str, attempts_left=10):
         pandas.dataframe -- the returned annotation
     """
     headers = {"user-agent": "rseymour@wustl.edu"}
-    time_to_sleep = 3
+    time_to_sleep = 5
     try:
         r = requests.post(ENDPOINT, data = {"format": "csv", "query": query}, headers = headers)
         if "<!DOCTYPE html SYSTEM \"about:legacy-compat\">" in r.text:  # This just means it returned a 500 error

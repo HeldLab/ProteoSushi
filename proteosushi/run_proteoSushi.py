@@ -19,8 +19,8 @@ def run_proteoSushi(search_engine: str, search_engine_filepath: str, use_target_
     pass
 '''
 if __name__ == "__main__":
-    run_gui()
-    '''
+    #run_gui()
+    #'''
     rollup(
         search_engine="generic",
         search_engine_filepath="/home/rob/Documents/Held_Lab/ProteoSushi/proteosushi/examples/EGFR_Skyline_data.csv",
@@ -36,5 +36,5 @@ if __name__ == "__main__":
         add_annotation=True,
         species_id="9606"
     )
-    '''
+    #'''
 #EOF

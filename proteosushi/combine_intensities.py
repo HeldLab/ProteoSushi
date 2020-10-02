@@ -10,7 +10,7 @@ from time import sleep
 
 from download_uniprot_AS import download_AS_file
 import parse_mascot, parse_MaxQuant, parse_generic, sparql
-from proteoSushi_constants import cleave_rules, annotation_type_dict
+from proteoSushi_constants import cleave_rules, annotation_type_dict, secondary_annotations
 #from ruputilities import load_pepdict, parse_mascot, parse_maxquant_summary
 import ps_utilities
 
@@ -366,6 +366,7 @@ def __compress_annotations(annotation_list: list) -> list:
     rhea_index = 8
     new_type_index = 9
     new_comment_index = 10
+    secondary_structure = ""
     #index_fix = 1  # Fixes the index after I combine the begin and end into range
     i = 1  # Basically which group it is on
     while (i * length_uniprot_annotations) + 3 < len(annotation_list):  # Essentially, we are moving through the annotation list and compressing it to new annotations
@@ -405,7 +406,9 @@ def __compress_annotations(annotation_list: list) -> list:
                 pass
             else:
                 # If the current comment is not in the Other cell
-                if (not current_comment in new_annotations[annotation_type_dict["Other"] + length_uniprot_annotations] and
+                if current_type in secondary_annotations:
+                    secondary_structure = current_type
+                elif (not current_comment in new_annotations[annotation_type_dict["Other"] + length_uniprot_annotations] and
                     not current_type in new_annotations[annotation_type_dict["Other"] + length_uniprot_annotations]):
                     if new_annotations[annotation_type_dict["Other"] + length_uniprot_annotations]:
                         if current_comment != "nan":
@@ -419,7 +422,7 @@ def __compress_annotations(annotation_list: list) -> list:
                             new_annotations[annotation_type_dict["Other"] 
                                             + length_uniprot_annotations] = f"{current_type}: {current_comment}"
         i += 1
-    return new_annotations
+    return new_annotations[:9] + [secondary_structure] + new_annotations[9:]
 
 
 def rollup(search_engine: str, search_engine_filepath: str, use_target_list: bool, 
@@ -579,11 +582,29 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                         intensity_dict[key] = 0
                 if to_add:
                     if use_target and gene.upper() + '\n' in target_genes:  # TODO: fetch the uniprot ID from the match
-                        gene_results.append([gene, site, "", gene, raw_seq, pep_mod_seq, unpid])
+                        gene_results.append([
+                            gene, 
+                            site, 
+                            "", 
+                            gene, 
+                            raw_seq, 
+                            pep_mod_seq, 
+                            annotDict[unpid] if unpid in annotDict else "", 
+                            unpid
+                            ])
                         if len(unpid) >= 5:
                             sparql_input.append(tuple((unpid, site, gene)))
                     else:
-                        gene_results.append([gene, site, "", "", raw_seq, pep_mod_seq, unpid])  # NOTE: I changed this from a tuple, so things might be different
+                        gene_results.append([
+                            gene, 
+                            site, 
+                            "", 
+                            "", 
+                            raw_seq, 
+                            pep_mod_seq, 
+                            annotDict[unpid] if unpid in annotDict else "", 
+                            unpid
+                            ])  # NOTE: I changed this from a tuple, so things might be different
                         if len(unpid) >= 5:
                             sparql_input.append(tuple((unpid, site, gene)))
         elif genes_positions and len(genes_positions) > 1:
@@ -617,11 +638,29 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                 intensity_dict[key] = 0
                         if to_add:  # NOTE: Wait, what does this do if it is not supposed to add the intensity? Isn't it supposed to make its own row
                             if isTarget:
-                                gene_results.append([gene, site, "", gene, raw_seq, pep_mod_seq, match[2]])
+                                gene_results.append([
+                                    gene, 
+                                    site, 
+                                    "", 
+                                    gene, 
+                                    raw_seq, 
+                                    pep_mod_seq, 
+                                    annotDict[match[2]] if match[2] in annotDict else "", 
+                                    match[2]
+                                    ])
                                 if len(match[2]) >= 5:
                                     sparql_input.append(tuple((match[2], site, gene)))
                             else:
-                                gene_results.append([gene, site, "", "", raw_seq, pep_mod_seq, match[2]])
+                                gene_results.append([
+                                    gene, 
+                                    site, 
+                                    "", 
+                                    "", 
+                                    raw_seq, 
+                                    pep_mod_seq, 
+                                    annotDict[match[2]] if match[2] in annotDict else "", 
+                                    match[2]
+                                    ])
                                 if len(match[2]) >= 5:
                                     sparql_input.append(tuple((match[2], site, gene)))
                 else:  # There are multiple matches
@@ -652,11 +691,29 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                         if to_add:
                             additGenes.remove(match[0][0])
                             if isTarget:
-                                gene_results.append([match[0][0], site, ' '.join(additGenes), ' '.join([i[0] for i in match]), raw_seq, pep_mod_seq, ' '.join([i[2] for i in match])])
+                                gene_results.append([
+                                    match[0][0], 
+                                    site, 
+                                    ' '.join(additGenes), 
+                                    ' '.join([i[0] for i in match]), 
+                                    raw_seq, 
+                                    pep_mod_seq, 
+                                    annotDict[match[0][2]] if match[0][2] in annotDict else "", 
+                                    ' '.join([i[2] for i in match])
+                                    ])
                                 if len(match[0][2]) >= 5:
                                     sparql_input.append(tuple((match[0][2], site, match[0][0])))
                             else:
-                                gene_results.append([match[0][0], site, ' '.join(additGenes), "", raw_seq, pep_mod_seq, ' '.join([i[2] for i in match])])
+                                gene_results.append([
+                                    match[0][0], 
+                                    site, 
+                                    ' '.join(additGenes), 
+                                    "", 
+                                    raw_seq, 
+                                    pep_mod_seq, 
+                                    annotDict[match[0][2]] if match[0][2] in annotDict else "", 
+                                    ' '.join([i[2] for i in match])
+                                    ])
                                 if len(match[0][2]) >= 5:
                                     sparql_input.append(tuple((match[0][2], site, match[0][0])))
             else:
@@ -742,8 +799,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     # Prints out the completed rollup with annotations from Uniprot (if requested)
     with open(output_filename, 'w', newline = '') as w1:
         out_writer = csv.writer(w1)
-        header2 = ["Gene", "Site", "Shared Genes", "Target Genes", "Peptide Sequence", 
-            "Peptide Modified Sequence", "Uniprot Accession ID"]
+        header2 = ["Gene", "Site", "Shared_Genes", "Target_Genes", "Peptide_Sequence", 
+            "Peptide_Modified_Sequence", "Annotation_Score", "Uniprot_Accession_ID"]
         if use_intensities:
             header2 += intensity_header
         if add_annotation:
@@ -758,8 +815,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                             "ec", "rhea", "type", "comment"]
                 annotations_length -= 9
             '''
-            header2 += ["position", "lengthOfSequence", "range", "regionOfInterest", 
-                        "catalyicActivity", "location", "ec", "rhea", 
+            header2 += ["Position", "Length_Of_Sequence", "Range", "Region_Of_Interest", 
+                        "Catalyic_Activity", "Location", "Enzyme_Class", "rhea", "Secondary_Structure", 
                         "Active_Site_Annotation", "Alternative_Sequence_Annotation", 
                         "Chain_Annotation", "Compositional_Bias_Annotation", 
                         "Disulfide_Bond_Annotation", "Domain_Extent_Annotation", 
@@ -787,7 +844,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                     writable_row += [float(x)/N for x in intensities]
             if add_annotation:
                 try:
-                    writable_row += __compress_annotations(sparql_dict[i[6] + '|' + str(i[1])])[1:]
+                    writable_row += __compress_annotations(sparql_dict[i[7] + '|' + str(i[1])])[1:]
                 except KeyError:
                     #print(i[6] + '|' + str(i[1]) + " not in dict")
                     pass

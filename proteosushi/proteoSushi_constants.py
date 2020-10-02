@@ -31,3 +31,9 @@ annotation_type_dict = {
     "Topological_Domain_Annotation": 16,
     "Zinc_Finger_Annotation": 17
 }
+
+secondary_annotations = [
+    "Beta_Strand_Annotation",
+    "Helix_Annotation",
+    "Turn_Annotation"
+]
