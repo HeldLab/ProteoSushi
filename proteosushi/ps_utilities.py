@@ -128,7 +128,7 @@ def digest_if_needed(proteome_fasta_filepath: str, enzyme: str, mcleave: bool, m
     rule = cleave_rule_determination(enzyme)
     pep_dict = defaultdict(set)  # NOTE: this won't work for large fasta/sequence databases as it's in ram; ~1GB for human
     for i in seq_list:
-        gene, _organism, seq, unpid = i
+        gene, _organism, seq, unpid, protein_name = i
         if m_excise == "Both":
             # Run digest results twice and combine; inefficient but gets job done
             digest_results_true = digest(seq, minlen, maxlen, mcleave, True,
@@ -146,7 +146,7 @@ def digest_if_needed(proteome_fasta_filepath: str, enzyme: str, mcleave: bool, m
         for result in digest_results:
             peptide, position = result
             peptide = peptide.replace("L", "I")
-            pep_dict[peptide].add((gene, position, unpid))  # careful with site specificity here
+            pep_dict[peptide].add((gene, position, unpid, protein_name))  # careful with site specificity here
     with open(f"{proteome_fasta_filepath.split('.')[0]}.pepdict", "wb") as w1:
         pickle.dump(pep_dict, w1)
     del pep_dict  # Free memory for later

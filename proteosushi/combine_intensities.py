@@ -556,7 +556,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                 intensity_header = row[intensity_start::2]  # Ideally, this would happen outside of this loop
 
         if genes_positions and len(genes_positions) == 1:
-            gene, start_pos, unpid = list(genes_positions)[0]
+            gene, start_pos, unpid, protein_name = list(genes_positions)[0]
             if not pep_mod_seq in mod_dict:
                 print("\033[91m {}\033[00m".format(f"{pep_seq} not in modDict!"))
                 missing_PTM += 1
@@ -585,6 +585,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                         gene_results.append([
                             gene, 
                             site, 
+                            protein_name,
                             "", 
                             gene, 
                             raw_seq, 
@@ -598,6 +599,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                         gene_results.append([
                             gene, 
                             site, 
+                            protein_name,
                             "", 
                             "", 
                             raw_seq, 
@@ -641,6 +643,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                 gene_results.append([
                                     gene, 
                                     site, 
+                                    match[3],
                                     "", 
                                     gene, 
                                     raw_seq, 
@@ -654,6 +657,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                 gene_results.append([
                                     gene, 
                                     site, 
+                                    match[3],
                                     "", 
                                     "", 
                                     raw_seq, 
@@ -694,6 +698,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                 gene_results.append([
                                     match[0][0], 
                                     site, 
+                                    match[0][3],
                                     ' '.join(additGenes), 
                                     ' '.join([i[0] for i in match]), 
                                     raw_seq, 
@@ -707,6 +712,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                 gene_results.append([
                                     match[0][0], 
                                     site, 
+                                    match[0][3],
                                     ' '.join(additGenes), 
                                     "", 
                                     raw_seq, 
@@ -799,7 +805,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     # Prints out the completed rollup with annotations from Uniprot (if requested)
     with open(output_filename, 'w', newline = '') as w1:
         out_writer = csv.writer(w1)
-        header2 = ["Gene", "Site", "Shared_Genes", "Target_Genes", "Peptide_Sequence", 
+        header2 = ["Gene", "Site", "Protein_Name", "Shared_Genes", "Target_Genes", "Peptide_Sequence", 
             "Peptide_Modified_Sequence", "Annotation_Score", "Uniprot_Accession_ID"]
         if use_intensities:
             header2 += intensity_header
@@ -829,22 +835,22 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         # This builds the rollup output file depending on what the user chose
         for i in sorted(gene_results, key=lambda r: r[0]):
             if rollup_file == "maxquant":
-                if not any(ptm[:2].lower() in i[5] for ptm in user_PTMs):
+                if not any(ptm[:2].lower() in i[6] for ptm in user_PTMs):
                     continue
-            elif not any(ptm in i[5] for ptm in user_PTMs):  # If none of the chosen ptms are in the rollup line
+            elif not any(ptm in i[6] for ptm in user_PTMs):  # If none of the chosen ptms are in the rollup line
                 continue
             # Start by adding in the base data
             writable_row = i
             if use_intensities:  # Add to that the intensity data if requested
                 if intensity_method == "sum":  # Reports the sum of each peak
-                    writable_row += intensity_dict[f"{i[5]}|{i[0].upper()}|{i[1]}"][:-1]
+                    writable_row += intensity_dict[f"{i[6]}|{i[0].upper()}|{i[1]}"][:-1]
                 elif intensity_method == "average":  # Calculates the average for each peak and reports
-                    N = intensity_dict[f"{i[5]}|{i[0].upper()}|{i[1]}"][-1]
-                    intensities = intensity_dict[f"{i[5]}|{i[0].upper()}|{i[1]}"][:-1]
+                    N = intensity_dict[f"{i[6]}|{i[0].upper()}|{i[1]}"][-1]
+                    intensities = intensity_dict[f"{i[6]}|{i[0].upper()}|{i[1]}"][:-1]
                     writable_row += [float(x)/N for x in intensities]
             if add_annotation:
                 try:
-                    writable_row += __compress_annotations(sparql_dict[i[7] + '|' + str(i[1])])[1:]
+                    writable_row += __compress_annotations(sparql_dict[i[8] + '|' + str(i[1])])[1:]
                 except KeyError:
                     #print(i[6] + '|' + str(i[1]) + " not in dict")
                     pass

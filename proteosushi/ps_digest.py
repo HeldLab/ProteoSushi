@@ -27,6 +27,8 @@ def fasta_producer(proteome_fasta_filepath: str, seq_list: list) -> list:
     def fasta_entry_check(header, sequence):
         unpid = "N/A"
         organism = None
+        protein_name = ""
+
         # TODO: make it so this is no longer dependent on whether an organism is listed
         # Check organism
         if 'OX=' in header:
@@ -42,9 +44,14 @@ def fasta_producer(proteome_fasta_filepath: str, seq_list: list) -> list:
             #gene = header.split('|')[1]
         else:
             gene = "N/A"
+
         if header.count('|') >= 2:
             unpid = header.split('|')[1]
-        seq_list.append((gene, organism, sequence, unpid))
+        
+        if "OS=" in header:
+            protein_name = ' '.join(header.split(' ')[1:]).split(" OS=")[0]
+
+        seq_list.append((gene, organism, sequence, unpid, protein_name))
 
     # open and read in the proteome fasta
     if os.path.exists(proteome_fasta_filepath):
