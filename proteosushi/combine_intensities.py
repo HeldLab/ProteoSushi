@@ -375,7 +375,10 @@ def __compress_annotations(annotation_list: list) -> list:
         if not f"{annotation_list[region_index-2+(i*length_uniprot_annotations) + 3]}" in new_annotations[region_index].split(','):
             new_annotations[region_index] += f",{annotation_list[region_index-2+(i*length_uniprot_annotations) + 3]}"
         if annotation_list[catalytic_index-2+(i*length_uniprot_annotations)+3] != new_annotations[catalytic_index]:
-            new_annotations[catalytic_index] += f",{annotation_list[catalytic_index-2+(i*length_uniprot_annotations)+3]}"
+            if annotation_list[catalytic_index-2+(i*length_uniprot_annotations)+3] == "nan":
+                new_annotations[catalytic_index] += ','
+            else:
+                new_annotations[catalytic_index] += f",{annotation_list[catalytic_index-2+(i*length_uniprot_annotations)+3]}"
         if not f"{annotation_list[location_index-2+(i*length_uniprot_annotations)+3]}" in new_annotations[location_index].split(','):
             new_annotations[location_index] += f",{annotation_list[location_index-2+(i*length_uniprot_annotations)+3]}"
         if not f"{annotation_list[ec_index-2+(i*length_uniprot_annotations)+3]}" in new_annotations[ec_index].split(','):
@@ -422,7 +425,7 @@ def __compress_annotations(annotation_list: list) -> list:
                             new_annotations[annotation_type_dict["Other"] 
                                             + length_uniprot_annotations] = f"{current_type}: {current_comment}"
         i += 1
-    return new_annotations[:9] + [secondary_structure] + new_annotations[9:]
+    return [s.replace("nan", "") for s in new_annotations[:9]] + [secondary_structure] + [s.replace("nan", "") for s in new_annotations[9:]]
 
 
 def rollup(search_engine: str, search_engine_filepath: str, use_target_list: bool, 

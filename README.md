@@ -54,6 +54,8 @@ In order to run ProteoSushi, there are some required files in specific formats:
 
   - This folder must have the *summary.txt* and *evidence.txt* files. Other files from the output are not used.
 
+  - *NOTE: It is recommended that you use the newest version of MaxQuant*
+
 - Or the output from any other search engine
 
   - This file must have a column for peptide sequence named “peptide sequence”

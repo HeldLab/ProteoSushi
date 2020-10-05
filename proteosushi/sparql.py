@@ -323,7 +323,8 @@ def process_sparql_output(output_df, sparql_dict: dict) -> list:
         '''Retrieve subcellular location information from UniProt directly'''
         r = requests.get('https://www.uniprot.org/locations/?format=tab')
         subcellular_location_df = pd.read_csv(StringIO(r.text), sep = '\t')  # TODO: potential ParserError
-        subcellular_location_df["location_id_reformatted"] = (subcellular_location_df["Subcellular location ID"]
+        subcellular_location_df["location_id_reformatted"] = (
+                                                             subcellular_location_df["Subcellular location ID"]
                                                              .str.split("-")
                                                              .str[1]
                                                              )
