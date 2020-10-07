@@ -28,6 +28,7 @@ class App(QMainWindow):
         self.centralWidget = QWidget()
         self.setCentralWidget(self.centralWidget)
         self.species_id_dict = self.__make_species_dict()
+        self.species_name_dict = {v:k for k, v in self.species_id_dict.items()}
         self.initUI()
         
     def initUI(self):
@@ -184,6 +185,10 @@ class App(QMainWindow):
         elif self.species_id_edit.text() in self.species_id_dict:
             self.species_name_label.setStyleSheet("background-color : white")
             self.species_name_label.setText(self.species_id_dict[self.species_id_edit.text()][2:])
+        elif f"N={self.species_id_edit.text()}" in self.species_name_dict:
+            self.species_name_label.setStyleSheet("background-color : white")
+            self.species_name_label.setText(self.species_id_edit.text())
+            self.species_id_edit.setText(self.species_name_dict[f"N={self.species_id_edit.text()}"])
         else:
             self.species_name_label.setText("Not a valid species ID")
             self.species_name_label.setStyleSheet("background-color : red")
@@ -373,6 +378,7 @@ class App(QMainWindow):
                 self.proteome_filepath.setText(filename)
                 if not species_ID is None:
                     self.species_id_edit.setText(species_ID)
+                    self.update_species_name()
         self.statusBar().showMessage("")
 
     @pyqtSlot()
