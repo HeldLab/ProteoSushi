@@ -54,7 +54,13 @@ In order to run ProteoSushi, there are some required files in specific formats:
 
 - The CSV file output from **Mascot**
 
-  - The file must have the header lines with the information from the search, such as the protease used with the sample and the maximum number of missed cleavages
+  - The file must have the header lines with the information from the search. In order to make sure that the file will be processed correctly, be sure to specify the following settings: 
+
+    - The protease used with the sample 
+
+    - The maximum number of missed cleavages (usually 1 or 2)
+
+    - The variable modifications present in the sample(s)
 
 - Or the output folder from **MaxQuant**
 

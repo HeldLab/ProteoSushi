@@ -7,7 +7,7 @@ from time import sleep
 
 from ps_utilities import parse_mascot, load_pepdict #most of the parsing actually happens here 
 
-
+'''
 def __promptFile() -> str:
     """Prompts the user for the file name
     Returns:
@@ -21,6 +21,7 @@ def __promptFile() -> str:
         sleep(.5)
         return __promptFile()
     return filename
+'''
 
 def __create_mod_dict(filename: str, mod_ids: list, var_mod_map: dict) -> dict:
     """Makes the PTM dictionary that connects a peptide sequence with its modifications
@@ -70,7 +71,8 @@ def __create_mod_dict(filename: str, mod_ids: list, var_mod_map: dict) -> dict:
                         except KeyError:
                             modDict[pep_mod_seq] = [tuple((inv_mod_map[aa], i))]
     return modDict
-
+    
+'''
 def __promptPTMs(PTMs: list) -> list:
     """prompts the user for which PTMs should be used
     Arguments:
@@ -93,7 +95,7 @@ def __promptPTMs(PTMs: list) -> list:
         sleep(.5)
         return __promptPTMs(PTMs)
     return modPTMs
-
+'''
 
 def compile_data(search_engine_filepath: str, PTMs: list) -> list:
     """Takes the lists and dictionaries needed to parse files

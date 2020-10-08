@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QMainWindow, QPushButton,
                              QMessageBox, QLineEdit, QLabel, QGroupBox, 
                              QGridLayout, QVBoxLayout, QFileDialog, QCheckBox,
                              QRadioButton, QButtonGroup, QComboBox)
-from PyQt5.QtCore import pyqtSlot, QSize
+from PyQt5.QtCore import pyqtSlot, QSize, Qt
 from PyQt5.QtGui import QIcon
 
 from combine_intensities import parse_output, rollup
@@ -134,6 +134,7 @@ class App(QMainWindow):
         self.createGridLayout()
         windowLayout = QVBoxLayout(self.centralWidget)
         windowLayout.addWidget(self.horizontalGroupBox)
+        windowLayout.setAlignment(Qt.AlignTop)
         self.setLayout(windowLayout)
         
         self.show()
@@ -573,6 +574,9 @@ class App(QMainWindow):
         self.layout.addWidget(self.protease_combo_box, row, 1)
         row += 1
         self.layout.addWidget(self.run_button, row, 0)
+
+        self.layout.setAlignment(Qt.AlignTop)
+        self.horizontalGroupBox.setAlignment(Qt.AlignTop)
 
         self.horizontalGroupBox.setLayout(self.layout)
 
