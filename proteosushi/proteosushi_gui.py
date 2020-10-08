@@ -204,9 +204,9 @@ class App(QMainWindow):
             generic_filepath {str} -- the filepath for maxquant output
         """
         # TODO: update to require species, etc.
-        if (((MQcheckState == QtCore.Qt.Checked and MQfilepath != "") or
-            (mascotCheckState == QtCore.Qt.Checked and mascot_filepath != "") or
-            (genericCheckState == QtCore.Qt.Checked and generic_filepath != "")) and
+        if (((MQcheckState == QtCore.Qt.Checked and os.path.exists(MQfilepath)) or
+            (mascotCheckState == QtCore.Qt.Checked and os.path.exists(mascot_filepath)) or
+            (genericCheckState == QtCore.Qt.Checked and os.path.exists(generic_filepath))) and
             os.path.exists(self.proteome_filepath.text())):
             self.run_button.setHidden(False)
         else:
@@ -267,7 +267,8 @@ class App(QMainWindow):
         self.statusBar().showMessage("Choose the MaxQuant output FOLDER")
         self.statusBar().setStyleSheet("background-color : white")
         filename = self.open_directory_dialog()
-        if self.maxquant_filepath.text() != "":
+        #if self.maxquant_filepath.text() != "":
+        if os.path.exists(filename):
             self.maxquant_filepath.setText(filename)
             missed_cleavages, enzyme, PTMs = parse_output("maxquant", filename)
             self.max_missed_edit.setText(str(missed_cleavages))
@@ -302,7 +303,8 @@ class App(QMainWindow):
         self.statusBar().showMessage("Choose the Mascot output file")
         self.statusBar().setStyleSheet("background-color : white")
         filename = self.openCSVFileNameDialog()
-        if self.mascot_filepath.text() != "":
+        #if self.mascot_filepath.text() != "":
+        if os.path.exists(filename):
             self.mascot_filepath.setText(filename)
             missed_cleavages, enzyme, PTMs = parse_output("mascot", filename)
             self.max_missed_edit.setText(str(missed_cleavages))
@@ -336,7 +338,8 @@ class App(QMainWindow):
         self.statusBar().showMessage("Choose the Search Engine output")
         self.statusBar().setStyleSheet("background-color : white")
         filename = self.openCSVFileNameDialog()
-        if self.generic_filepath.text() != "":
+        #if self.generic_filepath.text() != "":
+        if os.path.exists(filename):
             self.generic_filepath.setText(filename)
             missed_cleavages, enzyme, PTMs = parse_output("generic", filename)
             #Remove the previous PTM checkboxes (if there were any)
@@ -368,7 +371,8 @@ class App(QMainWindow):
         self.statusBar().showMessage("Choose the Uniprot Proteome FASTA file")
         self.statusBar().setStyleSheet("background-color : white")
         filename = self.openFASTAFileNameDialog()
-        if self.proteome_filepath.text() != "":
+        #if self.proteome_filepath.text() != "":
+        if os.path.exists(filename):
             # Parse the file to check it is valid and grab the species
             was_error, species_ID = parse_proteome(filename)
             if was_error:
