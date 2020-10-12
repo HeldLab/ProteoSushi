@@ -36,12 +36,12 @@ class App(QMainWindow):
         self.setGeometry(self.left, self.top, self.width, self.height)
 
 
-        self.file_chooser_label = QLabel("Types of Files", self)
+        self.file_chooser_label = QLabel("Types of ProteoSushi Files", self)
 
         self.maxquant_RB = QRadioButton("MaxQuant", self)
         self.maxquant_RB.toggled.connect(self.check_MQ_RB)
         self.maxquant_RB.setToolTip("Use the txt output folder from the MaxQuant Search Engine")
-        self.maxquant_button = QPushButton("MaxQuant Output Folder")
+        self.maxquant_button = QPushButton("MaxQuant txt Folder")
         self.maxquant_button.setHidden(True)
         self.maxquant_button.clicked.connect(self.onClickMQbutton)
         self.maxquant_filepath = QLabel("[Filepath]", self)
@@ -50,7 +50,7 @@ class App(QMainWindow):
         self.mascot_RB = QRadioButton("Mascot", self)
         self.mascot_RB.toggled.connect(self.check_mascot_RB)
         self.mascot_RB.setToolTip("Use the output from the Mascot Search Engine")
-        self.mascot_button = QPushButton("Mascot Output")
+        self.mascot_button = QPushButton("Mascot File")
         self.mascot_button.setHidden(True)
         self.mascot_button.clicked.connect(self.onClickMascotButton)
         self.mascot_filepath = QLabel("[Filepath]", self)
@@ -59,7 +59,7 @@ class App(QMainWindow):
         self.generic_RB = QRadioButton("Generic", self)
         self.generic_RB.toggled.connect(self.check_generic_RB)
         self.generic_RB.setToolTip("Use the output from any other search engine")
-        self.generic_button = QPushButton("Generic Output")
+        self.generic_button = QPushButton("Generic File")
         self.generic_button.setHidden(True)
         self.generic_button.clicked.connect(self.onClickGenericButton)
         self.generic_filepath = QLabel("[Filepath]", self)
