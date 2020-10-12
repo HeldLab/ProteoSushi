@@ -131,3 +131,6 @@ proteosushi/test_region_dataframe.csv
 proteosushi/test_subcell_dataframe.csv
 proteosushi/generic_rollup_sample.csv
 sparql_annotations.csv
+proteosushi/unmatched_sequences_maxquant
+proteosushi/.~lock.maxquant_rollup.csv#
+proteosushi/9606_annot_score.tsv

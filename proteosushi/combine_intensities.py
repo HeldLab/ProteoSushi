@@ -510,7 +510,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             continue
         total_seqs += 1
         raw_seq = row[sequence_index]
-        #if raw_seq == "FRCPEALFQPSFLGMESCGIHETTFNSIMK":
+        #if raw_seq == "VCNGIGIGEFK":
         #    print("start")
         pep_mod_seq = row[modified_sequence_index]
         pep_seq = row[sequence_index].replace("L","I")
@@ -825,7 +825,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                 annotations_length -= 9
             '''
             header2 += ["Position", "Length_Of_Sequence", "Range", "Region_Of_Interest", 
-                        "Catalyic_Activity", "Location", "Enzyme_Class", "rhea", "Secondary_Structure", 
+                        "Catalyic_Activity", "Subcellular_Location", "Enzyme_Class", "rhea", "Secondary_Structure", 
                         "Active_Site_Annotation", "Alternative_Sequence_Annotation", 
                         "Chain_Annotation", "Compositional_Bias_Annotation", 
                         "Disulfide_Bond_Annotation", "Domain_Extent_Annotation", 

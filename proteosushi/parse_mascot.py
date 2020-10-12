@@ -1,3 +1,4 @@
+"""parse_mascot.py: functions used to parse the mascot file and read it into memory"""
 
 import csv
 from collections import defaultdict
@@ -39,7 +40,7 @@ def __create_mod_dict(filename: str, mod_ids: list, var_mod_map: dict) -> dict:
         file_reader = csv.reader(mascot_output, quotechar='"')
         header = next(file_reader)
         sequence = header.index("pep_seq")
-        pep_mod_seq_index = header.index("")
+        #pep_mod_seq_index = header.index("")
         var_mods = header.index("pep_var_mod_pos")
 
         for row in file_reader:
@@ -54,7 +55,7 @@ def __create_mod_dict(filename: str, mod_ids: list, var_mod_map: dict) -> dict:
             new_seq = pep_seq
             pep_mod_seq = mods.split('.')[1]
             i = len(pep_mod_seq) - 1
-            inv_mod_dict = {v:k for k, v in var_mod_dict.items()}
+            inv_mod_dict = {v:k for k, v in var_mod_map.items()}
             while i >= 0:
                 if pep_mod_seq[i] != "0":  # If there is a mod
                     new_seq = new_seq[:i+1] + '(' + inv_mod_dict[pep_mod_seq[i]] + ')' + new_seq[i+1:]
@@ -71,7 +72,7 @@ def __create_mod_dict(filename: str, mod_ids: list, var_mod_map: dict) -> dict:
                         except KeyError:
                             modDict[pep_mod_seq] = [tuple((inv_mod_map[aa], i))]
     return modDict
-    
+
 '''
 def __promptPTMs(PTMs: list) -> list:
     """prompts the user for which PTMs should be used
