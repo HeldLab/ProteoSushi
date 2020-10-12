@@ -11,7 +11,7 @@ The machine running ProteoSushi must have:
 
 - stable internet access 
 
-- at least 8GB of RAM
+- at least 8GB of RAM, 12GB for Windows 10
 
   - 16GB or higher is recommended, but ultimately depends on how the user uses the machine. More is better up to a certain point.
   
@@ -42,11 +42,29 @@ run_proteosushi()
 
 2. Through Github
 
-Download the files directly from [GitHub](https://github.com/heldlab/ProteoSushi). 
+Download the files directly from [GitHub](https://github.com/HeldLab/ProteoSushi). Click on the Code button and then on Download ZIP.
 
-Once unpacked, start the terminal in the proteosushi folder and run the command
+Once unpacked (unzipped), we will need to use the terminal (command prompt in Windows) to run ProteoSushi.
+
+For MacOS, use Finder to navigate to the proteosushi folder in the downloaded files. Click on Finder (in the toolbar at the top of the screen) -> Services -> New Terminal at Folder to open a new terminal in the proteosushi folder. Run the command 
 `python run_proteosushi.py`
 to start the GUI.
+
+Alternatively, in MacOS or Linux, you can open the terminal and navigate within the terminal to the correct folder. Use the cd command to change the current folder as in 
+`cd Downloads/ProteoSushi-master/proteosushi` 
+and use the ls command to list the contents of the current folder as in
+`ls`
+, then use the command
+`python run_proteosushi.py`
+to run ProteoSushi.
+
+Finally, in Windows, open the command prompt by clicking on the search bar in the toolbar at the bottom (usually) of the screen. Type in 'cmd' and click on Command Prompt when it pops up. Once it pops up, use the command cd to change to the proteosushi folder, as in
+`cd Downloads/ProteoSushi-master/proteosushi`
+and the dir command to list the contents of the current folder, as in
+`dir`
+, then use the command
+`python run_proteosushi.py`
+to run ProteoSushi.
 
 ## Files Needed
 
@@ -158,7 +176,7 @@ Results will be returned as a CSV spreadsheet with one of the following filename
 
 - “Mascot_Rollup.csv” for Mascot
 
-- “Other_Rollup.csv” for any other search engine
+- “Generic_Rollup.csv” for any other search engine
 
 The resulting file will include information for each modified residue of interest including:
 
