@@ -453,6 +453,8 @@ class App(QMainWindow):
             if self.protease_combo_box.currentText() in cleave_rules:
                 # If the maxquant option was chosen, it sends that info to be run
                 if self.maxquant_RB.isChecked() and os.path.exists(self.maxquant_filepath.text()):
+                    self.statusBar().showMessage("Analysis in Progress")
+                    self.statusBar().setStyleSheet("background-color : white")
                     rollup("maxquant", 
                                     self.maxquant_filepath.text(), 
                                     self.target_checkbox.isChecked(),  # Whether target will be used
@@ -471,6 +473,8 @@ class App(QMainWindow):
                     print("\033[92m {}\033[00m".format("Analysis Complete!"))
                     sys.exit()
                 elif self.mascot_RB.isChecked() and os.path.exists(self.mascot_filepath.text()):
+                    self.statusBar().showMessage("Analysis in Progress")
+                    self.statusBar().setStyleSheet("background-color : white")
                     rollup("mascot", 
                                     self.mascot_filepath.text(), 
                                     self.target_checkbox.isChecked(),  # Whether target will be used
@@ -489,6 +493,8 @@ class App(QMainWindow):
                     print("\033[92m {}\033[00m".format("Analysis Complete!"))
                     sys.exit()
                 elif self.generic_RB.isChecked() and os.path.exists(self.generic_filepath.text()):
+                    self.statusBar().showMessage("Analysis in Progress")
+                    self.statusBar().setStyleSheet("background-color : white")
                     rollup("generic", 
                                     self.generic_filepath.text(), 
                                     self.target_checkbox.isChecked(),  # Whether target will be used
