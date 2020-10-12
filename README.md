@@ -1,6 +1,6 @@
 # ProteoSushi
 
-ProteoSushi transforms PTM enriched peptide data into condensed and annotated PTM site centric data that is easy to understand and analyze.
+ProteoSushi transforms peptide-centric, PTM-enriched peptide data into condensed and annotated PTM site output that is easy to understand and analyze.
 
 ProteoSushi is designed to be simple to use and easy to access. 
 
@@ -13,7 +13,7 @@ The machine running ProteoSushi must have:
 
 - at least 8GB of RAM
 
-  - 16GB or higher is recommended, but truly depends on how the user uses the machine. More is better up to a certain point.
+  - 16GB or higher is recommended, but ultimately depends on how the user uses the machine. More is better up to a certain point.
   
 - Python version 3.8 or higher installed 
 
