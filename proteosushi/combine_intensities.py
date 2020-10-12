@@ -561,7 +561,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         if genes_positions and len(genes_positions) == 1:
             gene, start_pos, unpid, protein_name = list(genes_positions)[0]
             if not pep_mod_seq in mod_dict:
-                print("\033[91m {}\033[00m".format(f"{pep_seq} not in modDict!"))
+                print("\033[91m {}\033[00m".format(f"{pep_seq} does not have the PTM(s) selected!"))
                 missing_PTM += 1
                 continue
             mods = mod_dict[pep_mod_seq]
@@ -621,7 +621,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                 if isinstance(match, tuple):  # Checks if this is just a single match.
                     gene = match[0]
                     if not pep_mod_seq in mod_dict:
-                        print("\033[91m {}\033[00m".format(f"{pep_seq} not in modDict!"))
+                        print("\033[91m {}\033[00m".format(f"{pep_seq} does not have the PTM(s) selected!"))
                         missing_PTM += 1
                         continue
                     mods = mod_dict[pep_mod_seq]
@@ -672,7 +672,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                     sparql_input.append(tuple((match[2], site, gene)))
                 else:  # There are multiple matches
                     if not pep_mod_seq in mod_dict:
-                        print("\033[91m {}\033[00m".format(f"{pep_seq} not in modDict!"))
+                        print("\033[91m {}\033[00m".format(f"{pep_seq} does not have the PTM(s) selected!"))
                         missing_PTM += 1
                         continue
                     mods = mod_dict[pep_mod_seq]
