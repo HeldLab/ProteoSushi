@@ -410,7 +410,7 @@ def __compress_annotations(annotation_list: list) -> list:
             else:
                 # If the current comment is not in the Other cell
                 if current_type in secondary_annotations:
-                    secondary_structure = current_type
+                    secondary_structure = current_type.replace("_Annotation")
                 elif (not current_comment in new_annotations[annotation_type_dict["Other"] + length_uniprot_annotations] and
                     not current_type in new_annotations[annotation_type_dict["Other"] + length_uniprot_annotations]):
                     if new_annotations[annotation_type_dict["Other"] + length_uniprot_annotations]:
