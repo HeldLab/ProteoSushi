@@ -160,5 +160,8 @@ def compile_data(search_engine_filepath: str, PTMs: list) -> list:
 
     mod_dict = __create_mod_dict(input_filename, [var_mod_map[mod] for mod in mods_for_quant], var_mod_map)
 
+    if quant_range[1] <= quant_range[0]:
+        return sequence, var_mods, mod_dict, None, input_filename, var_mod_map
+
     return sequence, var_mods, mod_dict, quant_range[0], input_filename, var_mod_map
 #EOF

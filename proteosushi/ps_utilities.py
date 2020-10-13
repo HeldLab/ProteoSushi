@@ -58,6 +58,7 @@ def parse_mascot(in_file: str) -> list:
         out_writer = csv.writer(out_file)
         enzyme = ""
         missed_cleaves = -1
+        quant_range = None
         for row in file_reader:
             if row:  # lots of blank rows
                 # Pull data we need

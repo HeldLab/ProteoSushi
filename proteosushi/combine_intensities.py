@@ -432,7 +432,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
            target_list_filepath: str, max_missed_cleavages: int, protease: str, 
            fdr_threshold: float, use_quant: bool, user_PTMs: list, 
            proteome_fasta_filepath: str, intensity_method: str, add_annotation: bool, 
-           species_id: str):
+           species_id: str) -> int:
     """starts proteoSushi rollup when called by run_proteoSushi
 
     Arguments:
@@ -449,6 +449,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         intensity_method {str} -- whether to "sum" or "average" the peaks for combined peptides
         add_annotation {bool} -- whether to query uniprot and add the annotation onto the results
         species_id {str} -- the species ID (e.g. 9606) to get the annotation score dictionary from Uniprot
+    Returns:
+        int -- possible error flag
     """
     threshold = fdr_threshold
     use_target = use_target_list
@@ -477,6 +479,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             var_mod_dict = parse_mascot.compile_data(search_engine_filepath, user_PTMs)
         data_file = open(data_filename, 'r')
         tsv_reader = csv.reader(data_file, quotechar='"')
+        if intensity_start is None and use_quant:
+            return 2
     else:
         assert False, "Not a valid file from search"
 

@@ -475,7 +475,7 @@ class App(QMainWindow):
                 elif self.mascot_RB.isChecked() and os.path.exists(self.mascot_filepath.text()):
                     self.statusBar().showMessage("Analysis in Progress")
                     self.statusBar().setStyleSheet("background-color : white")
-                    rollup("mascot", 
+                    output = rollup("mascot", 
                                     self.mascot_filepath.text(), 
                                     self.target_checkbox.isChecked(),  # Whether target will be used
                                     self.target_filepath.text(),
@@ -488,6 +488,10 @@ class App(QMainWindow):
                                     combine_method,
                                     self.uniprot_annot_CB.isChecked(),
                                     species_id)
+                    if self.quant_CB.isChecked() and output == 2:
+                        self.statusBar().showMessage("ERROR: Mascot file has no detectable intensity values!")
+                        self.statusBar().setStyleSheet("background-color : red")
+                        return
                     self.statusBar().showMessage("Analysis Complete!")
                     self.statusBar().setStyleSheet("background-color : green")
                     print("\033[92m {}\033[00m".format("Analysis Complete!"))
