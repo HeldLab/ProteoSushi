@@ -758,35 +758,39 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                 for gene in additGenes:
                                     intensity_dict[f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}"] = 0
                         if to_add:
-                            additGenes.remove(match[0][0])
-                            if isTarget:
-                                gene_results.append([
-                                    match[0][0], 
-                                    site, 
-                                    match[0][3],
-                                    ' '.join(additGenes), 
-                                    ' '.join([i[0] for i in match]), 
-                                    raw_seq, 
-                                    new_pep_mod_seq, 
-                                    annotDict[match[0][2]] if match[0][2] in annotDict else "", 
-                                    ' '.join([i[2] for i in match])
-                                    ])
-                                if len(match[0][2]) >= 5:
-                                    sparql_input.append(tuple((match[0][2], site, match[0][0])))
-                            else:
-                                gene_results.append([
-                                    match[0][0], 
-                                    site, 
-                                    match[0][3],
-                                    ' '.join(additGenes), 
-                                    "", 
-                                    raw_seq, 
-                                    new_pep_mod_seq, 
-                                    annotDict[match[0][2]] if match[0][2] in annotDict else "", 
-                                    ' '.join([i[2] for i in match])
-                                    ])
-                                if len(match[0][2]) >= 5:
-                                    sparql_input.append(tuple((match[0][2], site, match[0][0])))
+                            for addit_gene in additGenes:
+                                #additGenes.remove(match[0][0])
+                                gene_list = [x for x in additGenes if x != addit_gene]
+                                current_match = [x for x in match if x[0] == addit_gene][0]
+                                if isTarget:
+                                    gene_results.append([
+                                        addit_gene, 
+                                        site,
+                                        current_match[3], 
+                                        #match[0][3],
+                                        ' '.join(gene_list), 
+                                        ' '.join([i[0] for i in match]), 
+                                        raw_seq, 
+                                        new_pep_mod_seq, 
+                                        annotDict[current_match[2]] if current_match[2] in annotDict else "", 
+                                        ' '.join([i[2] for i in match])
+                                        ])
+                                    if len(current_match[2]) >= 5:
+                                        sparql_input.append(tuple((current_match[2], site, current_match[0])))
+                                else:
+                                    gene_results.append([
+                                        addit_gene, 
+                                        site, 
+                                        current_match[3], 
+                                        ' '.join(gene_list), 
+                                        "", 
+                                        raw_seq, 
+                                        new_pep_mod_seq, 
+                                        annotDict[current_match[2]] if current_match[2] in annotDict else "", 
+                                        ' '.join([i[2] for i in match])
+                                        ])
+                                    if len(current_match[2]) >= 5:
+                                        sparql_input.append(tuple((current_match[2], site, current_match[0])))
             else:
                 unmatched_peps += 1
                 unmatched_sequences.append(tuple([raw_seq, pep_mod_seq]))
