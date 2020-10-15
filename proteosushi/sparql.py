@@ -90,11 +90,30 @@ WHERE {
     # get the IUPAC AAs associated with the identifier
     ?sequence rdf:value ?iupac .
     # get the AA subsequence of the annotation as a new variable
-    FILTER (?begin <= ?position && ?position <= ?end)
-    # get the IUPAC AAs associated with the identifier
-    ?sequence rdf:value ?iupac .
 } ORDER BY DESC(?entry) ASC(?position)"""
 
+    query_stripped_entry_pos = prefix + """
+SELECT
+    ?entry
+    ?position ### New the position of the C that was given in the values
+    ?lengthOfSequence
+    ?begin
+    ?end
+    ?regionOfInterest ### subsequence of the annotation that had the C
+FROM <http://sparql.uniprot.org/uniprot>
+WHERE {
+     VALUES (?entry ?position) {""" + unpid_site_list_str + """}
+     ?entry up:sequence ?sequence .
+     ?annotation up:range ?range1, ?range2;
+                a ?type .
+     ?range1 faldo:begin
+         [ faldo:position ?begin ; faldo:reference ?sequence ] .
+     ?range2 faldo:end
+         [ faldo:position ?end ; faldo:reference ?sequence ] .
+     FILTER (?begin <= ?position && ?position <= ?end)
+     # get the IUPAC AAs associated with the identifier
+     ?sequence rdf:value ?iupac .
+} ORDER BY DESC(?entry) ASC(?position)"""
 
     query_entry_length_position = prefix + """
 SELECT
@@ -198,6 +217,11 @@ WHERE {
 
     # Grabs the annotation by parts to maximize the amount we receive from the uniprot server
     region_annot = request_annot(new_entry_length_pos_query)
+    #if region_annot.empty:
+    region_annot_stripped = request_annot(query_stripped_entry_pos)
+    if len(region_annot.index) < len(region_annot_stripped.index):  # This should check to see if there are rows missing in the full query
+        region_annot.append(region_annot_stripped)
+        region_annot.drop_duplicates(subset=["entry", " position", " begin", " end"], keep="first", inplace=True)
     catalytic_annot = request_annot(query_catalytic)
     subcell_annot = request_annot(query_entry_subcellular)
     extras_annot = request_annot(query_ec_rhea_type)

@@ -206,7 +206,7 @@ def __chooseTup(tuples: list, annotDict: dict) -> list:
                 return paralogs
             else:
                 return None, None'''
-
+'''
 def __prompt_PTMs(PTMs: list) -> list:
     """prompts the user for which PTMs should be used
     Arguments:
@@ -229,7 +229,7 @@ def __prompt_PTMs(PTMs: list) -> list:
         sleep(.5)
         return __prompt_PTMs(PTMs)
     return mod_PTMs
-
+'''
 
 def compile_data(search_engine_filepath: str, user_PTMs: list) -> list:
     """Takes the lists and dictionaries needed to parse files

@@ -134,3 +134,5 @@ sparql_annotations.csv
 proteosushi/unmatched_sequences_maxquant
 proteosushi/.~lock.maxquant_rollup.csv#
 proteosushi/9606_annot_score.tsv
+proteosushi/examples/txt/evidence.txt
+proteosushi/examples/txt/summary.txt

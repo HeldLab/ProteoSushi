@@ -71,7 +71,7 @@ def parse_evidence(filename: str) -> dict:
                     mod_dict[row[modified_index].strip('_')] = [tuple((pep_mods[loc],
                                                 loc - 2))]
     return mod_dict, PTMs
-
+'''
 def __prompt_dir() -> str:
     """Prompts the user for the directory with the MaxQuant files
     Returns:
@@ -108,7 +108,7 @@ def __prompt_PTMs(PTMs: list) -> list:
         sleep(.5)
         return __prompt_PTMs(PTMs)
     return mod_PTMs
-
+'''
 def compile_data(search_engine_filepath: str, user_PTMs: list) -> list:
     """Takes the lists and dictionaries needed to parse files
     Returns:

@@ -152,24 +152,73 @@ def __chooseTup(tuples: list, annot_dict: dict) -> list:
             else:
                 return None, None'''
 
-def __add_intensity(intensity_dict: dict, pep_seq: str, pep_mod_seq: str, gene: str, site: int, 
-                    intensities: list, rule: str) -> list:
+
+def __clean_pep_seq(rule: tuple, pep_mod_seq: str, user_PTMs: list) -> str:
+    """Removes the missed cleavages without selected PTMs
+
+    Arguments:
+        rule {tuple} -- contains info about the protease
+        pep_mod_seq {str} -- the peptide sequence with modifications
+        user_PTMs {list} -- a list of PTMs that the user has selected for Analysis
+    Returns:
+        str -- the cleaned peptide
+    """
+    breaks = finditer(rule[0], pep_mod_seq)
+    cut_sites = []
+    cut_peptides = []
+    for breakp in breaks:
+        cut_sites.append(breakp.start())
+
+    last_site = 0
+    if rule[1].lower() == 'c':
+        for i in cut_sites:
+            cut_peptides.append(pep_mod_seq[last_site:i+1])
+            last_site = i + 1
+        cut_peptides.append(pep_mod_seq[last_site:])
+    elif rule[1].lower() == 'n':
+        for i in cut_sites:
+            cut_peptides.append(pep_mod_seq[last_site:i])
+            last_site = i
+        cut_peptides.append(pep_mod_seq[last_site:])
+    # This gets the range of the first and last pep_slice with 
+    start = 0
+    while start < len(cut_peptides):
+        if any(user_PTM in cut_peptides[start] for user_PTM in user_PTMs):
+            break
+        else:
+            start += 1
+    
+    end = len(cut_peptides) - 1
+    while end > start:
+        if any(user_PTM in cut_peptides[end] for user_PTM in user_PTMs):
+            break
+        else:
+            end -= 1
+
+    if start == end:
+        new_pep_mod_seq = cut_peptides[0]
+    else:
+        new_pep_mod_seq = ''.join(cut_peptides[start:end])
+    return new_pep_mod_seq
+
+def __add_intensity(intensity_dict: dict, new_pep_mod_seq: str, gene: str, site: int, 
+                    intensities: list) -> list:
     """Adds the intensity of the site to the dictionary, if entry exists, adds to the numbers
+
     Arguments:
         intensity_dict {dict} -- a dictionary connecting the pep/gene/site to intensity
-        pep_seq {str} -- the unmodified sequence
         pep_mod_seq {str} -- the modified sequence of the peptide
         gene {str} -- the gene name that the peptide belongs to
         site {int} -- the position of the mod in the protein
         intensities {list} -- 
-        rule {str} -- 
     Returns:
         dict -- the intensity_dict following the update
         bool -- True if a new entry was added, False if not
     """
-    key = f"{pep_mod_seq}|{gene.upper()}|{str(site)}"
-    #if gene.upper() == "ACTB":
-    #    print("ACTB_14")
+    #new_pep_mod_seq = __clean_pep_seq(rule, pep_mod_seq, user_PTMs)
+    key = f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}"
+    #if gene.upper() == "SQRDL":
+    #    print("SQRDL_379")
     if key in intensity_dict:
         old_intensities = intensity_dict[key]
         new_intensities = list()
@@ -196,6 +245,7 @@ def __add_intensity(intensity_dict: dict, pep_seq: str, pep_mod_seq: str, gene: 
         intensity_dict[key] = new_intensities
         return intensity_dict, False
     else:
+        '''
         breaks = finditer(rule[0], pep_mod_seq)
         cut_sites = []
         cut_peptides = []
@@ -227,12 +277,12 @@ def __add_intensity(intensity_dict: dict, pep_seq: str, pep_mod_seq: str, gene: 
             cut_peptides.append(pep_mod_seq[last_site:])
         # If the skipped portion has a cysteine, it should have its own entry
         i = 0
-        peps_with_C = 0
+        peps_with_mod = 0
         while i < len(cut_peptides):
-            if 'C' in cut_peptides[i]:
-                peps_with_C += 1
+            if any(user_PTM in cut_peptides[i] for user_PTM in user_PTMs):
+                peps_with_mod += 1
             i += 1
-        if peps_with_C > 1:
+        if peps_with_mod > 1:
             new_intensities = []
             for new_int in intensities:
                 if "#N/A" == new_int:
@@ -243,11 +293,13 @@ def __add_intensity(intensity_dict: dict, pep_seq: str, pep_mod_seq: str, gene: 
             # Puts the peak sums in the dictionary
             intensity_dict[key] = new_intensities
             return intensity_dict, True
-
+            
         # Check for subsegments in the dictionary and if there is a match, add to the original
         for pep in cut_peptides:  # TODO: I need to check all of the genes that match and make sure that they are the same, even though the order may be different
             new_key = f"{pep}|{gene.upper()}|{str(site)}"
-            if 'C' in pep and new_key in intensity_dict:
+            print(new_key in intensity_dict)
+            #if 'C' in pep and new_key in intensity_dict:
+            if any(user_PTM in pep for user_PTM in user_PTMs) and new_key in intensity_dict:
                 old_intensities = intensity_dict[new_key]
                 new_intensities = list()
                 i = 0
@@ -258,8 +310,6 @@ def __add_intensity(intensity_dict: dict, pep_seq: str, pep_mod_seq: str, gene: 
                     new_int = intensities[i]
                     if "#N/A" == new_int or "NaN" == new_int or not new_int:
                         new_int = 0
-                    #print(repr(old_int))
-                    #print(repr(new_int))
                     new_intensities.append(float(old_int) + float(new_int))
                     i += 1
                 # Adds in the number of combined peptide peaks (1 so far)
@@ -267,7 +317,7 @@ def __add_intensity(intensity_dict: dict, pep_seq: str, pep_mod_seq: str, gene: 
                 # Adds a new entry for these peaks
                 intensity_dict[new_key] = new_intensities
                 return intensity_dict, False
-        
+        '''
         new_intensities = []
         for new_int in intensities:
             if "#N/A" == new_int:
@@ -562,13 +612,17 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                     continue
                 intensity_header = row[intensity_start::2]  # Ideally, this would happen outside of this loop
 
+        new_user_PTMs = user_PTMs
+        if rollup_file == "maxquant":
+            new_user_PTMs = [ptm.lower()[:2] for ptm in user_PTMs]
+        new_pep_mod_seq = __clean_pep_seq(cleave_rules[enzyme], pep_mod_seq, new_user_PTMs)
         if genes_positions and len(genes_positions) == 1:
             gene, start_pos, unpid, protein_name = list(genes_positions)[0]
-            if not pep_mod_seq in mod_dict:
+            if not new_pep_mod_seq in mod_dict:
                 print("\033[91m {}\033[00m".format(f"{pep_seq} does not have the PTM(s) selected!"))
                 missing_PTM += 1
                 continue
-            mods = mod_dict[pep_mod_seq]
+            mods = mod_dict[new_pep_mod_seq]
             if not (any(mods) and set([m[0] for m in mods]) & set(user_PTMs)): 
                 continue
             for mod in list(set(mods)):
@@ -578,10 +632,10 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                 #if gene.upper() == "ACTL6A":
                 #    print("ACTL6A")
                 if use_intensities:
-                    intensity_dict, to_add = __add_intensity(intensity_dict, pep_seq, pep_mod_seq, 
-                                                             gene, site, intensities, cleave_rules[enzyme])
+                    intensity_dict, to_add = __add_intensity(intensity_dict, new_pep_mod_seq, 
+                                                             gene, site, intensities)
                 else:
-                    key = f"{pep_mod_seq}|{gene.upper()}|{str(site)}"
+                    key = f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}"
                     if key in intensity_dict:
                         to_add = False
                     else:
@@ -596,7 +650,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                             "", 
                             gene, 
                             raw_seq, 
-                            pep_mod_seq, 
+                            new_pep_mod_seq, 
                             annotDict[unpid] if unpid in annotDict else "", 
                             unpid
                             ])
@@ -610,7 +664,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                             "", 
                             "", 
                             raw_seq, 
-                            pep_mod_seq, 
+                            new_pep_mod_seq, 
                             annotDict[unpid] if unpid in annotDict else "", 
                             unpid
                             ])  # NOTE: I changed this from a tuple, so things might be different
@@ -624,11 +678,11 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             if not match[0] is None:  # Checks to see that there has been a match
                 if isinstance(match, tuple):  # Checks if this is just a single match.
                     gene = match[0]
-                    if not pep_mod_seq in mod_dict:
+                    if not new_pep_mod_seq in mod_dict:
                         print("\033[91m {}\033[00m".format(f"{pep_seq} does not have the PTM(s) selected!"))
                         missing_PTM += 1
                         continue
-                    mods = mod_dict[pep_mod_seq]
+                    mods = mod_dict[new_pep_mod_seq]
                     for mod in list(set(mods)):
                         if not mod[0] in user_PTMs:
                             continue
@@ -637,9 +691,11 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                         #    print("ACTL6A")
                         to_add = None
                         if use_intensities:
-                            intensity_dict, to_add = __add_intensity(intensity_dict, pep_seq, pep_mod_seq, match[0], site, intensities, cleave_rules[enzyme])
+                            intensity_dict, to_add = __add_intensity(intensity_dict, 
+                                                                     new_pep_mod_seq, match[0], 
+                                                                     site, intensities)
                         else:
-                            key = f"{pep_mod_seq}|{gene.upper()}|{str(site)}"
+                            key = f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}"
                             if key in intensity_dict:
                                 to_add = False
                             else:
@@ -654,7 +710,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                     "", 
                                     gene, 
                                     raw_seq, 
-                                    pep_mod_seq, 
+                                    new_pep_mod_seq, 
                                     annotDict[match[2]] if match[2] in annotDict else "", 
                                     match[2]
                                     ])
@@ -668,18 +724,18 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                     "", 
                                     "", 
                                     raw_seq, 
-                                    pep_mod_seq, 
+                                    new_pep_mod_seq, 
                                     annotDict[match[2]] if match[2] in annotDict else "", 
                                     match[2]
                                     ])
                                 if len(match[2]) >= 5:
                                     sparql_input.append(tuple((match[2], site, gene)))
                 else:  # There are multiple matches
-                    if not pep_mod_seq in mod_dict:
+                    if not new_pep_mod_seq in mod_dict:
                         print("\033[91m {}\033[00m".format(f"{pep_seq} does not have the PTM(s) selected!"))
                         missing_PTM += 1
                         continue
-                    mods = mod_dict[pep_mod_seq]
+                    mods = mod_dict[new_pep_mod_seq]
                     for mod in list(set(mods)):
                         if not mod[0] in user_PTMs:
                             continue
@@ -691,14 +747,16 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                         #gene_true_pos = f"{match[0][0]}|{match[0][1]+mod[1]}"
                         site = match[0][1] + mod[1]
                         if use_intensities:
-                            intensity_dict, to_add = __add_intensity(intensity_dict, pep_seq, pep_mod_seq, match[0][0], site, intensities, cleave_rules[enzyme])
+                            intensity_dict, to_add = __add_intensity(intensity_dict,
+                                                                     new_pep_mod_seq, match[0][0], 
+                                                                     site, intensities)
                         else:
-                            if any(f"{pep_mod_seq}|{gene.upper()}|{str(site)}" in intensity_dict for gene in additGenes):
+                            if any(f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}" in intensity_dict for gene in additGenes):
                                 to_add = False
                             else:
                                 to_add = True
                                 for gene in additGenes:
-                                    intensity_dict[f"{pep_mod_seq}|{gene.upper()}|{str(site)}"] = 0
+                                    intensity_dict[f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}"] = 0
                         if to_add:
                             additGenes.remove(match[0][0])
                             if isTarget:
@@ -709,7 +767,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                     ' '.join(additGenes), 
                                     ' '.join([i[0] for i in match]), 
                                     raw_seq, 
-                                    pep_mod_seq, 
+                                    new_pep_mod_seq, 
                                     annotDict[match[0][2]] if match[0][2] in annotDict else "", 
                                     ' '.join([i[2] for i in match])
                                     ])
@@ -723,7 +781,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                     ' '.join(additGenes), 
                                     "", 
                                     raw_seq, 
-                                    pep_mod_seq, 
+                                    new_pep_mod_seq, 
                                     annotDict[match[0][2]] if match[0][2] in annotDict else "", 
                                     ' '.join([i[2] for i in match])
                                     ])
