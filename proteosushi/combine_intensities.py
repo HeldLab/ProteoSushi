@@ -893,8 +893,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                             "ec", "rhea", "type", "comment"]
                 annotations_length -= 9
             '''
-            header2 += ["Position", "Length_Of_Sequence", "Range", "Region_Of_Interest", 
-                        "Catalyic_Activity", "Subcellular_Location", "Enzyme_Class", "rhea", "Secondary_Structure", 
+            header2 += ["Length_Of_Sequence", "Range", "Region_Of_Interest", 
+                        "Subcellular_Location", "Enzyme_Class", "rhea", "Secondary_Structure", 
                         "Active_Site_Annotation", "Alternative_Sequence_Annotation", 
                         "Chain_Annotation", "Compositional_Bias_Annotation", 
                         "Disulfide_Bond_Annotation", "Domain_Extent_Annotation", 
@@ -922,7 +922,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                     writable_row += [float(x)/N for x in intensities]
             if add_annotation:
                 try:
-                    writable_row += __compress_annotations(sparql_dict[i[8] + '|' + str(i[1])])[1:]
+                    compressed_annotations = __compress_annotations(sparql_dict[i[8] + '|' + str(i[1])])
+                    writable_row += compressed_annotations[2:5] + compressed_annotations[6:]
                 except KeyError:
                     #print(i[6] + '|' + str(i[1]) + " not in dict")
                     pass
