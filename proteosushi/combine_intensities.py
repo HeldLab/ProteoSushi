@@ -366,6 +366,8 @@ def parse_output(search_engine: str, search_engine_filepath: str) -> list:
         missed_cleavages = -1
         enzyme = ""
         PTMs = parse_generic.get_PTMs(search_engine_filepath)
+        if PTMs == -3:
+            return -3, None, None  # "A sequence in the Peptide Modified Sequence column is missing PTMs"
     elif rollup_file == "maxquant":
         MQ_dir = search_engine_filepath
         sum_file = os.path.join(MQ_dir, "summary.txt")
@@ -374,7 +376,7 @@ def parse_output(search_engine: str, search_engine_filepath: str) -> list:
     elif rollup_file == "mascot":
         enzyme, quant_range, var_mod_map, missed_cleavages = ps_utilities.parse_mascot(search_engine_filepath)
         PTMs = list(var_mod_map.keys())
-    else:
+    else:  # It shouldn't be able to get here
         assert False, "Not a valid file from search"
 
     return missed_cleavages, enzyme, PTMs
@@ -826,7 +828,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     # If the user chose, it combines the annotation onto the rollup results (eventually)
     if add_annotation:
         print("\033[95m {}\033[00m".format("\nQuerying Uniprot for Annotations!"))
-        batch = 50
+        batch = 5
         i = 0
         results_annotated = 0
         sparql_output_list = list()

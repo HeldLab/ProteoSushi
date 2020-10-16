@@ -44,6 +44,7 @@ def get_PTMs(sky_filename: str) -> list:
             mods = findall(r"(\w?\[.+?\])|(\w?\(.+?\))", mod_seq)
             #print(row)
             if len(mods) < 1:
+                return -3  # This will be there error listed below, but handled in the GUI
                 raise ValueError("A sequence in the Peptide Modified Sequence column is missing PTMs")
             for mod in mods[0]:
                 if mod == '':

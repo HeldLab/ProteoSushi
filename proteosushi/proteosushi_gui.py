@@ -343,6 +343,10 @@ class App(QMainWindow):
         if os.path.exists(filename):
             self.generic_filepath.setText(filename)
             missed_cleavages, enzyme, PTMs = parse_output("generic", filename)
+            if missed_cleavages == -3:
+                self.statusBar().showMessage("A sequence in the Peptide Modified Sequence column is missing PTMs")
+                self.statusBar().setStyleSheet("background-color : red")
+                return
             #Remove the previous PTM checkboxes (if there were any)
             if self.PTM_CBs != []:
                 for cb in self.PTM_CBs:
