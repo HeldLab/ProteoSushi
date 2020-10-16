@@ -217,14 +217,15 @@ WHERE {
 
     # Grabs the annotation by parts to maximize the amount we receive from the uniprot server
     region_annot = request_annot(new_entry_length_pos_query)
-    print(region_annot.head(15))
+    #print(region_annot.head(15))
     #if region_annot.empty:
     region_annot_stripped = request_annot(query_stripped_entry_pos)
-    print(region_annot_stripped.head(15))
+    #print(region_annot_stripped.head(15))
     if len(region_annot.index) < len(region_annot_stripped.index):  # This should check to see if there are rows missing in the full query
-        region_annot.append(region_annot_stripped)
+        region_annot = region_annot.append(region_annot_stripped)
+        #print(region_annot.head(30))
         region_annot.drop_duplicates(subset=["entry", " position", " begin", " end"], keep="first", inplace=True)
-    print(region_annot.head(15))
+    #print(region_annot.head(15))
     catalytic_annot = request_annot(query_catalytic)
     subcell_annot = request_annot(query_entry_subcellular)
     extras_annot = request_annot(query_ec_rhea_type)

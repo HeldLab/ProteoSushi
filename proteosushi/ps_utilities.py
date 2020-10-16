@@ -141,7 +141,7 @@ def digest_if_needed(proteome_fasta_filepath: str, enzyme: str, mcleave: bool, m
             digest_results = set().union(digest_results_true,
                                          digest_results_false)
         else:
-            digest_results = digest(seq, minlen, maxlen, mcleave, mexcise,
+            digest_results = digest(seq, minlen, maxlen, mcleave, m_excise,
                                     li_swap=True, rule_to_use=rule,
                                     reverse=False)
         for result in digest_results:

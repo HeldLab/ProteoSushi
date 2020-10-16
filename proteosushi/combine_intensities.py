@@ -201,48 +201,49 @@ def __clean_pep_seq(rule: tuple, pep_mod_seq: str, user_PTMs: list) -> str:
         new_pep_mod_seq = ''.join(cut_peptides[start:end])
     return new_pep_mod_seq
 
-def __add_intensity(intensity_dict: dict, new_pep_mod_seq: str, gene: str, site: int, 
+def __add_intensity(intensity_dict: dict, new_pep_mod_seq: str, genes: list, site: int, 
                     intensities: list) -> list:
     """Adds the intensity of the site to the dictionary, if entry exists, adds to the numbers
 
     Arguments:
         intensity_dict {dict} -- a dictionary connecting the pep/gene/site to intensity
         pep_mod_seq {str} -- the modified sequence of the peptide
-        gene {str} -- the gene name that the peptide belongs to
+        genes {list} -- a list of gene names associated with this peptide
         site {int} -- the position of the mod in the protein
         intensities {list} -- 
     Returns:
         dict -- the intensity_dict following the update
         bool -- True if a new entry was added, False if not
     """
+    for gene in genes:
     #new_pep_mod_seq = __clean_pep_seq(rule, pep_mod_seq, user_PTMs)
-    key = f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}"
-    #if gene.upper() == "SQRDL":
-    #    print("SQRDL_379")
-    if key in intensity_dict:
-        old_intensities = intensity_dict[key]
-        new_intensities = list()
-        new_ints = list()
-        i = 0
-        # Combines the new values for the peak
-        while i < len(intensities):
-            old_int = old_intensities[i]
-            if not old_int or "#N/A" == old_int or "NaN" == old_int or not old_int:
-                old_int = 0
-            new_int = intensities[i]
-            if not new_int or "#N/A" == new_int or "NaN" == new_int or not new_int:
-                new_int = 0
-            new_ints.append(new_int)
-            #print(f"values {repr(old_int)}, {repr(new_int)}")
-            new_intensities.append(float(old_int) + float(new_int))
-            i += 1
-        # Adds to the number of combined peptides for averaging later (if needed)
-        if any(new_ints):
-            new_intensities.append(int(old_intensities[i]) + 1)  # NOTE: what does it mean if this is out of range?
-        else:
-            new_intensities.append(int(old_intensities[i]))
-        # Replaces the combined numbers in the dictionary
-        intensity_dict[key] = new_intensities
+        key = f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}"
+        #if gene.upper() == "SQRDL":
+        #    print("SQRDL_379")
+        if key in intensity_dict:
+            old_intensities = intensity_dict[key]
+            new_intensities = list()
+            new_ints = list()
+            i = 0
+            # Combines the new values for the peak
+            while i < len(intensities):
+                old_int = old_intensities[i]
+                if not old_int or "#N/A" == old_int or "NaN" == old_int or not old_int:
+                    old_int = 0
+                new_int = intensities[i]
+                if not new_int or "#N/A" == new_int or "NaN" == new_int or not new_int:
+                    new_int = 0
+                new_ints.append(new_int)
+                #print(f"values {repr(old_int)}, {repr(new_int)}")
+                new_intensities.append(float(old_int) + float(new_int))
+                i += 1
+            # Adds to the number of combined peptides for averaging later (if needed)
+            if any(new_ints):
+                new_intensities.append(int(old_intensities[i]) + 1)  # NOTE: what does it mean if this is out of range?
+            else:
+                new_intensities.append(int(old_intensities[i]))
+            # Replaces the combined numbers in the dictionary
+            intensity_dict[key] = new_intensities
         return intensity_dict, False
     else:
         '''
@@ -566,8 +567,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             continue
         total_seqs += 1
         raw_seq = row[sequence_index]
-        #if raw_seq == "VCNGIGIGEFK":
-        #    print("start")
+        if raw_seq == "ILVALCGGN":
+            print("start")
         pep_mod_seq = row[modified_sequence_index]
         pep_seq = row[sequence_index].replace("L","I")
         if pep_seq is None:
@@ -630,12 +631,12 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             for mod in list(set(mods)):
                 if not mod[0] in user_PTMs:
                     continue
-                site = start_pos + mod[1]
+                site = start_pos + mod[1] + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
                 #if gene.upper() == "ACTL6A":
                 #    print("ACTL6A")
                 if use_intensities:
                     intensity_dict, to_add = __add_intensity(intensity_dict, new_pep_mod_seq, 
-                                                             gene, site, intensities)
+                                                             [gene], site, intensities)
                 else:
                     key = f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}"
                     if key in intensity_dict:
@@ -688,13 +689,13 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                     for mod in list(set(mods)):
                         if not mod[0] in user_PTMs:
                             continue
-                        site = match[1] + mod[1]
+                        site = match[1] + mod[1] + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
                         #if gene.upper() == "ACTL6A":
                         #    print("ACTL6A")
                         to_add = None
                         if use_intensities:
                             intensity_dict, to_add = __add_intensity(intensity_dict, 
-                                                                     new_pep_mod_seq, match[0], 
+                                                                     new_pep_mod_seq, [match[0]], 
                                                                      site, intensities)
                         else:
                             key = f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}"
@@ -747,10 +748,10 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                         assert len(additGenes) > 1, "The # of matches should be >1, but isn't"
                         additGenes = list(set(additGenes))
                         #gene_true_pos = f"{match[0][0]}|{match[0][1]+mod[1]}"
-                        site = match[0][1] + mod[1]
+                        site = match[0][1] + mod[1] + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
                         if use_intensities:
                             intensity_dict, to_add = __add_intensity(intensity_dict,
-                                                                     new_pep_mod_seq, match[0][0], 
+                                                                     new_pep_mod_seq, additGenes, 
                                                                      site, intensities)
                         else:
                             if any(f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}" in intensity_dict for gene in additGenes):
@@ -801,7 +802,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             unmatched_sequences.append(tuple([raw_seq, pep_mod_seq]))
     data_file.close()
     # Prints the stats from the rollup
-    print("\033[93m {}\033[00m".format(f"\nUnmatched Peptides: {unmatched_peps}\nMissing PTMs: {missing_PTM}\nTotal Peptides: {total_seqs}"))
+    print("\033[93m {}\033[00m".format(f"\nUnmatched Peptides: {unmatched_peps}\nMissing Selected PTMs: {missing_PTM}\nTotal Peptides: {total_seqs}"))
     '''
     ########################
     #Just to annotate EGFR #
@@ -828,7 +829,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     # If the user chose, it combines the annotation onto the rollup results (eventually)
     if add_annotation:
         print("\033[95m {}\033[00m".format("\nQuerying Uniprot for Annotations!"))
-        batch = 5
+        batch = 50
         i = 0
         results_annotated = 0
         sparql_output_list = list()

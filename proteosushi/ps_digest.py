@@ -125,6 +125,9 @@ def digest(sequence: str, min_length: int, max_length: int,
         cut_set {set} -- Set of integers (hashed peptides) that result from the
         cut rules used.
     '''
+    #AMVSEFLKQAWFIENEEQEYVQTVKSSKGGPGSAVSPYPTFNPSSDVAALHKAIMVKGVDEATIIDILTKRNNAQRQQIKAAYLQETGKPLDETLKKALTGHLEEVVLALLKTPAQFDADELRAAMKGLGTDEDTLIEILASRTNKEIRDINRVYREELKRDLAKDITSDTSGDFRNALLSLAKGDRSEDFGVNEDLADSDARALYEAGERRKGTDVNVFNTILTTRSYPQLRRVFQKYTKYSKHDMNKVLDLELKGDIEKCLTAIVKCATSKPAFFAEKLHQAMKGVGTRHKALIRIMVSRSEIDMNDIKAFYQKMYGISLCQAILDETKGDYEKILVALCGGN
+    if "ILVALCGGN" in sequence:
+        print("ILVALCGGN")
     site_specificity, cut_terminus = rule_to_use
     # Set parameters for a decoy database; only used for ProteoClade really
     if reverse:
@@ -151,9 +154,10 @@ def digest(sequence: str, min_length: int, max_length: int,
             last_site = i
         cut_peptides.append(sequence[last_site:])
     cut_and_missed = list(cut_peptides)  # duplicate to add to for iteration
-    begin_sites = [y - len(x) + 2 for x, y in zip(cut_peptides, cut_sites)]
-    if begin_sites:
-        begin_sites.append(begin_sites[-1] + 1)
+    #begin_sites = [y - len(x) + 2 for x, y in zip(cut_peptides, cut_sites)]  # Wouldn't it be simpler to add a 1 first and go from there?
+    begin_sites = [0] + [y + 2 for x, y in zip(cut_peptides, cut_sites)]
+    #if begin_sites:
+    #    begin_sites.append(begin_sites[-1] + 1)
     cut_and_missed = [(seq, pos)
                       for seq, pos in zip(cut_and_missed, begin_sites)]
     missed_counter = 1
@@ -172,7 +176,7 @@ def digest(sequence: str, min_length: int, max_length: int,
         cut_set = set([
             (i[0].replace("L", "I"), i[1])
             for i in cut_and_missed
-            if min_length <= len(i[0]) <= max_length
+            if min_length <= len(i[0]) <= max_length  # Chaining multiple comparators is allowed in python... technically.
             ])
     else:
         cut_set = set([
