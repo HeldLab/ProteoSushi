@@ -130,7 +130,8 @@ def compile_data(search_engine_filepath: str, user_PTMs: list) -> list:
     header = next(tsv_reader)
     sequence = header.index("Sequence")
     mod_seq = header.index("Modified sequence")
-    reporter_intensities = [i for i, h in enumerate(header) if "intensit" in h.lower()]
+    reporter_intensities = [i for i, h in enumerate(header) if "intensit" in h.lower() and 
+                                                               not "max intensity m/z" in h.lower()]
     #reporter_intensity = header.index("Intensity")
     evidence_file.close()
     return sequence, mod_seq, mod_dict, reporter_intensities, evidence_filename, PTMs

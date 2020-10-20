@@ -136,3 +136,5 @@ proteosushi/.~lock.maxquant_rollup.csv#
 proteosushi/9606_annot_score.tsv
 proteosushi/examples/txt/evidence.txt
 proteosushi/examples/txt/summary.txt
+.~lock.maxquant_rollup.csv#
+unmatched_sequences_maxquant

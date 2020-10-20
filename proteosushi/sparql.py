@@ -226,7 +226,7 @@ WHERE {
         #print(region_annot.head(30))
         region_annot.drop_duplicates(subset=["entry", " position", " begin", " end"], keep="first", inplace=True)
     #print(region_annot.head(15))
-    catalytic_annot = request_annot(query_catalytic)
+    #catalytic_annot = request_annot(query_catalytic)
     subcell_annot = request_annot(query_entry_subcellular)
     extras_annot = request_annot(query_ec_rhea_type)
     # Creates blank dataframes if uniprot did not return that info
@@ -234,10 +234,10 @@ WHERE {
         region_annot = pd.DataFrame(columns=["entry", " position", " lengthOfSequence", " begin", " end", " regionOfInterest"])
     else:
         region_annot.dropna(how="all", inplace=True)
-    if catalytic_annot is None:
-        catalytic_annot = pd.DataFrame(columns=["entry", " position", " catalyticActivity"])
-    else:
-        catalytic_annot.dropna(how="any", inplace=True)
+    #if catalytic_annot is None:
+    #    catalytic_annot = pd.DataFrame(columns=["entry", " position", " catalyticActivity"])
+    #else:
+    #    catalytic_annot.dropna(how="any", inplace=True)
     if subcell_annot is None:
         subcell_annot = pd.DataFrame(columns=["entry", " location"])
     else:
@@ -251,8 +251,8 @@ WHERE {
     full_annot = region_annot
     del(region_annot)
     try:
-        full_annot = full_annot.merge(catalytic_annot, how="outer", on=["entry", " position"])
-        del(catalytic_annot)
+        #full_annot = full_annot.merge(catalytic_annot, how="outer", on=["entry", " position"])
+        #del(catalytic_annot)
         full_annot = full_annot.merge(subcell_annot, how="outer", on="entry")
         del(subcell_annot)
         full_annot = full_annot.merge(extras_annot, how="outer", on=["entry", " position"])
@@ -377,7 +377,7 @@ def process_sparql_output(output_df, sparql_dict: dict) -> list:
             current_description = enzyme_dat_list[line_number + 1][5:]
             ec_id_to_description_dict[current_id] = current_description
 
-    #entry,lengthOfSequence,catalyicActivity,location,ec,rhea,type,comment,position,begin,end,regionOfInterest
+    #entry,position,lengthOfSequence,begin,end,regionOfInterest,location,ec,rhea,type,comment
     #header = output_lines.colnames()
     #print(output_lines.columns)
     

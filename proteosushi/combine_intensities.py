@@ -14,7 +14,7 @@ from proteoSushi_constants import cleave_rules, annotation_type_dict, secondary_
 #from ruputilities import load_pepdict, parse_mascot, parse_maxquant_summary
 import ps_utilities
 
-
+'''
 def __promptCleavenMissed() -> list:
     """Prompts the user for the cleavage rule and max missed cleavages
     Returns:
@@ -53,10 +53,11 @@ def __promptMissed() -> int:
         sleep(.5)
         return __promptMissed()
     return missed_cleavages
-
+'''
 def __chooseHit(genes_positions: list, target_genes: list, annot_dict: dict, use_target: bool) -> list:
-    """chooses which of the matched sequences to use. If there is one target gene, it will be that one.
+    """Chooses which of the matched sequences to use. If there is one target gene, it will be that one.
     If there are more than one non-target, annotation score decides. If there are more than one target, annotation score decides.
+    
     Arguments:
         genes_positions {list} -- a list of tuples with gene and position info
         target_genes {list} -- a list of strings of target gene names
@@ -215,6 +216,7 @@ def __add_intensity(intensity_dict: dict, new_pep_mod_seq: str, genes: list, sit
         dict -- the intensity_dict following the update
         bool -- True if a new entry was added, False if not
     """
+    to_adds = []
     for gene in genes:
     #new_pep_mod_seq = __clean_pep_seq(rule, pep_mod_seq, user_PTMs)
         key = f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}"
@@ -244,91 +246,92 @@ def __add_intensity(intensity_dict: dict, new_pep_mod_seq: str, genes: list, sit
                 new_intensities.append(int(old_intensities[i]))
             # Replaces the combined numbers in the dictionary
             intensity_dict[key] = new_intensities
-        return intensity_dict, False
-    else:
-        '''
-        breaks = finditer(rule[0], pep_mod_seq)
-        cut_sites = []
-        cut_peptides = []
-        for breakp in breaks:
-            cut_sites.append(breakp.start())
-        if len(cut_sites) < 1:
-            new_intensities = []
-            for new_int in intensities:
-                if "#N/A" == new_int:
-                    new_int = 0
-                new_intensities.append(new_int)
-            # Adds to the number of combined peptides for averaging later (if needed)
-            new_intensities.append(1)
-            # Replaces the combined numbers in the dictionary
-            intensity_dict[key] = new_intensities
-            return intensity_dict, True
-
-        # Find sites
-        last_site = 0
-        if rule[1].lower() == 'c':
-            for i in cut_sites:
-                cut_peptides.append(pep_mod_seq[last_site:i+1])
-                last_site = i + 1
-            cut_peptides.append(pep_mod_seq[last_site:])
-        elif rule[1].lower() == 'n':
-            for i in cut_sites:
-                cut_peptides.append(pep_mod_seq[last_site:i])
-                last_site = i
-            cut_peptides.append(pep_mod_seq[last_site:])
-        # If the skipped portion has a cysteine, it should have its own entry
-        i = 0
-        peps_with_mod = 0
-        while i < len(cut_peptides):
-            if any(user_PTM in cut_peptides[i] for user_PTM in user_PTMs):
-                peps_with_mod += 1
-            i += 1
-        if peps_with_mod > 1:
-            new_intensities = []
-            for new_int in intensities:
-                if "#N/A" == new_int:
-                    new_int = 0
-                new_intensities.append(new_int)
-            # Adds in the number of peptides combined (1 so far)
-            new_intensities.append(1)
-            # Puts the peak sums in the dictionary
-            intensity_dict[key] = new_intensities
-            return intensity_dict, True
-            
-        # Check for subsegments in the dictionary and if there is a match, add to the original
-        for pep in cut_peptides:  # TODO: I need to check all of the genes that match and make sure that they are the same, even though the order may be different
-            new_key = f"{pep}|{gene.upper()}|{str(site)}"
-            print(new_key in intensity_dict)
-            #if 'C' in pep and new_key in intensity_dict:
-            if any(user_PTM in pep for user_PTM in user_PTMs) and new_key in intensity_dict:
-                old_intensities = intensity_dict[new_key]
-                new_intensities = list()
-                i = 0
-                while i < len(intensities):
-                    old_int = old_intensities[i]
-                    if "#N/A" == old_int or "NaN" == old_int or not old_int:
-                        old_int = 0
-                    new_int = intensities[i]
-                    if "#N/A" == new_int or "NaN" == new_int or not new_int:
+            to_adds.append(False)
+        else:
+            '''
+            breaks = finditer(rule[0], pep_mod_seq)
+            cut_sites = []
+            cut_peptides = []
+            for breakp in breaks:
+                cut_sites.append(breakp.start())
+            if len(cut_sites) < 1:
+                new_intensities = []
+                for new_int in intensities:
+                    if "#N/A" == new_int:
                         new_int = 0
-                    new_intensities.append(float(old_int) + float(new_int))
-                    i += 1
-                # Adds in the number of combined peptide peaks (1 so far)
+                    new_intensities.append(new_int)
+                # Adds to the number of combined peptides for averaging later (if needed)
                 new_intensities.append(1)
-                # Adds a new entry for these peaks
-                intensity_dict[new_key] = new_intensities
-                return intensity_dict, False
-        '''
-        new_intensities = []
-        for new_int in intensities:
-            if "#N/A" == new_int:
-                new_int = 0
-            new_intensities.append(new_int)
-        # Adds in the number of combined peptide peaks (1 so far)
-        new_intensities.append(1)
-        # Adds a new entry for these peaks
-        intensity_dict[key] = new_intensities
-        return intensity_dict, True
+                # Replaces the combined numbers in the dictionary
+                intensity_dict[key] = new_intensities
+                return intensity_dict, True
+
+            # Find sites
+            last_site = 0
+            if rule[1].lower() == 'c':
+                for i in cut_sites:
+                    cut_peptides.append(pep_mod_seq[last_site:i+1])
+                    last_site = i + 1
+                cut_peptides.append(pep_mod_seq[last_site:])
+            elif rule[1].lower() == 'n':
+                for i in cut_sites:
+                    cut_peptides.append(pep_mod_seq[last_site:i])
+                    last_site = i
+                cut_peptides.append(pep_mod_seq[last_site:])
+            # If the skipped portion has a cysteine, it should have its own entry
+            i = 0
+            peps_with_mod = 0
+            while i < len(cut_peptides):
+                if any(user_PTM in cut_peptides[i] for user_PTM in user_PTMs):
+                    peps_with_mod += 1
+                i += 1
+            if peps_with_mod > 1:
+                new_intensities = []
+                for new_int in intensities:
+                    if "#N/A" == new_int:
+                        new_int = 0
+                    new_intensities.append(new_int)
+                # Adds in the number of peptides combined (1 so far)
+                new_intensities.append(1)
+                # Puts the peak sums in the dictionary
+                intensity_dict[key] = new_intensities
+                return intensity_dict, True
+                
+            # Check for subsegments in the dictionary and if there is a match, add to the original
+            for pep in cut_peptides:  # TODO: I need to check all of the genes that match and make sure that they are the same, even though the order may be different
+                new_key = f"{pep}|{gene.upper()}|{str(site)}"
+                print(new_key in intensity_dict)
+                #if 'C' in pep and new_key in intensity_dict:
+                if any(user_PTM in pep for user_PTM in user_PTMs) and new_key in intensity_dict:
+                    old_intensities = intensity_dict[new_key]
+                    new_intensities = list()
+                    i = 0
+                    while i < len(intensities):
+                        old_int = old_intensities[i]
+                        if "#N/A" == old_int or "NaN" == old_int or not old_int:
+                            old_int = 0
+                        new_int = intensities[i]
+                        if "#N/A" == new_int or "NaN" == new_int or not new_int:
+                            new_int = 0
+                        new_intensities.append(float(old_int) + float(new_int))
+                        i += 1
+                    # Adds in the number of combined peptide peaks (1 so far)
+                    new_intensities.append(1)
+                    # Adds a new entry for these peaks
+                    intensity_dict[new_key] = new_intensities
+                    return intensity_dict, False
+            '''
+            new_intensities = []
+            for new_int in intensities:
+                if "#N/A" == new_int:
+                    new_int = 0
+                new_intensities.append(new_int)
+            # Adds in the number of combined peptide peaks (1 so far)
+            new_intensities.append(1)
+            # Adds a new entry for these peaks
+            intensity_dict[key] = new_intensities
+            to_adds.append(True)
+    return intensity_dict, any(to_adds)
 
 def __load_annot_dict(annot_file: str) -> dict:
     """loads the annotation score file to make a dict that connects gene to annotation score
@@ -391,16 +394,22 @@ def __compress_annotations(annotation_list: list) -> list:
     Returns:
         list -- the compressed list of annotations
     """
+    #entry,position,lengthOfSequence,begin,end,regionOfInterest,location,ec,rhea,type,comment(,begin,end,...)
+    # NOTE: you may need to update these numbers if you add or delete a column
     begin_index = 3
     end_index = 4
-    type_index = 10
-    comment_index = 11
-    length_uniprot_annotations = 9
-
+    type_index = 9
+    comment_index = 10
+    length_uniprot_annotations = 8  # The number of 
+    # Grabs the entry, position, and lengthofsequence columns
     new_annotations = annotation_list[:begin_index]
+    # Compresses the begin and end columns into a range column
     new_annotations.append(f"{annotation_list[begin_index]}-{annotation_list[end_index]}")
+    # Adds the rest of the columns (up to type)
     new_annotations += annotation_list[end_index+1:type_index]
+    # Adds a blank spot for each annotation (as listed in proteosushi_constants.py)
     new_annotations += [""]*len(annotation_type_dict)
+
     try:  # Attempts to put the comment in the appropriate column using the type as reference
         new_annotations[annotation_type_dict[annotation_list[type_index]] + length_uniprot_annotations] = annotation_list[comment_index]
     except KeyError:
@@ -409,16 +418,16 @@ def __compress_annotations(annotation_list: list) -> list:
         else:
             new_annotations[annotation_type_dict["Other"] + length_uniprot_annotations] = annotation_list[comment_index]
 
+    # NOTE: you will need to update these numbers if you add or remove a column from query
     new_begin_index = begin_index - 3
     new_end_index = end_index - 3
     range_index = 3
     region_index = 4
-    catalytic_index = 5
-    location_index = 6
-    ec_index = 7
-    rhea_index = 8
-    new_type_index = 9
-    new_comment_index = 10
+    location_index = 5
+    ec_index = 6
+    rhea_index = 7
+    new_type_index = 8
+    new_comment_index = 9
     secondary_structure = ""
     #index_fix = 1  # Fixes the index after I combine the begin and end into range
     i = 1  # Basically which group it is on
@@ -427,11 +436,11 @@ def __compress_annotations(annotation_list: list) -> list:
             new_annotations[range_index] += f",{annotation_list[new_begin_index+(i*length_uniprot_annotations) + 3]}-{annotation_list[new_end_index+(i*length_uniprot_annotations)+3]}"
         if not f"{annotation_list[region_index-2+(i*length_uniprot_annotations) + 3]}" in new_annotations[region_index].split(','):
             new_annotations[region_index] += f",{annotation_list[region_index-2+(i*length_uniprot_annotations) + 3]}"
-        if annotation_list[catalytic_index-2+(i*length_uniprot_annotations)+3] != new_annotations[catalytic_index]:
-            if annotation_list[catalytic_index-2+(i*length_uniprot_annotations)+3] == "nan":
-                new_annotations[catalytic_index] += ','
-            else:
-                new_annotations[catalytic_index] += f",{annotation_list[catalytic_index-2+(i*length_uniprot_annotations)+3]}"
+        #if annotation_list[catalytic_index-2+(i*length_uniprot_annotations)+3] != new_annotations[catalytic_index]:
+        #    if annotation_list[catalytic_index-2+(i*length_uniprot_annotations)+3] == "nan":
+        #        new_annotations[catalytic_index] += ','
+        #    else:
+        #        new_annotations[catalytic_index] += f",{annotation_list[catalytic_index-2+(i*length_uniprot_annotations)+3]}"
         if not f"{annotation_list[location_index-2+(i*length_uniprot_annotations)+3]}" in new_annotations[location_index].split(','):
             new_annotations[location_index] += f",{annotation_list[location_index-2+(i*length_uniprot_annotations)+3]}"
         if not f"{annotation_list[ec_index-2+(i*length_uniprot_annotations)+3]}" in new_annotations[ec_index].split(','):
@@ -567,7 +576,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             continue
         total_seqs += 1
         raw_seq = row[sequence_index]
-        if raw_seq == "ILVALCGGN":
+        if raw_seq == "AVYTQDCPLAAAK":
             print("start")
         pep_mod_seq = row[modified_sequence_index]
         pep_seq = row[sequence_index].replace("L","I")
@@ -577,6 +586,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         genes_positions = pep_dict.get(pep_seq)
         if use_intensities and rollup_file == "generic":
             intensities = [e for i, e in enumerate(row) if i in intensity_start]
+            # If there is no intensity, skip that site
             if intensities == '' or intensities[0] == '':
                 continue
             intensity_header = [e for i, e in enumerate(header) if i in intensity_start]
@@ -586,6 +596,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             if use_intensities:
                 #intensities = row[intensity_start]
                 intensities = [e for i, e in enumerate(row) if i in intensity_start]
+                # If there is no intensity, skip that site
                 if intensities == '' or intensities[0] == '':
                     continue
                 #intensities = [intensities]
@@ -607,10 +618,12 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                 if len(row) < len(header):  # If the row is cut short (of the intensity cells), skip to the next one
                     continue
                 while intensity_start < len(header) and '/' in row[intensity_start]:
-                    intensity_start += 2  # TODO: See if you can send this as an error to the GUI
+                    intensity_start += 2  # 
+                # NOTE: This is now an error to the GUI and this line of code shouldn't run.
                 assert intensity_start < len(header), "Mascot intensity values may be missing, please check"
 
                 intensities = row[intensity_start+1::2]
+                # If there is no intensity, skip that site
                 if intensities[0] == "---":  # If there are no intensity values in this line, go to the next one
                     continue
                 intensity_header = row[intensity_start::2]  # Ideally, this would happen outside of this loop
@@ -634,7 +647,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                 site = start_pos + mod[1] + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
                 #if gene.upper() == "ACTL6A":
                 #    print("ACTL6A")
-                if use_intensities:
+                if use_intensities:  # If the user chose to combine/average intensities
                     intensity_dict, to_add = __add_intensity(intensity_dict, new_pep_mod_seq, 
                                                              [gene], site, intensities)
                 else:
@@ -704,7 +717,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                             else:
                                 to_add = True
                                 intensity_dict[key] = 0
-                        if to_add:  # NOTE: Wait, what does this do if it is not supposed to add the intensity? Isn't it supposed to make its own row
+                        if to_add:
                             if isTarget:
                                 gene_results.append([
                                     gene, 
@@ -794,10 +807,10 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                         ])
                                     if len(current_match[2]) >= 5:
                                         sparql_input.append(tuple((current_match[2], site, current_match[0])))
-            else:
+            else:  # NOTE: it generally shouldn't get here
                 unmatched_peps += 1
                 unmatched_sequences.append(tuple([raw_seq, pep_mod_seq]))
-        else:
+        else:  # There was no match for the peptide in the pepdict
             unmatched_peps += 1
             unmatched_sequences.append(tuple([raw_seq, pep_mod_seq]))
     data_file.close()
@@ -893,7 +906,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                             "ec", "rhea", "type", "comment"]
                 annotations_length -= 9
             '''
-            header2 += ["Length_Of_Sequence", "Range", "Region_Of_Interest", 
+            header2 += ["Length_Of_Sequence", "Range_of_Interest", "Region_of_Interest", 
                         "Subcellular_Location", "Enzyme_Class", "rhea", "Secondary_Structure", 
                         "Active_Site_Annotation", "Alternative_Sequence_Annotation", 
                         "Chain_Annotation", "Compositional_Bias_Annotation", 
