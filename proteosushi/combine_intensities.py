@@ -248,79 +248,6 @@ def __add_intensity(intensity_dict: dict, new_pep_mod_seq: str, genes: list, sit
             intensity_dict[key] = new_intensities
             to_adds.append(False)
         else:
-            '''
-            breaks = finditer(rule[0], pep_mod_seq)
-            cut_sites = []
-            cut_peptides = []
-            for breakp in breaks:
-                cut_sites.append(breakp.start())
-            if len(cut_sites) < 1:
-                new_intensities = []
-                for new_int in intensities:
-                    if "#N/A" == new_int:
-                        new_int = 0
-                    new_intensities.append(new_int)
-                # Adds to the number of combined peptides for averaging later (if needed)
-                new_intensities.append(1)
-                # Replaces the combined numbers in the dictionary
-                intensity_dict[key] = new_intensities
-                return intensity_dict, True
-
-            # Find sites
-            last_site = 0
-            if rule[1].lower() == 'c':
-                for i in cut_sites:
-                    cut_peptides.append(pep_mod_seq[last_site:i+1])
-                    last_site = i + 1
-                cut_peptides.append(pep_mod_seq[last_site:])
-            elif rule[1].lower() == 'n':
-                for i in cut_sites:
-                    cut_peptides.append(pep_mod_seq[last_site:i])
-                    last_site = i
-                cut_peptides.append(pep_mod_seq[last_site:])
-            # If the skipped portion has a cysteine, it should have its own entry
-            i = 0
-            peps_with_mod = 0
-            while i < len(cut_peptides):
-                if any(user_PTM in cut_peptides[i] for user_PTM in user_PTMs):
-                    peps_with_mod += 1
-                i += 1
-            if peps_with_mod > 1:
-                new_intensities = []
-                for new_int in intensities:
-                    if "#N/A" == new_int:
-                        new_int = 0
-                    new_intensities.append(new_int)
-                # Adds in the number of peptides combined (1 so far)
-                new_intensities.append(1)
-                # Puts the peak sums in the dictionary
-                intensity_dict[key] = new_intensities
-                return intensity_dict, True
-                
-            # Check for subsegments in the dictionary and if there is a match, add to the original
-            for pep in cut_peptides:  # TODO: I need to check all of the genes that match and make sure that they are the same, even though the order may be different
-                new_key = f"{pep}|{gene.upper()}|{str(site)}"
-                print(new_key in intensity_dict)
-                #if 'C' in pep and new_key in intensity_dict:
-                if any(user_PTM in pep for user_PTM in user_PTMs) and new_key in intensity_dict:
-                    old_intensities = intensity_dict[new_key]
-                    new_intensities = list()
-                    i = 0
-                    while i < len(intensities):
-                        old_int = old_intensities[i]
-                        if "#N/A" == old_int or "NaN" == old_int or not old_int:
-                            old_int = 0
-                        new_int = intensities[i]
-                        if "#N/A" == new_int or "NaN" == new_int or not new_int:
-                            new_int = 0
-                        new_intensities.append(float(old_int) + float(new_int))
-                        i += 1
-                    # Adds in the number of combined peptide peaks (1 so far)
-                    new_intensities.append(1)
-                    # Adds a new entry for these peaks
-                    intensity_dict[new_key] = new_intensities
-                    return intensity_dict, False
-            '''
             new_intensities = []
             for new_int in intensities:
                 if "#N/A" == new_int:
@@ -842,7 +769,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     # If the user chose, it combines the annotation onto the rollup results (eventually)
     if add_annotation:
         print("\033[95m {}\033[00m".format("\nQuerying Uniprot for Annotations!"))
-        batch = 50
+        batch = 10
         i = 0
         results_annotated = 0
         sparql_output_list = list()
@@ -852,11 +779,17 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         while i + batch <= len(sparql_input):
             # Makes the request and sends it to uniprot
             batch_output = sparql.sparql_request(sparql_input[i:i+batch])
+
+            #If there is a 502 error, send that to the GUI to display
+            if isinstance(batch_output, int) and batch_output == 502:
+                return 502
+
             # If after all attempts to get annotations for this batch has failed, this is reported and the next batch will be sent
             if batch_output is None or (not isinstance(batch_output, str) and batch_output.empty):
                 print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+batch+1} not annotated!"))
                 i += batch
                 continue
+
             # This processes and combines the annotations to 1 per site
             sparql_output, sparql_dict = sparql.process_sparql_output(batch_output, sparql_dict)
             if not sparql_output:
@@ -868,6 +801,11 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             results_annotated += batch
             print("\033[96m {}\033[00m" .format(f"{round(float(results_annotated)/len(sparql_input)*100, 2)}% of results annotated"))
         batch_output = sparql.sparql_request(sparql_input[i:])
+
+        #If there is a 502 error, send that to the GUI to display
+        if isinstance(batch_output, int) and batch_output == 502:
+            return 502
+
         if batch_output is None or (not isinstance(batch_output, str) and batch_output.empty):
             print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+len(sparql_input[i:])+1} not annotated!"))
             pass

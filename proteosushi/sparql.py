@@ -52,6 +52,8 @@ def sparql_request(unpid_site_list: list):
     for tup in unpid_site_list:
         if len(tup) >= 2 and tup[1] == '0':
             tup[1] = '1'
+        if tup[0] == "P60709" or tup[0] == "P63261":
+            print("Multiple")
         if len(tup[0]) >= 5:
             unpid_site_list_str += f"(uniprotkb:{tup[0]} {tup[1]})\n"
     # TODO: Delete this later
@@ -258,7 +260,10 @@ WHERE {
         full_annot = full_annot.merge(extras_annot, how="outer", on=["entry", " position"])
         del(extras_annot)
     except KeyError:
-        print(full_annot)
+        print(full_annot.head(2))
+        #print(isinstance(full_annot, pd.DataFrame))
+        if "502 Proxy Error" in full_annot.iloc[1][0]:
+            return 502
         sys.exit()
     return full_annot
 

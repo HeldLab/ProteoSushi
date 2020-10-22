@@ -459,7 +459,7 @@ class App(QMainWindow):
                 if self.maxquant_RB.isChecked() and os.path.exists(self.maxquant_filepath.text()):
                     self.statusBar().showMessage("Analysis in Progress")
                     self.statusBar().setStyleSheet("background-color : white")
-                    rollup("maxquant", 
+                    output = rollup("maxquant", 
                                     self.maxquant_filepath.text(), 
                                     self.target_checkbox.isChecked(),  # Whether target will be used
                                     self.target_filepath.text(),
@@ -472,6 +472,11 @@ class App(QMainWindow):
                                     combine_method,
                                     self.uniprot_annot_CB.isChecked(),
                                     species_id)
+                    # If there is a 502 proxy error (server side error)
+                    if self.uniprot_annot_CB.isChecked() and output == 502:
+                        self.statusBar().showMessage("ERROR: Uniprot server error! Please try again later.")
+                        self.statusBar().setStyleSheet("background-color : red")
+                        return
                     self.statusBar().showMessage("Analysis Complete!")
                     self.statusBar().setStyleSheet("background-color : green")
                     print("\033[92m {}\033[00m".format("Analysis Complete!"))
@@ -492,8 +497,14 @@ class App(QMainWindow):
                                     combine_method,
                                     self.uniprot_annot_CB.isChecked(),
                                     species_id)
+                    # If the mascot file has no intensity values and user tried to analyze them
                     if self.quant_CB.isChecked() and output == 2:
                         self.statusBar().showMessage("ERROR: Mascot file has no detectable intensity values!")
+                        self.statusBar().setStyleSheet("background-color : red")
+                        return
+                    # If there is a 502 proxy error (server side error)
+                    if self.uniprot_annot_CB.isChecked() and output == 502:
+                        self.statusBar().showMessage("ERROR: Uniprot server error! Please try again later.")
                         self.statusBar().setStyleSheet("background-color : red")
                         return
                     self.statusBar().showMessage("Analysis Complete!")
@@ -503,7 +514,7 @@ class App(QMainWindow):
                 elif self.generic_RB.isChecked() and os.path.exists(self.generic_filepath.text()):
                     self.statusBar().showMessage("Analysis in Progress")
                     self.statusBar().setStyleSheet("background-color : white")
-                    rollup("generic", 
+                    output = rollup("generic", 
                                     self.generic_filepath.text(), 
                                     self.target_checkbox.isChecked(),  # Whether target will be used
                                     self.target_filepath.text(),
@@ -516,6 +527,11 @@ class App(QMainWindow):
                                     combine_method,
                                     self.uniprot_annot_CB.isChecked(),
                                     species_id)
+                    # If there is a 502 proxy error (server side error)
+                    if self.uniprot_annot_CB.isChecked() and output == 502:
+                        self.statusBar().showMessage("ERROR: Uniprot server error! Please try again later.")
+                        self.statusBar().setStyleSheet("background-color : red")
+                        return
                     self.statusBar().showMessage("Analysis Complete!")
                     self.statusBar().setStyleSheet("background-color : green")
                     print("\033[92m {}\033[00m".format("Analysis Complete!"))
