@@ -260,9 +260,9 @@ WHERE {
         full_annot = full_annot.merge(extras_annot, how="outer", on=["entry", " position"])
         del(extras_annot)
     except KeyError:
-        print(full_annot.head(2))
+        print(full_annot)
         #print(isinstance(full_annot, pd.DataFrame))
-        if "502 Proxy Error" in full_annot.iloc[1][0]:
+        if isinstance(full_annot, pd.DataFrame) and "502 Proxy Error" in full_annot.iloc[1][0]:
             return 502
         sys.exit()
     return full_annot

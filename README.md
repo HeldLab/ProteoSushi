@@ -80,7 +80,7 @@ In order to run ProteoSushi, there are some required files in specific formats:
 
     - The variable modifications present in the sample(s)
 
-- Or the output folder from **MaxQuant**
+- Or the txt output folder from **MaxQuant**
 
   - This folder must have the *summary.txt* and *evidence.txt* files. Other files from the output are not used.
 
@@ -134,6 +134,8 @@ Choose the PTM(s) that will be used in the analysis. The options available are d
 
 Next, choose the FASTA Uniprot proteome to use in ProteoSushi.
 
+After that, choose the ProteoSushi output file name and location.
+
 Following this is the **Options** section with some settings that can be added or ignored based on your analysis.
 
 First, choose whether to use a prioritized gene list. If so, choose the file to be used. 
@@ -170,13 +172,7 @@ Once all of the necessary options are included, click on the **“Rollup!”** b
 
 ## Results
 
-Results will be returned as a CSV spreadsheet with one of the following filenames depending on the search engine used:
-
-- “MQ_Rollup.csv” for MaxQuant
-
-- “Mascot_Rollup.csv” for Mascot
-
-- “Generic_Rollup.csv” for any other search engine
+Results will be returned as a CSV spreadsheet with the name and location based on what the user chose earlier.
 
 The resulting file will include information for each modified residue of interest including:
 

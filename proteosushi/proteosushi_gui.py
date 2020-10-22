@@ -76,6 +76,10 @@ class App(QMainWindow):
         self.proteome_filepath_button.clicked.connect(self.on_click_proteome_button)
         self.proteome_filepath = QLabel("[Filepath]", self)
 
+        self.output_filepath_button = QPushButton("Choose Output Location")
+        self.output_filepath_button.clicked.connect(self.on_click_output_button)
+        self.output_filepath = QLabel("[Filepath]", self)
+
         self.options_label = QLabel("Options", self)
 
         self.target_checkbox = QCheckBox("Use Target Genes", self)
@@ -391,6 +395,14 @@ class App(QMainWindow):
         self.statusBar().showMessage("")
 
     @pyqtSlot()
+    def on_click_output_button(self):
+        self.statusBar().showMessage("Choose the ProteoSushi output file location")
+        self.statusBar().setStyleSheet("background-color : white")
+        filename = self.openCSVFileNameDialog()
+        self.output_filepath.setText(filename)
+        self.statusBar().showMessage("")
+
+    @pyqtSlot()
     def onClickTargetButton(self):
         self.statusBar().showMessage("Choose the Target Gene file")
         self.statusBar().setStyleSheet("background-color : white")
@@ -471,7 +483,8 @@ class App(QMainWindow):
                                     self.proteome_filepath.text(),
                                     combine_method,
                                     self.uniprot_annot_CB.isChecked(),
-                                    species_id)
+                                    species_id,
+                                    self.output_filepath.text())
                     # If there is a 502 proxy error (server side error)
                     if self.uniprot_annot_CB.isChecked() and output == 502:
                         self.statusBar().showMessage("ERROR: Uniprot server error! Please try again later.")
@@ -496,7 +509,8 @@ class App(QMainWindow):
                                     self.proteome_filepath.text(),
                                     combine_method,
                                     self.uniprot_annot_CB.isChecked(),
-                                    species_id)
+                                    species_id,
+                                    self.output_filepath.text())
                     # If the mascot file has no intensity values and user tried to analyze them
                     if self.quant_CB.isChecked() and output == 2:
                         self.statusBar().showMessage("ERROR: Mascot file has no detectable intensity values!")
@@ -526,7 +540,8 @@ class App(QMainWindow):
                                     self.proteome_filepath.text(),
                                     combine_method,
                                     self.uniprot_annot_CB.isChecked(),
-                                    species_id)
+                                    species_id,
+                                    self.output_filepath.text())
                     # If there is a 502 proxy error (server side error)
                     if self.uniprot_annot_CB.isChecked() and output == 502:
                         self.statusBar().showMessage("ERROR: Uniprot server error! Please try again later.")
@@ -577,6 +592,10 @@ class App(QMainWindow):
         self.layout.addWidget(QLabel("Proteome File", self), row, 0)
         self.layout.addWidget(self.proteome_filepath_button, row, 1)
         self.layout.addWidget(self.proteome_filepath, row, 2)
+        row += 1
+        self.layout.addWidget(QLabel("Output Location", self), row, 0)
+        self.layout.addWidget(self.output_filepath_button, row, 1)
+        self.layout.addWidget(self.output_filepath, row, 2)
         row += 1
         self.layout.addWidget(self.options_label, row, 0)
         row += 1

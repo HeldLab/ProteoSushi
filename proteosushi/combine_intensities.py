@@ -421,7 +421,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
            target_list_filepath: str, max_missed_cleavages: int, protease: str, 
            fdr_threshold: float, use_quant: bool, user_PTMs: list, 
            proteome_fasta_filepath: str, intensity_method: str, add_annotation: bool, 
-           species_id: str) -> int:
+           species_id: str, output_filename: str) -> int:
     """starts proteoSushi rollup when called by run_proteoSushi
 
     Arguments:
@@ -451,19 +451,19 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     rollup_file = search_engine
 
     if rollup_file == "generic":
-        output_filename = "generic_rollup.csv"
+        #output_filename = "generic_rollup.csv"
         sequence_index, modified_sequence_index, mod_dict, intensity_start, data_filename, \
             var_mod_dict = parse_generic.compile_data(search_engine_filepath, user_PTMs)
         data_file = open(data_filename, 'r')
         tsv_reader = csv.reader(data_file, quotechar='"')
     elif rollup_file == "maxquant":
-        output_filename = "maxquant_rollup.csv"
+        #output_filename = "maxquant_rollup.csv"
         sequence_index, modified_sequence_index, mod_dict, intensity_start, data_filename, \
             var_mod_dict = parse_MaxQuant.compile_data(search_engine_filepath, user_PTMs)
         data_file = open(data_filename, 'r')
         tsv_reader = csv.reader(data_file, delimiter='\t', quotechar='"')
     elif rollup_file == "mascot":
-        output_filename = "mascot_rollup.csv"
+        #output_filename = "mascot_rollup.csv"
         sequence_index, modified_sequence_index, mod_dict, intensity_start, data_filename, \
             var_mod_dict = parse_mascot.compile_data(search_engine_filepath, user_PTMs)
         data_file = open(data_filename, 'r')
