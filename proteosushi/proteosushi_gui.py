@@ -76,7 +76,7 @@ class App(QMainWindow):
         self.proteome_filepath_button.clicked.connect(self.on_click_proteome_button)
         self.proteome_filepath = QLabel("[Filepath]", self)
 
-        self.output_filepath_button = QPushButton("Choose Output Location")
+        self.output_filepath_button = QPushButton("Output Name and Location")
         self.output_filepath_button.clicked.connect(self.on_click_output_button)
         self.output_filepath = QLabel("[Filepath]", self)
 
@@ -249,7 +249,13 @@ class App(QMainWindow):
     def openFASTAFileNameDialog(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","FASTA Files (*.fasta);;All Files (*)", options=options)
+        fileName, _ = QFileDialog.getOpenFileName(self,"Choose the Proteome FASTA file", "","FASTA Files (*.fasta);;All Files (*)", options=options)
+        return fileName
+    
+    def write_output_dialog(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        fileName, _ = QFileDialog.getSaveFileName(self,"Choose the name and location of the output", "","CSV Files (*.csv);;All Files (*)", options=options)
         return fileName
 
 
@@ -398,7 +404,7 @@ class App(QMainWindow):
     def on_click_output_button(self):
         self.statusBar().showMessage("Choose the ProteoSushi output file location")
         self.statusBar().setStyleSheet("background-color : white")
-        filename = self.openCSVFileNameDialog()
+        filename = self.write_output_dialog()
         self.output_filepath.setText(filename)
         self.statusBar().showMessage("")
 
@@ -420,6 +426,18 @@ class App(QMainWindow):
                 self.statusBar().showMessage("ERROR: Missing Proteome FASTA file!")
                 self.statusBar().setStyleSheet("background-color : red")
                 return
+
+            # If the user didn't choose a name or location for the file
+            if self.output_filepath.text() == "":
+                self.statusBar().showMessage("ERROR: ProteoSushi output name and location not chosen!")
+                self.statusBar().setStyleSheet("background-color : red")
+                return
+            
+            if os.path.isdir(self.output_filepath.text()):
+                self.output_filepath.setText(os.path.join(self.output_filepath, "proteosushi_output.csv"))
+
+            if self.output_filepath.text()[-4:] != ".csv":
+                self.output_filepath.setText(self.output_filepath.text() + ".csv")
 
             try:  # Check to see if the provided number of allowed missed cleavages is legal
                 max_missed = int(self.max_missed_edit.text())

@@ -46,7 +46,7 @@ Download the files directly from [GitHub](https://github.com/HeldLab/ProteoSushi
 
 Once unpacked (unzipped), we will need to use the terminal (command prompt in Windows) to run ProteoSushi.
 
-For MacOS, use Finder to navigate to the proteosushi folder in the downloaded files. Click on Finder (in the toolbar at the top of the screen) -> Services -> New Terminal at Folder to open a new terminal in the proteosushi folder. Run the command 
+For MacOS, use Finder to navigate to the proteosushi folder in the downloaded files. Right click (or command click) on the proteosushi folder -> Services -> New Terminal at Folder to open a new terminal in the proteosushi folder. Run the command 
 `python run_proteosushi.py`
 to start the GUI.
 

@@ -769,7 +769,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     # If the user chose, it combines the annotation onto the rollup results (eventually)
     if add_annotation:
         print("\033[95m {}\033[00m".format("\nQuerying Uniprot for Annotations!"))
-        batch = 10
+        batch = 12
         i = 0
         results_annotated = 0
         sparql_output_list = list()
