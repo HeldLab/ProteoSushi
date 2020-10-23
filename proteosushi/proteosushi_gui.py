@@ -231,31 +231,31 @@ class App(QMainWindow):
     def openCSVFileNameDialog(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","CSV Files (*.csv);;All Files (*)", options=options)
+        fileName, _ = QFileDialog.getOpenFileName(self,"Choose the Search Engine Output", os.getcwd(),"CSV Files (*.csv);;All Files (*)", options=options)
         return fileName
 
     def openTXTFileNameDialog(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileName()", "","TXT Files (*.txt);;All Files (*)", options=options)
+        fileName, _ = QFileDialog.getOpenFileName(self,"Choose the Gene Name File", os.getcwd(),"TXT Files (*.txt);;All Files (*)", options=options)
         return fileName
 
     def open_directory_dialog(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        dir_name = str(QFileDialog.getExistingDirectory(self, "Select Directory", options=options))
+        dir_name = str(QFileDialog.getExistingDirectory(self, "Select Directory", os.getcwd(), options=options))
         return dir_name
     
     def openFASTAFileNameDialog(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getOpenFileName(self,"Choose the Proteome FASTA file", "","FASTA Files (*.fasta);;All Files (*)", options=options)
+        fileName, _ = QFileDialog.getOpenFileName(self,"Choose the Proteome FASTA file", os.getcwd(),"FASTA Files (*.fasta);;All Files (*)", options=options)
         return fileName
     
     def write_output_dialog(self):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getSaveFileName(self,"Choose the name and location of the output", "","CSV Files (*.csv);;All Files (*)", options=options)
+        fileName, _ = QFileDialog.getSaveFileName(self,"Choose the name and location of the output", os.getcwd(),"CSV Files (*.csv);;All Files (*)", options=options)
         return fileName
 
 
@@ -611,7 +611,7 @@ class App(QMainWindow):
         self.layout.addWidget(self.proteome_filepath_button, row, 1)
         self.layout.addWidget(self.proteome_filepath, row, 2)
         row += 1
-        self.layout.addWidget(QLabel("Output Location", self), row, 0)
+        self.layout.addWidget(QLabel("Output Name & Location", self), row, 0)
         self.layout.addWidget(self.output_filepath_button, row, 1)
         self.layout.addWidget(self.output_filepath, row, 2)
         row += 1
