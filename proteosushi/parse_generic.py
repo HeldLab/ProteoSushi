@@ -41,11 +41,13 @@ def get_PTMs(sky_filename: str) -> list:
             # This grabs the PTMs in each sequence and builds a list of all of them
             sequence = row[seq_index].replace("L","I")
             mod_seq = row[mod_index]
-            mods = findall(r"(\w?\[.+?\])|(\w?\(.+?\))", mod_seq)
-            #print(row)
+            mods = findall(r"(\w?\[.+?\])|(\w?\(.+?\(?.\)?\))", mod_seq)
+
+            #If there are no PTMs in the sequence
             if len(mods) < 1:
                 return -3  # This will be there error listed below, but handled in the GUI
                 raise ValueError("A sequence in the Peptide Modified Sequence column is missing PTMs")
+
             for mod in mods[0]:
                 if mod == '':
                     continue
@@ -85,11 +87,11 @@ def create_mod_dict(sky_filename: str, user_PTMs: list) -> dict:
             #if sequence == "FACAVVCIQK":
             #    print("here")
             mod_seq = row[mod_index]
-            mods = findall(r"(\w?\[.+?\])|(\w?\(.+?\))", mod_seq)
+            mods = findall(r"(\w?\[.+?\])|(\w?\(.+?\(?.\)?\))", mod_seq)
             if len(mods) < 1:
                 raise ValueError("A sequence in the Peptide Modified Sequence column is missing PTMs")
 
-            breaks = finditer(r"(\w?\[.+?\])|(\w?\(.+?\))", mod_seq)
+            breaks = finditer(r"(\w?\[.+?\])|(\w?\(.+?\(?.\)?\))", mod_seq)
             cut_sites = []
             for breakp in breaks:
                 cut_sites.append(breakp.start())

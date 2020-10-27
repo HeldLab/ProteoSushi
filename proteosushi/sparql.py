@@ -290,7 +290,7 @@ def request_annot(query: str, attempts_left=10):
                 raise pd.errors.ParserError("Ran out of Uniprot accession attempts")
         csv_file = StringIO(r.text)
         sparql_from_csv_df = pd.read_csv(csv_file)
-    except pd.errors.ParserError:
+    except (pd.errors.ParserError, requests.exceptions.ConnectionError):
         if attempts_left > 0:
             sleep(time_to_sleep)
             print("\033[93m {}\033[00m".format(f"Attempts used: {11 - attempts_left}"))

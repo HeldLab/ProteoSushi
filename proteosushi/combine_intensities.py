@@ -5,7 +5,7 @@
 import csv
 import os
 import pandas as pd
-from re import finditer, match
+from re import finditer, match, findall
 from time import sleep
 
 from download_uniprot_AS import download_AS_file
@@ -202,13 +202,35 @@ def __clean_pep_seq(rule: tuple, pep_mod_seq: str, user_PTMs: list) -> str:
         new_pep_mod_seq = ''.join(cut_peptides[start:end])
     return new_pep_mod_seq
 
+def consolidate_sequence(new_pep_mod_seq: str, new_user_PTMs: list) -> str:
+    """Changes the modified peptide sequence to only have the relevant PTMs for indexing
+
+    Arguments:
+        new_pep_mod_seq {str} -- the modified peptide sequence
+        new_user_PTMs {list} -- the PTMs selected by the user
+    Returns:
+        str -- the modified peptide sequence with irrelevant PTMs removed (for indexing)
+    """
+    try:
+        mods = findall(r"(\[.+?\])|(\(.+?\(?.\)?\))", new_pep_mod_seq).remove('')
+    except ValueError:
+        mods = findall(r"(\[.+?\])|(\(.+?\(?.\)?\))", new_pep_mod_seq)
+    # If there is a PTM in the sequence that isn't in the user list
+    #if all([mod[0] in new_user_PTMs for mod in mods]):
+    #    return new_pep_mod_seq
+
+    for mod in mods:
+        if not mod[1][1:-1] in new_user_PTMs:
+            new_pep_mod_seq = new_pep_mod_seq.replace(mod[1], "")
+    return new_pep_mod_seq
+
 def __add_intensity(intensity_dict: dict, new_pep_mod_seq: str, genes: list, site: int, 
                     intensities: list) -> list:
     """Adds the intensity of the site to the dictionary, if entry exists, adds to the numbers
 
     Arguments:
         intensity_dict {dict} -- a dictionary connecting the pep/gene/site to intensity
-        pep_mod_seq {str} -- the modified sequence of the peptide
+        new_pep_mod_seq {str} -- the consolidated, modified sequence of the peptide
         genes {list} -- a list of gene names associated with this peptide
         site {int} -- the position of the mod in the protein
         intensities {list} -- 
@@ -218,7 +240,6 @@ def __add_intensity(intensity_dict: dict, new_pep_mod_seq: str, genes: list, sit
     """
     to_adds = []
     for gene in genes:
-    #new_pep_mod_seq = __clean_pep_seq(rule, pep_mod_seq, user_PTMs)
         key = f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}"
         #if gene.upper() == "SQRDL":
         #    print("SQRDL_379")
@@ -227,37 +248,44 @@ def __add_intensity(intensity_dict: dict, new_pep_mod_seq: str, genes: list, sit
             new_intensities = list()
             new_ints = list()
             i = 0
+
             # Combines the new values for the peak
             while i < len(intensities):
                 old_int = old_intensities[i]
                 if not old_int or "#N/A" == old_int or "NaN" == old_int or not old_int:
                     old_int = 0
+
                 new_int = intensities[i]
                 if not new_int or "#N/A" == new_int or "NaN" == new_int or not new_int:
                     new_int = 0
+
                 new_ints.append(new_int)
-                #print(f"values {repr(old_int)}, {repr(new_int)}")
                 new_intensities.append(float(old_int) + float(new_int))
                 i += 1
+
             # Adds to the number of combined peptides for averaging later (if needed)
             if any(new_ints):
                 new_intensities.append(int(old_intensities[i]) + 1)  # NOTE: what does it mean if this is out of range?
             else:
                 new_intensities.append(int(old_intensities[i]))
+
             # Replaces the combined numbers in the dictionary
             intensity_dict[key] = new_intensities
             to_adds.append(False)
+
         else:
             new_intensities = []
             for new_int in intensities:
                 if "#N/A" == new_int:
                     new_int = 0
                 new_intensities.append(new_int)
+
             # Adds in the number of combined peptide peaks (1 so far)
             new_intensities.append(1)
             # Adds a new entry for these peaks
             intensity_dict[key] = new_intensities
             to_adds.append(True)
+
     return intensity_dict, any(to_adds)
 
 def __load_annot_dict(annot_file: str) -> dict:
@@ -269,7 +297,6 @@ def __load_annot_dict(annot_file: str) -> dict:
         dict -- a dictionary connecting genes to annotation scores
     """
     annot_dict = {}
-    #print(annot_file)
     if annot_file == "":
         return annot_dict
     with open(annot_file, 'r') as r1:
@@ -503,9 +530,11 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             continue
         total_seqs += 1
         raw_seq = row[sequence_index]
-        if raw_seq == "AVYTQDCPLAAAK":
+        if raw_seq == "DLGGIVLANACGPCIGQWDR":
             print("start")
         pep_mod_seq = row[modified_sequence_index]
+        #if pep_mod_seq == "DLGGIVLANAC(ne)GPC(ca)IGQWDR":
+        #    print("start")
         pep_seq = row[sequence_index].replace("L","I")
         if pep_seq is None:
             print("HALT!")  # A handled exception would be preferable here
@@ -575,7 +604,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                 #if gene.upper() == "ACTL6A":
                 #    print("ACTL6A")
                 if use_intensities:  # If the user chose to combine/average intensities
-                    intensity_dict, to_add = __add_intensity(intensity_dict, new_pep_mod_seq, 
+                    intensity_dict, to_add = __add_intensity(intensity_dict, 
+                                                             new_pep_mod_seq, 
                                                              [gene], site, intensities)
                 else:
                     key = f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}"
@@ -635,7 +665,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                         to_add = None
                         if use_intensities:
                             intensity_dict, to_add = __add_intensity(intensity_dict, 
-                                                                     new_pep_mod_seq, [match[0]], 
+                                                                     new_pep_mod_seq, 
+                                                                     [match[0]], 
                                                                      site, intensities)
                         else:
                             key = f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}"
@@ -691,7 +722,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                         site = match[0][1] + mod[1] + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
                         if use_intensities:
                             intensity_dict, to_add = __add_intensity(intensity_dict,
-                                                                     new_pep_mod_seq, additGenes, 
+                                                                     new_pep_mod_seq, 
+                                                                     additGenes, 
                                                                      site, intensities)
                         else:
                             if any(f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}" in intensity_dict for gene in additGenes):
@@ -769,7 +801,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     # If the user chose, it combines the annotation onto the rollup results (eventually)
     if add_annotation:
         print("\033[95m {}\033[00m".format("\nQuerying Uniprot for Annotations!"))
-        batch = 12
+        batch = 25
         i = 0
         results_annotated = 0
         sparql_output_list = list()
@@ -831,7 +863,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         header2 = ["Gene", "Site", "Protein_Name", "Shared_Genes", "Target_Genes", "Peptide_Sequence", 
             "Peptide_Modified_Sequence", "Annotation_Score", "Uniprot_Accession_ID"]
         if use_intensities:
-            header2 += intensity_header
+            header2 += [ih + f" ({intensity_method})" for ih in intensity_header]
         if add_annotation:
             # TODO: Change the header to be just one group of annotations
             '''
