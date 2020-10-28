@@ -801,7 +801,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     # If the user chose, it combines the annotation onto the rollup results (eventually)
     if add_annotation:
         print("\033[95m {}\033[00m".format("\nQuerying Uniprot for Annotations!"))
-        batch = 25
+        batch = 50
         i = 0
         results_annotated = 0
         sparql_output_list = list()
@@ -905,7 +905,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                     writable_row += [float(x)/N for x in intensities]
             if add_annotation:
                 try:
-                    compressed_annotations = __compress_annotations(sparql_dict[i[8] + '|' + str(i[1])])
+                    compressed_annotations = __compress_annotations(sparql_dict[i[8].split(' ')[0] + '|' + str(i[1])])
                     writable_row += compressed_annotations[2:5] + compressed_annotations[6:]
                 except KeyError:
                     #print(i[6] + '|' + str(i[1]) + " not in dict")

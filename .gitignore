@@ -143,3 +143,8 @@ proteosushi/.~lock.test_consolidate.csv#
 unmatched_sequences_mascot
 proteosushi/test_method_printing.csv
 proteosushi/test_consolidate.csv
+proteosushi/test_5.csv
+proteosushi/test_10.csv
+proteosushi/test_25.csv
+proteosushi/test_50.csv
+proteosushi/.~lock.test_50.csv#
