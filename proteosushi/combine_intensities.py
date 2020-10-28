@@ -914,7 +914,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         #print(sparql_dict)
 
     # Puts all of the unmatched sequences into a new file
-    with open(f"unmatched_sequences_{rollup_file}", 'w', newline = '') as w2:
+    with open(f"unmatched_sequences_{rollup_file}.csv", 'w', newline = '') as w2:
         out_writer = csv.writer(w2)
         header = ["Sequence", "Peptide Modified Sequence"]
         out_writer.writerow(header)
