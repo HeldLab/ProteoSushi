@@ -15,6 +15,8 @@ The machine running ProteoSushi must have:
 
   - 16GB or higher is recommended, but ultimately depends on how the user uses the machine. More is better up to a certain point.
   
+  - With only 8GB of RAM, the user will likely need to free up memory by closing other open programs
+
 - Python version 3.8 or higher installed 
 
   - earlier versions of python may work, but nothing as early as 2.7 will work
