@@ -114,3 +114,7 @@ proteosushi/.~lock.test_50.csv#
 proteosushi/mascot_test.csv
 proteosushi/skyline_test.csv
 proteosushi/examples/txt.zip
+proteosushi/unmatched_sequences_maxquant.csv
+proteosushi/unmatched_sequences_mascot.csv
+proteosushi/unmatched_sequences_generic.csv
+proteosushi/test_async.csv

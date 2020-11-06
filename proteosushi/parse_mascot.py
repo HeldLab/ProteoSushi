@@ -152,7 +152,7 @@ def compile_data(search_engine_filepath: str, PTMs: list) -> list:
     sequence = header.index('pep_seq') #assert this exists later on
     var_mods = header.index('pep_var_mod_pos')
     #score = header.index('pep_expect')
-    print(sequence, var_mods)
+    #print(sequence, var_mods)
     #failedSeqs = 0
     #totalSeqs = 0
 
