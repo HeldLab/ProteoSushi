@@ -564,7 +564,10 @@ class App(QMainWindow):
                 return
             
             if os.path.isdir(self.output_filepath.text()):
-                self.output_filepath.setText(os.path.join(self.output_filepath, "proteosushi_output.csv"))
+                self.output_filepath.setText(os.path.join(self.output_filepath.text(), "proteosushi_output.csv"))
+
+            if self.output_filepath.text() == "[Filepath]":
+                self.output_filepath.setText(os.path.join(os.getcwd(), "proteosushi_output.csv"))
 
             if self.output_filepath.text()[-4:] != ".csv":
                 self.output_filepath.setText(self.output_filepath.text() + ".csv")

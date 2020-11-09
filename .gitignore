@@ -118,3 +118,4 @@ proteosushi/unmatched_sequences_maxquant.csv
 proteosushi/unmatched_sequences_mascot.csv
 proteosushi/unmatched_sequences_generic.csv
 proteosushi/test_async.csv
+proteosushi/proteosushi_output.csv
