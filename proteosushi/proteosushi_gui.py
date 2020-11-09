@@ -544,7 +544,7 @@ class App(QMainWindow):
         self.maxquant_button.setEnabled(True)
         self.mascot_button.setEnabled(True)
         self.generic_button.setEnabled(True)
-        sys.exit()
+        #sys.exit()
         return
 
     @pyqtSlot()
