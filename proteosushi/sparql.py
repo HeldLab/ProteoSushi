@@ -52,8 +52,8 @@ def sparql_request(unpid_site_list: list):
     for tup in unpid_site_list:
         if len(tup) >= 2 and tup[1] == '0':
             tup[1] = '1'
-        if tup[0] == "P60709" or tup[0] == "P63261":
-            print("Multiple")
+        #if tup[0] == "P60709" or tup[0] == "P63261":
+        #    print("Multiple")
         if len(tup[0]) >= 5:
             unpid_site_list_str += f"(uniprotkb:{tup[0]} {tup[1]})\n"
     # TODO: Delete this later
@@ -230,6 +230,7 @@ WHERE {
     #print(region_annot.head(15))
     #catalytic_annot = request_annot(query_catalytic)
     subcell_annot = request_annot(query_entry_subcellular)
+    #print(subcell_annot.head(15))
     extras_annot = request_annot(query_ec_rhea_type)
     # Creates blank dataframes if uniprot did not return that info
     if region_annot is None:
@@ -256,6 +257,7 @@ WHERE {
         #full_annot = full_annot.merge(catalytic_annot, how="outer", on=["entry", " position"])
         #del(catalytic_annot)
         full_annot = full_annot.merge(subcell_annot, how="outer", on="entry")
+        #print(full_annot.head(15))
         del(subcell_annot)
         full_annot = full_annot.merge(extras_annot, how="outer", on=["entry", " position"])
         del(extras_annot)

@@ -9,12 +9,38 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QMainWindow, QPushButton,
                              QMessageBox, QLineEdit, QLabel, QGroupBox, 
                              QGridLayout, QVBoxLayout, QFileDialog, QCheckBox,
                              QRadioButton, QButtonGroup, QComboBox)
-from PyQt5.QtCore import pyqtSlot, QSize, Qt
+from PyQt5.QtCore import pyqtSlot, QSize, Qt, QRunnable, QObject, QThreadPool, pyqtSignal
 from PyQt5.QtGui import QIcon
 
 from combine_intensities import parse_output, rollup
 from parse_proteome import parse_proteome
 from proteoSushi_constants import cleave_rules
+
+
+class WorkerSignals(QObject):
+    """Class that contains the signal sent at the end of the worker thread"""
+    end = pyqtSignal()
+
+
+class Worker(QRunnable):
+    """Class for the backend worker thread"""
+
+    def __init__(self, fn, *args, **kwargs):
+        super(Worker, self).__init__()
+
+        # Store constructor arguments (re-used for processing)
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+        self.signals = WorkerSignals()    
+
+
+    @pyqtSlot()
+    def run(self):
+        """Initializes the runner function"""
+        # Retrieve args/kwargs here; and fire processing using them
+        self.fn(*self.args, **self.kwargs)
+        self.signals.end.emit()
 
 class App(QMainWindow):
 
@@ -29,6 +55,7 @@ class App(QMainWindow):
         self.setCentralWidget(self.centralWidget)
         self.species_id_dict = self.__make_species_dict()
         self.species_name_dict = {v:k for k, v in self.species_id_dict.items()}
+        self.threadpool = QThreadPool()
         self.initUI()
         
     def initUI(self):
@@ -417,6 +444,109 @@ class App(QMainWindow):
             self.target_filepath.setText(filename)
         self.statusBar().showMessage("")
 
+    def __run_async(self, fdr, combine_method, species_id):
+        """Function that runs the backend on a separate thread"""
+        # If the maxquant option was chosen, it sends that info to be run
+        if self.maxquant_RB.isChecked() and os.path.exists(self.maxquant_filepath.text()):
+            self.statusBar().showMessage("Analysis in Progress")
+            self.statusBar().setStyleSheet("background-color : white")
+            output = rollup("maxquant", 
+                            self.maxquant_filepath.text(), 
+                            self.target_checkbox.isChecked(),  # Whether target will be used
+                            self.target_filepath.text(),
+                            int(self.max_missed_edit.text()),
+                            self.protease_combo_box.currentText(),
+                            fdr,
+                            self.quant_CB.isChecked(),
+                            self.convert_PTM_list(self.PTM_CBs),
+                            self.proteome_filepath.text(),
+                            combine_method,
+                            self.uniprot_annot_CB.isChecked(),
+                            species_id,
+                            self.output_filepath.text())
+            # If there is a 502 proxy error (server side error)
+            if self.uniprot_annot_CB.isChecked() and output == 502:
+                self.statusBar().showMessage("ERROR: Uniprot server error! Please try again later.")
+                self.statusBar().setStyleSheet("background-color : red")
+                return
+            self.statusBar().showMessage("Analysis Complete!")
+            self.statusBar().setStyleSheet("background-color : green")
+            print("\033[92m {}\033[00m".format("Analysis Complete!"))
+            #sys.exit()
+        elif self.mascot_RB.isChecked() and os.path.exists(self.mascot_filepath.text()):
+            self.statusBar().showMessage("Analysis in Progress")
+            self.statusBar().setStyleSheet("background-color : white")
+            output = rollup("mascot", 
+                            self.mascot_filepath.text(), 
+                            self.target_checkbox.isChecked(),  # Whether target will be used
+                            self.target_filepath.text(),
+                            int(self.max_missed_edit.text()),
+                            self.protease_combo_box.currentText(),
+                            fdr,
+                            self.quant_CB.isChecked(),
+                            self.convert_PTM_list(self.PTM_CBs),
+                            self.proteome_filepath.text(),
+                            combine_method,
+                            self.uniprot_annot_CB.isChecked(),
+                            species_id,
+                            self.output_filepath.text())
+            # If the mascot file has no intensity values and user tried to analyze them
+            if self.quant_CB.isChecked() and output == 2:
+                self.statusBar().showMessage("ERROR: Mascot file has no detectable intensity values!")
+                self.statusBar().setStyleSheet("background-color : red")
+                return
+            # If there is a 502 proxy error (server side error)
+            if self.uniprot_annot_CB.isChecked() and output == 502:
+                self.statusBar().showMessage("ERROR: Uniprot server error! Please try again later.")
+                self.statusBar().setStyleSheet("background-color : red")
+                return
+            self.statusBar().showMessage("Analysis Complete!")
+            self.statusBar().setStyleSheet("background-color : green")
+            print("\033[92m {}\033[00m".format("Analysis Complete!"))
+            #sys.exit()
+        elif self.generic_RB.isChecked() and os.path.exists(self.generic_filepath.text()):
+            self.statusBar().showMessage("Analysis in Progress")
+            self.statusBar().setStyleSheet("background-color : white")
+            output = rollup("generic", 
+                            self.generic_filepath.text(), 
+                            self.target_checkbox.isChecked(),  # Whether target will be used
+                            self.target_filepath.text(),
+                            int(self.max_missed_edit.text()),
+                            self.protease_combo_box.currentText(),
+                            fdr,
+                            self.quant_CB.isChecked(),
+                            self.convert_PTM_list(self.PTM_CBs),
+                            self.proteome_filepath.text(),
+                            combine_method,
+                            self.uniprot_annot_CB.isChecked(),
+                            species_id,
+                            self.output_filepath.text())
+            # If there is a 502 proxy error (server side error)
+            if self.uniprot_annot_CB.isChecked() and output == 502:
+                self.statusBar().showMessage("ERROR: Uniprot server error! Please try again later.")
+                self.statusBar().setStyleSheet("background-color : red")
+                return
+            self.statusBar().showMessage("Analysis Complete!")
+            self.statusBar().setStyleSheet("background-color : green")
+            print("\033[92m {}\033[00m".format("Analysis Complete!"))
+            #sys.exit()
+        else:
+            self.statusBar().showMessage("ERROR: Missing Search Engine Output!")
+            self.statusBar().setStyleSheet("background-color : red")
+        #sys.exit()
+
+    def __cut_thread(self):
+        """Called once the backend thread finishes"""
+        # Enables the buttons again in case I get multiple analyses working
+        self.run_button.setEnabled(True)
+        self.proteome_filepath_button.setEnabled(True)
+        self.output_filepath_button.setEnabled(True)
+        self.maxquant_button.setEnabled(True)
+        self.mascot_button.setEnabled(True)
+        self.generic_button.setEnabled(True)
+        #sys.exit()
+        return
+
     @pyqtSlot()
     def onClickRunButton(self):
         if ((self.maxquant_RB.isChecked() and os.path.exists(self.maxquant_filepath.text())) or
@@ -434,7 +564,10 @@ class App(QMainWindow):
                 return
             
             if os.path.isdir(self.output_filepath.text()):
-                self.output_filepath.setText(os.path.join(self.output_filepath, "proteosushi_output.csv"))
+                self.output_filepath.setText(os.path.join(self.output_filepath.text(), "proteosushi_output.csv"))
+
+            if self.output_filepath.text() == "[Filepath]":
+                self.output_filepath.setText(os.path.join(os.getcwd(), "proteosushi_output.csv"))
 
             if self.output_filepath.text()[-4:] != ".csv":
                 self.output_filepath.setText(self.output_filepath.text() + ".csv")
@@ -485,93 +618,18 @@ class App(QMainWindow):
 
                 
             if self.protease_combo_box.currentText() in cleave_rules:
-                # If the maxquant option was chosen, it sends that info to be run
-                if self.maxquant_RB.isChecked() and os.path.exists(self.maxquant_filepath.text()):
-                    self.statusBar().showMessage("Analysis in Progress")
-                    self.statusBar().setStyleSheet("background-color : white")
-                    output = rollup("maxquant", 
-                                    self.maxquant_filepath.text(), 
-                                    self.target_checkbox.isChecked(),  # Whether target will be used
-                                    self.target_filepath.text(),
-                                    int(self.max_missed_edit.text()),
-                                    self.protease_combo_box.currentText(),
-                                    fdr,
-                                    self.quant_CB.isChecked(),
-                                    self.convert_PTM_list(self.PTM_CBs),
-                                    self.proteome_filepath.text(),
-                                    combine_method,
-                                    self.uniprot_annot_CB.isChecked(),
-                                    species_id,
-                                    self.output_filepath.text())
-                    # If there is a 502 proxy error (server side error)
-                    if self.uniprot_annot_CB.isChecked() and output == 502:
-                        self.statusBar().showMessage("ERROR: Uniprot server error! Please try again later.")
-                        self.statusBar().setStyleSheet("background-color : red")
-                        return
-                    self.statusBar().showMessage("Analysis Complete!")
-                    self.statusBar().setStyleSheet("background-color : green")
-                    print("\033[92m {}\033[00m".format("Analysis Complete!"))
-                    sys.exit()
-                elif self.mascot_RB.isChecked() and os.path.exists(self.mascot_filepath.text()):
-                    self.statusBar().showMessage("Analysis in Progress")
-                    self.statusBar().setStyleSheet("background-color : white")
-                    output = rollup("mascot", 
-                                    self.mascot_filepath.text(), 
-                                    self.target_checkbox.isChecked(),  # Whether target will be used
-                                    self.target_filepath.text(),
-                                    int(self.max_missed_edit.text()),
-                                    self.protease_combo_box.currentText(),
-                                    fdr,
-                                    self.quant_CB.isChecked(),
-                                    self.convert_PTM_list(self.PTM_CBs),
-                                    self.proteome_filepath.text(),
-                                    combine_method,
-                                    self.uniprot_annot_CB.isChecked(),
-                                    species_id,
-                                    self.output_filepath.text())
-                    # If the mascot file has no intensity values and user tried to analyze them
-                    if self.quant_CB.isChecked() and output == 2:
-                        self.statusBar().showMessage("ERROR: Mascot file has no detectable intensity values!")
-                        self.statusBar().setStyleSheet("background-color : red")
-                        return
-                    # If there is a 502 proxy error (server side error)
-                    if self.uniprot_annot_CB.isChecked() and output == 502:
-                        self.statusBar().showMessage("ERROR: Uniprot server error! Please try again later.")
-                        self.statusBar().setStyleSheet("background-color : red")
-                        return
-                    self.statusBar().showMessage("Analysis Complete!")
-                    self.statusBar().setStyleSheet("background-color : green")
-                    print("\033[92m {}\033[00m".format("Analysis Complete!"))
-                    sys.exit()
-                elif self.generic_RB.isChecked() and os.path.exists(self.generic_filepath.text()):
-                    self.statusBar().showMessage("Analysis in Progress")
-                    self.statusBar().setStyleSheet("background-color : white")
-                    output = rollup("generic", 
-                                    self.generic_filepath.text(), 
-                                    self.target_checkbox.isChecked(),  # Whether target will be used
-                                    self.target_filepath.text(),
-                                    int(self.max_missed_edit.text()),
-                                    self.protease_combo_box.currentText(),
-                                    fdr,
-                                    self.quant_CB.isChecked(),
-                                    self.convert_PTM_list(self.PTM_CBs),
-                                    self.proteome_filepath.text(),
-                                    combine_method,
-                                    self.uniprot_annot_CB.isChecked(),
-                                    species_id,
-                                    self.output_filepath.text())
-                    # If there is a 502 proxy error (server side error)
-                    if self.uniprot_annot_CB.isChecked() and output == 502:
-                        self.statusBar().showMessage("ERROR: Uniprot server error! Please try again later.")
-                        self.statusBar().setStyleSheet("background-color : red")
-                        return
-                    self.statusBar().showMessage("Analysis Complete!")
-                    self.statusBar().setStyleSheet("background-color : green")
-                    print("\033[92m {}\033[00m".format("Analysis Complete!"))
-                    sys.exit()
-                else:
-                    self.statusBar().showMessage("ERROR: Missing Search Engine Output!")
-                    self.statusBar().setStyleSheet("background-color : red")
+                # Disable all buttons before running to keep analysis confined
+                self.run_button.setEnabled(False)
+                self.proteome_filepath_button.setEnabled(False)
+                self.output_filepath_button.setEnabled(False)
+                self.maxquant_button.setEnabled(False)
+                self.mascot_button.setEnabled(False)
+                self.generic_button.setEnabled(False)
+                # Starts a new thread for the backend analysis
+                worker = Worker(self.__run_async, fdr, combine_method, species_id)
+                worker.signals.end.connect(self.__cut_thread)
+                self.threadpool.start(worker)
+                
             else:
                 self.statusBar().showMessage("ERROR: Protease provided is not supported!")
                 self.statusBar().setStyleSheet("background-color : red")

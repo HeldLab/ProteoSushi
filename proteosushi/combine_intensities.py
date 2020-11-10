@@ -906,7 +906,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             if add_annotation:
                 try:
                     compressed_annotations = __compress_annotations(sparql_dict[i[8].split(' ')[0] + '|' + str(i[1])])
-                    writable_row += compressed_annotations[2:5] + compressed_annotations[6:]
+                    writable_row += compressed_annotations[2:]#5]# + compressed_annotations[6:]
                 except KeyError:
                     #print(i[6] + '|' + str(i[1]) + " not in dict")
                     pass
