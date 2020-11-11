@@ -121,3 +121,5 @@ proteosushi/test_async.csv
 proteosushi/proteosushi_output.csv
 proteosushi/.~lock.mascot_test.csv#
 proteosushi/.~lock.proteosushi_output.csv#
+proteosushi/test_1.csv
+proteosushi/maxquant_test.csv

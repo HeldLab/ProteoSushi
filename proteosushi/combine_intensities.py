@@ -416,7 +416,7 @@ def __compress_annotations(annotation_list: list) -> list:
                 else:
                     if current_comment == "nan":
                         new_annotations[annotation_type_dict[current_type]
-                                        + length_uniprot_annotations] += f"{current_type}"
+                                        + length_uniprot_annotations] += f"{current_type.replace('_Annotation', '')}"
                     else:
                         new_annotations[annotation_type_dict[current_type]
                                         + length_uniprot_annotations] += f"{current_comment}"
@@ -432,16 +432,16 @@ def __compress_annotations(annotation_list: list) -> list:
                     if new_annotations[annotation_type_dict["Other"] + length_uniprot_annotations]:
                         if current_comment != "nan":
                             new_annotations[annotation_type_dict["Other"] 
-                                            + length_uniprot_annotations] = f",{current_type}: {current_comment}"
+                                            + length_uniprot_annotations] = f",{current_type.replace('_Annotation', '')}: {current_comment}"
                     else:
                         if current_comment == "nan":
                             new_annotations[annotation_type_dict["Other"] 
-                                            + length_uniprot_annotations] = f"{current_type}"
+                                            + length_uniprot_annotations] = f"{current_type.replace('_Annotation', '')}"
                         else:
                             new_annotations[annotation_type_dict["Other"] 
-                                            + length_uniprot_annotations] = f"{current_type}: {current_comment}"
+                                            + length_uniprot_annotations] = f"{current_type.replace('_Annotation', '')}: {current_comment}"
         i += 1
-    return [s.replace("nan", "") for s in new_annotations[:9]] + [secondary_structure] + [s.replace("nan", "") for s in new_annotations[9:]]
+    return [s.replace("nan", "") for s in new_annotations[:8]] + [secondary_structure] + [s.replace("nan", "") for s in new_annotations[8:]]
 
 
 def rollup(search_engine: str, search_engine_filepath: str, use_target_list: bool, 
