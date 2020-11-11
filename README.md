@@ -13,7 +13,7 @@ The machine running ProteoSushi must have:
 
 - at least 8GB of RAM, 12GB for Windows 10
 
-  - 16GB or higher is recommended, but ultimately depends on how the user uses the machine. More is better up to a certain point.
+  - 16GB or higher is recommended, but ultimately depends on the user's memory usage (having other programs open will decrease the memory available for ProteoSushi). More memory allows for more flexibility in the number and scope of programs running at once.
   
   - With only 8GB of RAM, the user will likely need to free up memory by closing other open programs
 
@@ -52,7 +52,7 @@ For **MacOS**, use Finder to navigate to the proteosushi folder in the downloade
 `python run_proteoSushi.py`
 to start the GUI.
 
-Alternatively, in **MacOS** or **Linux**, you can open the terminal and navigate within the terminal to the correct folder. Use the cd command to change the current folder as in 
+Alternatively, in **MacOS** or **Linux**, you can open the terminal and navigate within the terminal to the 'proteosushi' folder in the downloaded files. Use the cd command to change the current folder as in 
 `cd Downloads/ProteoSushi-master/proteosushi` 
 and use the ls command to list the contents of the current folder as in
 `ls`
@@ -60,7 +60,7 @@ and use the ls command to list the contents of the current folder as in
 `python run_proteoSushi.py`
 to run ProteoSushi.
 
-Finally, in **Windows**, open the command prompt by clicking on the search bar in the toolbar at the bottom (usually) of the screen. Type in 'cmd' and click on Command Prompt when it pops up. Once it pops up, use the command cd to change to the proteosushi folder, as in
+Finally, in **Windows**, open the command prompt by clicking on the search bar in the toolbar at the bottom (usually) of the screen. Type in 'cmd' and click on Command Prompt when it pops up. Once Command Prompt pops up, use the command cd to change to the proteosushi folder in the downloaded files, as in
 `cd Downloads/ProteoSushi-master/proteosushi`
 and the dir command to list the contents of the current folder, as in
 `dir`
@@ -70,7 +70,7 @@ to run ProteoSushi.
 
 ## Files Needed
 
-In order to run ProteoSushi, there are some required files in specific formats:
+In order to run ProteoSushi, there are some required files in specific formats. Example files are included in the 'examples' folder in the downloaded files:
 
 - The CSV file output from **Mascot**
 
