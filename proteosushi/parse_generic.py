@@ -24,7 +24,10 @@ def get_PTMs(sky_filename: str) -> list:
     with open(sky_filename, 'r') as sky_output:
         tsv_reader = csv.reader(sky_output, quotechar='"')
         header = next(tsv_reader)
-        seq_index = header.index("Peptide Sequence")
+        try:
+            seq_index = header.index("Peptide Sequence")
+        except ValueError:
+            return -4
         mod_index = -1
         try:
             mod_index = header.index("Peptide Modified Sequence") #NOTE: apparently, this changes, so check here.
@@ -34,7 +37,7 @@ def get_PTMs(sky_filename: str) -> list:
             except ValueError:
                 print("\033[91m {}\033[00m".format("No peptide modified sequence column detected in the Skyline output file."))
                 print("\033[91m {}\033[00m".format("Please add or modify header with the name \"Peptide Modified Sequence\"\n"))
-                sys.exit()
+                return -4
         
         mod_list = []
         for row in tsv_reader:

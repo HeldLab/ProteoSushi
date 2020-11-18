@@ -59,6 +59,7 @@ def parse_mascot(in_file: str) -> list:
         enzyme = ""
         missed_cleaves = -1
         quant_range = None
+        var_mod_map = dict()
         for row in file_reader:
             if row:  # lots of blank rows
                 # Pull data we need
@@ -73,7 +74,10 @@ def parse_mascot(in_file: str) -> list:
                 elif row[0] == "prot_hit_num" or row[0] == "prot_acc":
                     # This should be last elif; start of quantitative info
                     header = row
+                    header.remove('')
                     second_row = next(file_reader)  # need to normalize headers
+                    print(header)
+                    print(second_row)
                     quant_range = (len(header), len(second_row)-1)  #range where there will be quant; appears to skip some
                     header.extend(['SampleQuant' 
                                    for i in range(len(second_row) - len(header))])
@@ -81,7 +85,9 @@ def parse_mascot(in_file: str) -> list:
                     for row in file_reader:
                         out_writer.writerow(row)
                     break  # Exit loop as we have all of the header information
-        print('done parsing')
+        print("Finished Parsing")
+        if quant_range is None:
+            return -5, None, None, None
         return enzyme, quant_range, var_mod_map, missed_cleaves
 
 

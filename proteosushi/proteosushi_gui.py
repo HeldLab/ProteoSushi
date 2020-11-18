@@ -53,6 +53,8 @@ class App(QMainWindow):
         self.height = 480
         self.centralWidget = QWidget()
         self.setCentralWidget(self.centralWidget)
+        self.setWindowTitle("ProteoSushi")
+        self.setWindowIcon(QIcon("ProteoSushi_icon.png"))
         self.species_id_dict = self.__make_species_dict()
         self.species_name_dict = {v:k for k, v in self.species_id_dict.items()}
         self.threadpool = QThreadPool()
@@ -345,6 +347,11 @@ class App(QMainWindow):
         if os.path.exists(filename):
             self.mascot_filepath.setText(filename)
             missed_cleavages, enzyme, PTMs = parse_output("mascot", filename)
+            if missed_cleavages == -5:
+                self.statusBar().showMessage("Invalid Mascot file")
+                self.statusBar().setStyleSheet("background-color : red")
+                self.mascot_filepath.setText("")
+                return
             self.max_missed_edit.setText(str(missed_cleavages))
             self.protease_combo_box.setEditText(enzyme)
             #Remove the previous PTM checkboxes (if there were any)
@@ -383,6 +390,11 @@ class App(QMainWindow):
             if missed_cleavages == -3:
                 self.statusBar().showMessage("A sequence in the Peptide Modified Sequence column is missing PTMs")
                 self.statusBar().setStyleSheet("background-color : red")
+                return
+            if missed_cleavages == -4:
+                self.statusBar().showMessage("Invalid file")
+                self.statusBar().setStyleSheet("background-color : red")
+                self.generic_filepath.setText("")
                 return
             #Remove the previous PTM checkboxes (if there were any)
             if self.PTM_CBs != []:

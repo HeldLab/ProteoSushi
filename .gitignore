@@ -123,3 +123,5 @@ proteosushi/.~lock.mascot_test.csv#
 proteosushi/.~lock.proteosushi_output.csv#
 proteosushi/test_1.csv
 proteosushi/maxquant_test.csv
+proteosushi/examples/MascotEGFR_quant.csv
+proteosushi/examples/.~lock.MascotEGFR_quant.csv#

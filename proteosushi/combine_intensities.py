@@ -326,6 +326,8 @@ def parse_output(search_engine: str, search_engine_filepath: str) -> list:
         PTMs = parse_generic.get_PTMs(search_engine_filepath)
         if PTMs == -3:
             return -3, None, None  # "A sequence in the Peptide Modified Sequence column is missing PTMs"
+        if PTMs == -4:
+            return -4, None, None
     elif rollup_file == "maxquant":
         MQ_dir = search_engine_filepath
         sum_file = os.path.join(MQ_dir, "summary.txt")
@@ -333,6 +335,8 @@ def parse_output(search_engine: str, search_engine_filepath: str) -> list:
         mod_dict, PTMs = parse_MaxQuant.parse_evidence(os.path.join(MQ_dir, "evidence.txt"))  # This grabs the PTMs from the evidence file
     elif rollup_file == "mascot":
         enzyme, quant_range, var_mod_map, missed_cleavages = ps_utilities.parse_mascot(search_engine_filepath)
+        if enzyme == -5:
+            return -5, None, None
         PTMs = list(var_mod_map.keys())
     else:  # It shouldn't be able to get here
         assert False, "Not a valid file from search"
