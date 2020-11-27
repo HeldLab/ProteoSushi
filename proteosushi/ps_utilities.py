@@ -74,10 +74,10 @@ def parse_mascot(in_file: str) -> list:
                 elif row[0] == "prot_hit_num" or row[0] == "prot_acc":
                     # This should be last elif; start of quantitative info
                     header = row
-                    header.remove('')
+                    header = [i for i in header if i]
                     second_row = next(file_reader)  # need to normalize headers
-                    print(header)
-                    print(second_row)
+                    #print(header)
+                    #print(second_row)
                     quant_range = (len(header), len(second_row)-1)  #range where there will be quant; appears to skip some
                     header.extend(['SampleQuant' 
                                    for i in range(len(second_row) - len(header))])

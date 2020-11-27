@@ -534,8 +534,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             continue
         total_seqs += 1
         raw_seq = row[sequence_index]
-        if raw_seq == "DLGGIVLANACGPCIGQWDR":
-            print("start")
+        #if raw_seq == "DLGGIVLANACGPCIGQWDR":
+        #    print("start")
         pep_mod_seq = row[modified_sequence_index]
         #if pep_mod_seq == "DLGGIVLANAC(ne)GPC(ca)IGQWDR":
         #    print("start")
