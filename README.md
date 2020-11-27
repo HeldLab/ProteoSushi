@@ -27,15 +27,15 @@ Download python from [here](https://www.python.org/downloads/) and install if ne
 
 There are two ways to install ProteoSushi: 
 
-1. **Coming Soon:** Through pip
+1. Through pip
 
-~~The (likely) easier way is by opening the terminal (or command prompt in Windows) and running the command~~
+The (likely) easier way is by opening the terminal (or command prompt in Windows) and running the command
 
-~~`pip install proteosushi`~~
+`pip install proteosushi`
 
-~~While in the terminal, run python with the command 
+While in the terminal, run python with the command 
 `python` 
-(or start python in Windows) and run the next two commands to import the module and run the GUI:~~
+(or start python in Windows) and run the next two commands to import the module and run the GUI:
 
 ```
 from run_proteosushi import run_proteosushi
