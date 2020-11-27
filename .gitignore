@@ -126,3 +126,15 @@ proteosushi/maxquant_test.csv
 proteosushi/examples/MascotEGFR_quant.csv
 proteosushi/examples/.~lock.MascotEGFR_quant.csv#
 proteosushi/test_mascot_quant.csv
+dist/proteosushi-1.0.0.tar.gz
+dist/proteosushi-1.0.1.tar.gz
+proteosushi_rseymour1.egg-info/dependency_links.txt
+proteosushi_rseymour1.egg-info/PKG-INFO
+proteosushi_rseymour1.egg-info/requires.txt
+proteosushi_rseymour1.egg-info/SOURCES.txt
+proteosushi_rseymour1.egg-info/top_level.txt
+proteosushi.egg-info/dependency_links.txt
+proteosushi.egg-info/PKG-INFO
+proteosushi.egg-info/requires.txt
+proteosushi.egg-info/SOURCES.txt
+proteosushi.egg-info/top_level.txt

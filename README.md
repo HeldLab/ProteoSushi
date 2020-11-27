@@ -34,7 +34,9 @@ The (likely) easier way is by opening the terminal (or command prompt in Windows
 `pip install proteosushi`
 
 While in the terminal, run python with the command 
+
 `python` 
+
 (or start python in Windows) and run the next two commands to import the module and run the GUI:
 
 ```
@@ -49,34 +51,53 @@ Download the files directly from [GitHub](https://github.com/HeldLab/ProteoSushi
 Once unpacked (unzipped), we will need to use the terminal (command prompt in Windows) to run ProteoSushi.
 
 Before running ProteoSushi, you will need to install some dependencies. In the terminal/command prompt, run the following commands:
-`pip install PyQt5`
-`pip install requests`
-`pip install pandas`
+```
+pip install PyQt5
+pip install requests
+pip install pandas
+```
+
 If that doesn't install correctly, use the following commands:
-`python -m pip install PyQt5`
-`python -m pip install requests`
-`python -m pip install pandas`
+```
+python -m pip install PyQt5
+python -m pip install requests
+python -m pip install pandas
+```
 
 Now we will run ProteoSushi itself.
 
 For **MacOS**, use Finder to navigate to the 'proteosushi' folder in the downloaded files. Right click (or command click) on the 'proteosushi' folder -> Services -> New Terminal at Folder to open a new terminal in the 'proteosushi' folder. Run the command 
+
 `python run_proteoSushi.py`
+
 to start the GUI.
 
 Alternatively, in **MacOS** or **Linux**, you can open the terminal and navigate within the terminal to the 'proteosushi' folder in the downloaded files. Use the cd command to change the current folder as in 
+
 `cd Downloads/ProteoSushi-master/proteosushi` 
+
 and use the ls command to list the contents of the current folder as in
+
 `ls`
+
 , then use the command
+
 `python run_proteoSushi.py`
+
 to run ProteoSushi.
 
 Finally, in **Windows**, open the command prompt by clicking on the search bar in the toolbar at the bottom (usually) of the screen. Type in 'cmd' and click on Command Prompt when it pops up. Once Command Prompt pops up, use the command cd to change to the 'proteosushi' folder in the downloaded files, as in
+
 `cd Downloads/ProteoSushi-master/proteosushi`
+
 and the dir command to list the contents of the current folder, as in
+
 `dir`
+
 , then use the command
+
 `python run_proteoSushi.py`
+
 to run ProteoSushi.
 
 ## Files Needed
