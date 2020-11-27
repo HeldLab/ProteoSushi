@@ -48,6 +48,17 @@ Download the files directly from [GitHub](https://github.com/HeldLab/ProteoSushi
 
 Once unpacked (unzipped), we will need to use the terminal (command prompt in Windows) to run ProteoSushi.
 
+Before running ProteoSushi, you will need to install some dependencies. In the terminal/command prompt, run the following commands:
+`pip install PyQt5`
+`pip install requests`
+`pip install pandas`
+If that doesn't install correctly, use the following commands:
+`python -m pip install PyQt5`
+`python -m pip install requests`
+`python -m pip install pandas`
+
+Now we will run ProteoSushi itself.
+
 For **MacOS**, use Finder to navigate to the 'proteosushi' folder in the downloaded files. Right click (or command click) on the 'proteosushi' folder -> Services -> New Terminal at Folder to open a new terminal in the 'proteosushi' folder. Run the command 
 `python run_proteoSushi.py`
 to start the GUI.
