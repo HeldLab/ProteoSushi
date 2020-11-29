@@ -6,7 +6,7 @@ import os
 from re import match
 from time import sleep
 
-from ps_utilities import parse_mascot, load_pepdict #most of the parsing actually happens here 
+from .ps_utilities import parse_mascot, load_pepdict #most of the parsing actually happens here 
 
 '''
 def __promptFile() -> str:
@@ -98,7 +98,7 @@ def __promptPTMs(PTMs: list) -> list:
     return modPTMs
 '''
 
-def compile_data(search_engine_filepath: str, PTMs: list) -> list:
+def compile_data_mascot(search_engine_filepath: str, PTMs: list) -> list:
     """Takes the lists and dictionaries needed to parse files
 
     Arguments:

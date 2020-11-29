@@ -138,3 +138,9 @@ proteosushi.egg-info/PKG-INFO
 proteosushi.egg-info/requires.txt
 proteosushi.egg-info/SOURCES.txt
 proteosushi.egg-info/top_level.txt
+proteosushi/__pycache__/__init__.cpython-37.pyc
+proteosushi/__pycache__/__main__.cpython-37.pyc
+proteosushi/__pycache__/run_proteoSushi.cpython-37.pyc
+dist/proteosushi-1.0.2.tar.gz
+dist/proteosushi-1.0.3.tar.gz
+dist/proteosushi-1.0.4.tar.gz

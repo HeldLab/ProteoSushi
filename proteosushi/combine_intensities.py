@@ -8,11 +8,14 @@ import pandas as pd
 from re import finditer, match, findall
 from time import sleep
 
-from download_uniprot_AS import download_AS_file
-import parse_mascot, parse_MaxQuant, parse_generic, sparql
-from proteoSushi_constants import cleave_rules, annotation_type_dict, secondary_annotations
+from .download_uniprot_AS import download_AS_file
+from .parse_mascot import compile_data_mascot
+from .parse_MaxQuant import compile_data_maxquant, parse_evidence
+from .parse_generic import compile_data_generic, get_PTMs
+from .sparql import process_sparql_output, sparql_request
+from .proteoSushi_constants import cleave_rules, annotation_type_dict, secondary_annotations
 #from ruputilities import load_pepdict, parse_mascot, parse_maxquant_summary
-import ps_utilities
+from .ps_utilities import parse_mascot, load_pepdict, parse_maxquant_summary
 
 '''
 def __promptCleavenMissed() -> list:
@@ -323,7 +326,7 @@ def parse_output(search_engine: str, search_engine_filepath: str) -> list:
     if rollup_file == "generic":
         missed_cleavages = -1
         enzyme = ""
-        PTMs = parse_generic.get_PTMs(search_engine_filepath)
+        PTMs = get_PTMs(search_engine_filepath)
         if PTMs == -3:
             return -3, None, None  # "A sequence in the Peptide Modified Sequence column is missing PTMs"
         if PTMs == -4:
@@ -331,10 +334,10 @@ def parse_output(search_engine: str, search_engine_filepath: str) -> list:
     elif rollup_file == "maxquant":
         MQ_dir = search_engine_filepath
         sum_file = os.path.join(MQ_dir, "summary.txt")
-        enzyme, missed_cleavages = ps_utilities.parse_maxquant_summary(sum_file)
-        mod_dict, PTMs = parse_MaxQuant.parse_evidence(os.path.join(MQ_dir, "evidence.txt"))  # This grabs the PTMs from the evidence file
+        enzyme, missed_cleavages = parse_maxquant_summary(sum_file)
+        mod_dict, PTMs = parse_evidence(os.path.join(MQ_dir, "evidence.txt"))  # This grabs the PTMs from the evidence file
     elif rollup_file == "mascot":
-        enzyme, quant_range, var_mod_map, missed_cleavages = ps_utilities.parse_mascot(search_engine_filepath)
+        enzyme, quant_range, var_mod_map, missed_cleavages = parse_mascot(search_engine_filepath)
         if enzyme == -5:
             return -5, None, None
         PTMs = list(var_mod_map.keys())
@@ -484,19 +487,19 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     if rollup_file == "generic":
         #output_filename = "generic_rollup.csv"
         sequence_index, modified_sequence_index, mod_dict, intensity_start, data_filename, \
-            var_mod_dict = parse_generic.compile_data(search_engine_filepath, user_PTMs)
+            var_mod_dict = compile_data_generic(search_engine_filepath, user_PTMs)
         data_file = open(data_filename, 'r')
         tsv_reader = csv.reader(data_file, quotechar='"')
     elif rollup_file == "maxquant":
         #output_filename = "maxquant_rollup.csv"
         sequence_index, modified_sequence_index, mod_dict, intensity_start, data_filename, \
-            var_mod_dict = parse_MaxQuant.compile_data(search_engine_filepath, user_PTMs)
+            var_mod_dict = compile_data_maxquant(search_engine_filepath, user_PTMs)
         data_file = open(data_filename, 'r')
         tsv_reader = csv.reader(data_file, delimiter='\t', quotechar='"')
     elif rollup_file == "mascot":
         #output_filename = "mascot_rollup.csv"
         sequence_index, modified_sequence_index, mod_dict, intensity_start, data_filename, \
-            var_mod_dict = parse_mascot.compile_data(search_engine_filepath, user_PTMs)
+            var_mod_dict = compile_data_mascot(search_engine_filepath, user_PTMs)
         data_file = open(data_filename, 'r')
         tsv_reader = csv.reader(data_file, quotechar='"')
         if intensity_start is None and use_quant:
@@ -506,7 +509,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
 
     enzyme = protease
     missed_cleavages = max_missed_cleavages
-    pep_dict = ps_utilities.load_pepdict(proteome_fasta_filepath, enzyme, missed_cleavages)
+    pep_dict = load_pepdict(proteome_fasta_filepath, enzyme, missed_cleavages)
     annotDict = __load_annot_dict(annot_filename)
 
     if use_target:
@@ -814,7 +817,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         # Separates the input into batches then sends those batches
         while i + batch <= len(sparql_input):
             # Makes the request and sends it to uniprot
-            batch_output = sparql.sparql_request(sparql_input[i:i+batch])
+            batch_output = sparql_request(sparql_input[i:i+batch])
 
             #If there is a 502 error, send that to the GUI to display
             if isinstance(batch_output, int) and batch_output == 502:
@@ -827,7 +830,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                 continue
 
             # This processes and combines the annotations to 1 per site
-            sparql_output, sparql_dict = sparql.process_sparql_output(batch_output, sparql_dict)
+            sparql_output, sparql_dict = process_sparql_output(batch_output, sparql_dict)
             if not sparql_output:
                 print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+batch+1} not annotated!"))
                 i += batch
@@ -836,7 +839,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             i += batch
             results_annotated += batch
             print("\033[96m {}\033[00m" .format(f"{round(float(results_annotated)/len(sparql_input)*100, 2)}% of results annotated"))
-        batch_output = sparql.sparql_request(sparql_input[i:])
+        batch_output = sparql_request(sparql_input[i:])
 
         #If there is a 502 error, send that to the GUI to display
         if isinstance(batch_output, int) and batch_output == 502:
@@ -846,7 +849,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+len(sparql_input[i:])+1} not annotated!"))
             pass
         else:
-            sparql_output, sparql_dict = sparql.process_sparql_output(batch_output, sparql_dict)
+            sparql_output, sparql_dict = process_sparql_output(batch_output, sparql_dict)
             if not sparql_output:
                 print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+batch+1} not annotated!"))
                 pass

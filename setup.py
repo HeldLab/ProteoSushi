@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="proteosushi",
-    version="1.0.1",
+    version="1.0.4",
     author="Rob Seymour",
     author_email="rseymour@wustl.edu",
     description="",
@@ -29,7 +29,7 @@ setuptools.setup(
     python_requires=">=3.7",
     install_requires=[
         "PyQt5>=5.15",
-        "request>=2.24.0",
-        "pandas>=1.0.4"
+        "requests>=2.24",
+        "pandas>=1.0"
     ]
 )

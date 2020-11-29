@@ -8,7 +8,7 @@ import os.path
 from re import match
 from time import sleep
 
-from ps_utilities import load_pepdict, parse_maxquant_summary
+from .ps_utilities import load_pepdict, parse_maxquant_summary
 
 def parse_evidence(filename: str) -> dict:
     """parses the evidence file and builds a dictionary for PTMs
@@ -109,7 +109,7 @@ def __prompt_PTMs(PTMs: list) -> list:
         return __prompt_PTMs(PTMs)
     return mod_PTMs
 '''
-def compile_data(search_engine_filepath: str, user_PTMs: list) -> list:
+def compile_data_maxquant(search_engine_filepath: str, user_PTMs: list) -> list:
     """Takes the lists and dictionaries needed to parse files
     Returns:
         int -- index of unmodified sequence

@@ -12,9 +12,9 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QMainWindow, QPushButton,
 from PyQt5.QtCore import pyqtSlot, QSize, Qt, QRunnable, QObject, QThreadPool, pyqtSignal
 from PyQt5.QtGui import QIcon
 
-from combine_intensities import parse_output, rollup
-from parse_proteome import parse_proteome
-from proteoSushi_constants import cleave_rules
+from .combine_intensities import parse_output, rollup
+from .parse_proteome import parse_proteome
+from .proteoSushi_constants import cleave_rules
 
 
 class WorkerSignals(QObject):

@@ -8,7 +8,8 @@ import csv
 from collections import defaultdict
 import ntpath
 import os
-from ps_digest import digest, fasta_producer, cleave_rule_determination
+
+from .ps_digest import digest, fasta_producer, cleave_rule_determination
 
 
 def parse_maxquant_summary(infile: str) -> list:

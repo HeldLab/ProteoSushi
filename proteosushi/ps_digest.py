@@ -8,7 +8,7 @@ from collections import defaultdict
 import re
 import pickle
 
-from proteoSushi_constants import cleave_rules
+from .proteoSushi_constants import cleave_rules
 
 # NOTE: ONLY HANDLES SINGLE ORGANISM. Use ProteoClade for multi-organism/PDX files.
 

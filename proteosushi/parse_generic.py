@@ -9,8 +9,8 @@ from re import findall, finditer, match
 import sys
 from time import sleep
 
-from proteoSushi_constants import cleave_rules
-from ps_utilities import load_pepdict
+from .proteoSushi_constants import cleave_rules
+from .ps_utilities import load_pepdict
 
 
 def get_PTMs(sky_filename: str) -> list:
@@ -237,7 +237,7 @@ def __prompt_PTMs(PTMs: list) -> list:
     return mod_PTMs
 '''
 
-def compile_data(search_engine_filepath: str, user_PTMs: list) -> list:
+def compile_data_generic(search_engine_filepath: str, user_PTMs: list) -> list:
     """Takes the lists and dictionaries needed to parse files
 
     Arguments:

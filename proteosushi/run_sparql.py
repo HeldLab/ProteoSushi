@@ -1,6 +1,6 @@
 """run_sparql.py: runs the sparql script independent of ProteoSushi"""
 
-from sparql import sparql_request
+from .sparql import sparql_request
 
 from time import sleep
 
