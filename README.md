@@ -29,11 +29,29 @@ There are two ways to install ProteoSushi:
 
 1. Through **PIP**
 
-The (likely) easier way is by opening the terminal (or command prompt in Windows) and running the command
+This is (likely) the easier way to install.
 
-`pip install proteosushi`
+**In Windows:** 
 
-While in the terminal, run ProteoSushi with the command:
+Open the command prompt by typing `cmd` into the search bar (probably at the bottom of the screeen) and clicking on "Command Prompt" when it pops up. Run the command:
+
+`py -m pip install proteosushi`
+
+While in the command prompt, run ProteoSushi with the command:
+
+`py -m proteosushi`
+
+**In MacOS/Linux:**
+
+Open the terminal in MacOS by either searching for it in spotlight or manually finding it in the application list.
+
+In linux, the terminal is among one of the installed applications. If you use linux, you most likely already know how to use the terminal.
+
+Once the terminal is open, run the command:
+
+`python -m pip install proteosushi`
+
+While the terminal is open, run ProteoSushi with the command:
 
 `python -m proteosushi`
 
@@ -55,6 +73,13 @@ If that doesn't install correctly, use the following commands:
 python -m pip install PyQt5
 python -m pip install requests
 python -m pip install pandas
+```
+
+In Windows, run these commands instead:
+```
+py -m pip install PyQt5
+py -m pip install requests
+py -m pip install pandas
 ```
 
 Now we will run ProteoSushi itself.
@@ -89,7 +114,7 @@ and the dir command to list the contents of the current folder, as in
 
 , then use the command
 
-`python run_proteoSushi.py`
+`py run_proteoSushi.py`
 
 to run ProteoSushi.
 

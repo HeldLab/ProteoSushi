@@ -62,6 +62,29 @@ def sparql_request(unpid_site_list: list):
     #print(unpid_site_list_str)
 
 
+    '''
+SELECT
+    ?entry
+    ?position
+	?type
+FROM <http://sparql.uniprot.org/uniprot>
+WHERE {
+    VALUES (?entry ?position) {(uniprotkb:P01375 44)
+    (uniprotkb:P00533 41)
+    (uniprotkb:P15692 39)
+    (uniprotkb:P02649 50)
+    (uniprotkb:P04637 100)
+    (uniprotkb:P08887 41)
+    (uniprotkb:P42898 41)
+    (uniprotkb:P03372 41)
+    }
+    ?entry up:annotation ?annotation .
+    ?annotation up:range ?range ;
+               a ?type 
+  #FILTER ( REGEX(STR(?annotation), "Similarity_Annotation"))
+} ORDER BY DESC(?entry) ASC(?position)
+    '''
+
     prefix="""PREFIX uniprotkb: <http://purl.uniprot.org/uniprot/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -69,7 +92,7 @@ PREFIX faldo: <http://biohackathon.org/resource/faldo#>
 PREFIX up: <http://purl.uniprot.org/core/>
 PREFIX ec: <http://purl.uniprot.org/enzyme/>"""
 
-
+    #TODO: Add up:Similarity_Annotation, 
     new_entry_length_pos_query = prefix + """
 SELECT
     ?entry
