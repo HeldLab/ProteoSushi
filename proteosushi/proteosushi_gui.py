@@ -2,6 +2,7 @@
 
 """proteosushi_gui.py: displays the GUI and connects it to the main program"""
 
+import importlib.resources as pkg_resources
 import os
 import sys
 from PyQt5 import QtCore
@@ -13,6 +14,7 @@ from PyQt5.QtCore import pyqtSlot, QSize, Qt, QRunnable, QObject, QThreadPool, p
 from PyQt5.QtGui import QIcon
 
 from .combine_intensities import parse_output, rollup
+from . import lib
 from .parse_proteome import parse_proteome
 from .proteoSushi_constants import cleave_rules
 
@@ -249,7 +251,8 @@ class App(QMainWindow):
 
     def __make_species_dict(self):
         species_id_dict = dict()
-        with open("spec_list_fixed.tsv", 'r') as spec_list:
+        with pkg_resources.open_text(lib, "spec_list_fixed.tsv") as spec_list:
+        #with pkg_resources.open_text(__package__, "spec_list_fixed.tsv") as spec_list:
             for line in spec_list:
                 split_line = line.strip().split('\t')
                 species_id_dict[split_line[0]] = split_line[1]

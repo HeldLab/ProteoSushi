@@ -22,7 +22,6 @@ quant_parsed.csv
 mascot_rollup.csv
 9606_annot_score.tsv
 ref_UNPIDs.txt
-spec_list_fixed.tsv
 unmatchedSequencesmascot_rollup.csv
 proteosushi/sparql_annotations.csv
 proteosushi/proteosushi_200817.zip
@@ -144,3 +143,19 @@ proteosushi/__pycache__/run_proteoSushi.cpython-37.pyc
 dist/proteosushi-1.0.2.tar.gz
 dist/proteosushi-1.0.3.tar.gz
 dist/proteosushi-1.0.4.tar.gz
+proteosushi/__pycache__/__init__.cpython-39.pyc
+proteosushi/__pycache__/__main__.cpython-39.pyc
+proteosushi/__pycache__/combine_intensities.cpython-39.pyc
+proteosushi/__pycache__/download_uniprot_AS.cpython-39.pyc
+proteosushi/__pycache__/parse_generic.cpython-39.pyc
+proteosushi/__pycache__/parse_mascot.cpython-39.pyc
+proteosushi/__pycache__/parse_MaxQuant.cpython-39.pyc
+proteosushi/__pycache__/parse_proteome.cpython-39.pyc
+proteosushi/__pycache__/proteoSushi_constants.cpython-39.pyc
+proteosushi/__pycache__/proteosushi_gui.cpython-39.pyc
+proteosushi/__pycache__/ps_digest.cpython-39.pyc
+proteosushi/__pycache__/ps_utilities.cpython-39.pyc
+proteosushi/__pycache__/sparql.cpython-39.pyc
+dist/proteosushi-1.0.5.tar.gz
+dist/proteosushi-1.0.6.tar.gz
+dist/proteosushi-1.0.7.tar.gz
