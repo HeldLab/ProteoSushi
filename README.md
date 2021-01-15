@@ -25,6 +25,8 @@ The machine running ProteoSushi must have:
 
 Download python from [here](https://www.python.org/downloads/) and install if needed.
 
+*Those who have python 2.7 installed along with python 3.x will need to replace the python and pip commands with python3 and pip3 respectively*
+
 There are two ways to install ProteoSushi: 
 
 1. Through **PIP**

@@ -14,7 +14,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/HeldLab/ProteoSushi",
-    download_url="https://github.com/HeldLab/ProteoSushi/archive/v1.0.0.tar.gz",
+    download_url="https://github.com/HeldLab/ProteoSushi/archive/v1.1.0.tar.gz",
     include_package_data=True,
     packages=setuptools.find_packages(),
     package_dir={
