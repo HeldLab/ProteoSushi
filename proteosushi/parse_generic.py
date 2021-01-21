@@ -24,20 +24,27 @@ def get_PTMs(sky_filename: str) -> list:
     with open(sky_filename, 'r') as sky_output:
         tsv_reader = csv.reader(sky_output, quotechar='"')
         header = next(tsv_reader)
+        header_lower = [s.lower() for s in header]
         try:
-            seq_index = header.index("Peptide Sequence")
-        except ValueError:
-            return -4
-        mod_index = -1
-        try:
-            mod_index = header.index("Peptide Modified Sequence") #NOTE: apparently, this changes, so check here.
+            seq_index = header_lower.index("peptide sequence")
         except ValueError:
             try:
-                mod_index = header.index("Modified Sequence")
+                seq_index = header_lower.index("peptide")
             except ValueError:
-                print("\033[91m {}\033[00m".format("No peptide modified sequence column detected in the Skyline output file."))
-                print("\033[91m {}\033[00m".format("Please add or modify header with the name \"Peptide Modified Sequence\"\n"))
                 return -4
+        mod_index = -1
+        try:
+            mod_index = header_lower.index("peptide modified sequence") #NOTE: apparently, this changes, so check here.
+        except ValueError:
+            try:
+                mod_index = header_lower.index("modified sequence")
+            except ValueError:
+                try:
+                    mod_index = header_lower.index("modified peptide")
+                except ValueError:
+                    print("\033[91m {}\033[00m".format("No peptide modified sequence column detected in the generic output file."))
+                    print("\033[91m {}\033[00m".format("Please add or modify header with the name \"Peptide Modified Sequence\"\n"))
+                    return -4
         
         mod_list = []
         for row in tsv_reader:
@@ -72,17 +79,27 @@ def create_mod_dict(sky_filename: str, user_PTMs: list) -> dict:
     with open(sky_filename, 'r') as sky_output:
         tsv_reader = csv.reader(sky_output, quotechar='"')
         header = next(tsv_reader)
-        seq_index = header.index("Peptide Sequence")
-        mod_index = -1
+        header_lower = [s.lower() for s in header]
         try:
-            mod_index = header.index("Peptide Modified Sequence") #NOTE: apparently, this changes, so check here.
+            seq_index = header_lower.index("peptide sequence")
         except ValueError:
             try:
-                mod_index = header.index("Modified Sequence")
+                seq_index = header_lower.index("peptide")
             except ValueError:
-                print("\033[91m {}\033[00m".format("No peptide modified sequence column detected in the Skyline output file."))
-                print("\033[91m {}\033[00m".format("Please add or modify header with the name \"Peptide Modified Sequence\"\n"))
-                sys.exit()
+                return -4
+        mod_index = -1
+        try:
+            mod_index = header_lower.index("peptide modified sequence") #NOTE: apparently, this changes, so check here.
+        except ValueError:
+            try:
+                mod_index = header_lower.index("modified sequence")
+            except ValueError:
+                try:
+                    mod_index = header_lower.index("modified peptide")
+                except ValueError:
+                    print("\033[91m {}\033[00m".format("No peptide modified sequence column detected in the generic output file."))
+                    print("\033[91m {}\033[00m".format("Please add or modify header with the name \"Peptide Modified Sequence\"\n"))
+                    return -4
         
         for row in tsv_reader:
             # This grabs the PTMs in each sequence and builds a list of all of them
@@ -268,16 +285,27 @@ def compile_data_generic(search_engine_filepath: str, user_PTMs: list) -> list:
     skyFile = open(sky_filename, 'r')
     tsv_reader = csv.reader(skyFile, quotechar='"')
     header = next(tsv_reader)
-    sequence = header.index("Peptide Sequence")
+    header_lower = [s.lower() for s in header]
     try:
-        pms = header.index("Peptide Modified Sequence") #NOTE: apparently, this changes, so check here.
+        sequence = header_lower.index("peptide sequence")
     except ValueError:
         try:
-            pms = header.index("Modified Sequence")
+            sequence = header_lower.index("peptide")
         except ValueError:
-            print("\033[91m {}\033[00m".format("No peptide modified sequence column detected in the Skyline output file."))
-            print("\033[91m {}\033[00m".format("Please add or modify header with the name \"Peptide Modified Sequence\"\n"))
-            sys.exit()
+            return -4
+    pms = -1
+    try:
+        pms = header_lower.index("peptide modified sequence") #NOTE: apparently, this changes, so check here.
+    except ValueError:
+        try:
+            pms = header_lower.index("modified sequence")
+        except ValueError:
+            try:
+                pms = header_lower.index("modified peptide")
+            except ValueError:
+                print("\033[91m {}\033[00m".format("No peptide modified sequence column detected in the generic output file."))
+                print("\033[91m {}\033[00m".format("Please add or modify header with the name \"Peptide Modified Sequence\"\n"))
+                return -4
     #UNPID = -1
     #try:
     #    UNPID = header.index("Protein Accession")

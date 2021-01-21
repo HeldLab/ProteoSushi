@@ -24,14 +24,15 @@ def parse_evidence(filename: str) -> dict:
     with open(filename, 'r') as evidence_file:
         tsv_reader = csv.reader(evidence_file, delimiter='\t', quotechar='"')
         header = next(tsv_reader)
-        seq_index = header.index("Sequence")
+        header_lower = [s.lower() for s in header]
+        seq_index = header_lower.index("sequence")
         #modIndices = [i for i, s in enumerate(header) if "Probabilities" in s]
-        modified_index = header.index("Modified sequence")
-        mods_index = header.index("Modifications")
+        modified_index = header_lower.index("modified sequence")
+        mods_index = header_lower.index("modifications")
         #PTMs = [ptm.split(" Probabilities")[0] for ptm in header if "Probabilities" in ptm]
-        start_index = header.index([ptm for ptm in header if "Score Diffs" in ptm][-1]) + 1
-        end_index = header.index("Missed cleavages")
-        PTMs = header[start_index:end_index]
+        start_index = header_lower.index([ptm for ptm in header if "score diffs" in ptm][-1]) + 1
+        end_index = header_lower.index("missed cleavages")
+        PTMs = header_lower[start_index:end_index]
         for row in tsv_reader:
             pep_mods = dict()
             sequence = row[seq_index].replace('L', 'I')
@@ -128,8 +129,9 @@ def compile_data_maxquant(search_engine_filepath: str, user_PTMs: list) -> list:
     evidence_file = open(evidence_filename, 'r')
     tsv_reader = csv.reader(evidence_file, delimiter='\t', quotechar='"')
     header = next(tsv_reader)
-    sequence = header.index("Sequence")
-    mod_seq = header.index("Modified sequence")
+    header_lower = [s.lower() for s in header]
+    sequence = header_lower.index("sequence")
+    mod_seq = header_lower.index("modified sequence")
     reporter_intensities = [i for i, h in enumerate(header) if "intensit" in h.lower() and 
                                                                not "max intensity m/z" in h.lower()]
     #reporter_intensity = header.index("Intensity")
