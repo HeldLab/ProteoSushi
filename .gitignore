@@ -186,3 +186,7 @@ proteosushi/examples/PSMs/plex-21_psm.tsv
 proteosushi/examples/PSMs/plex-22_psm.tsv
 proteosushi/examples/PSMs/plex-23_psm.tsv
 proteosushi/oximouse_formatter.py
+proteosushi/examples/fastas/UNI-HUMAN-REF-20190731.pepdict
+proteosushi/examples/miss_cleavage_puzzler_1.csv
+proteosushi/lib/__pycache__/__init__.cpython-37.pyc
+unmatched_sequences_generic.csv

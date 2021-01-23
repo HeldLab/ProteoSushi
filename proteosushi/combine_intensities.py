@@ -157,7 +157,7 @@ def __chooseTup(tuples: list, annot_dict: dict) -> list:
                 return None, None'''
 
 
-def __clean_pep_seq(rule: tuple, pep_mod_seq: str, user_PTMs: list) -> str:
+def __clean_pep_seq(rule: tuple, pep_mod_seq: str, user_PTMs: list, old_pep_seq: str) -> str:
     """Removes the missed cleavages without selected PTMs
 
     Arguments:
@@ -167,12 +167,32 @@ def __clean_pep_seq(rule: tuple, pep_mod_seq: str, user_PTMs: list) -> str:
     Returns:
         str -- the cleaned peptide
     """
+    # Puts break points for unmodified sequence in a list
+    breaks = finditer(rule[0], old_pep_seq)
+    cut_unmod_sites = []
+    cut_unmod_peptides = []
+    for breakp in breaks:
+        cut_unmod_sites.append(breakp.start())
+    # Adds the unmodified cut peptides in one at a time
+    last_site = 0
+    if rule[1].lower() == 'c':
+        for i in cut_unmod_sites:
+            cut_unmod_peptides.append(old_pep_seq[last_site:i+1])
+            last_site = i + 1
+        cut_unmod_peptides.append(old_pep_seq[last_site:])
+    elif rule[1].lower() == 'n':
+        for i in cut_unmod_sites:
+            cut_unmod_peptides.append(old_pep_seq[last_site:i])
+            last_site = i
+        cut_unmod_peptides.append(old_pep_seq[last_site:])
+
+    # Puts the break points for modified sequence in a list
     breaks = finditer(rule[0], pep_mod_seq)
     cut_sites = []
     cut_peptides = []
     for breakp in breaks:
         cut_sites.append(breakp.start())
-
+    # Adds the cut peptides in one at a time
     last_site = 0
     if rule[1].lower() == 'c':
         for i in cut_sites:
@@ -184,7 +204,7 @@ def __clean_pep_seq(rule: tuple, pep_mod_seq: str, user_PTMs: list) -> str:
             cut_peptides.append(pep_mod_seq[last_site:i])
             last_site = i
         cut_peptides.append(pep_mod_seq[last_site:])
-    # This gets the range of the first and last pep_slice with 
+    # This gets the range of the first and last pep_slice with a PTM
     start = 0
     while start < len(cut_peptides):
         if any(user_PTM in cut_peptides[start] for user_PTM in user_PTMs):
@@ -201,9 +221,11 @@ def __clean_pep_seq(rule: tuple, pep_mod_seq: str, user_PTMs: list) -> str:
 
     if start == end:
         new_pep_mod_seq = cut_peptides[0]
+        new_pep_seq = cut_unmod_peptides[0]
     else:
         new_pep_mod_seq = ''.join(cut_peptides[start:end])
-    return new_pep_mod_seq
+        new_pep_seq = ''.join(cut_unmod_peptides[start:end])
+    return new_pep_mod_seq, new_pep_seq
 
 def consolidate_sequence(new_pep_mod_seq: str, new_user_PTMs: list) -> str:
     """Changes the modified peptide sequence to only have the relevant PTMs for indexing
@@ -543,6 +565,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         #if pep_mod_seq == "DLGGIVLANAC(ne)GPC(ca)IGQWDR":
         #    print("start")
         pep_seq = row[sequence_index].replace("L","I")
+        old_pep_seq = row[sequence_index]
         if pep_seq is None:
             print("HALT!")  # A handled exception would be preferable here
             break
@@ -594,11 +617,11 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         new_user_PTMs = user_PTMs
         if rollup_file == "maxquant":
             new_user_PTMs = [ptm.lower()[:2] for ptm in user_PTMs]
-        new_pep_mod_seq = __clean_pep_seq(cleave_rules[enzyme], pep_mod_seq, new_user_PTMs)
+        new_pep_mod_seq, new_pep_seq = __clean_pep_seq(cleave_rules[enzyme], pep_mod_seq, new_user_PTMs, raw_seq)
         if genes_positions and len(genes_positions) == 1:
             gene, start_pos, unpid, protein_name = list(genes_positions)[0]
             if not new_pep_mod_seq in mod_dict:
-                print("\033[91m {}\033[00m".format(f"{pep_seq} does not have the PTM(s) selected!"))
+                print("\033[91m {}\033[00m".format(f"{raw_seq} does not have the PTM(s) selected!"))
                 missing_PTM += 1
                 continue
             mods = mod_dict[new_pep_mod_seq]
@@ -629,7 +652,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                             protein_name,
                             "", 
                             gene, 
-                            raw_seq, 
+                            new_pep_seq, 
                             new_pep_mod_seq, 
                             annotDict[unpid] if unpid in annotDict else "", 
                             unpid
@@ -643,7 +666,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                             protein_name,
                             "", 
                             "", 
-                            raw_seq, 
+                            new_pep_seq, 
                             new_pep_mod_seq, 
                             annotDict[unpid] if unpid in annotDict else "", 
                             unpid
@@ -659,7 +682,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                 if isinstance(match, tuple):  # Checks if this is just a single match.
                     gene = match[0]
                     if not new_pep_mod_seq in mod_dict:
-                        print("\033[91m {}\033[00m".format(f"{pep_seq} does not have the PTM(s) selected!"))
+                        print("\033[91m {}\033[00m".format(f"{raw_seq} does not have the PTM(s) selected!"))
                         missing_PTM += 1
                         continue
                     mods = mod_dict[new_pep_mod_seq]
@@ -690,7 +713,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                     match[3],
                                     "", 
                                     gene, 
-                                    raw_seq, 
+                                    new_pep_seq, 
                                     new_pep_mod_seq, 
                                     annotDict[match[2]] if match[2] in annotDict else "", 
                                     match[2]
@@ -704,7 +727,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                     match[3],
                                     "", 
                                     "", 
-                                    raw_seq, 
+                                    new_pep_seq, 
                                     new_pep_mod_seq, 
                                     annotDict[match[2]] if match[2] in annotDict else "", 
                                     match[2]
@@ -713,7 +736,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                     sparql_input.append(tuple((match[2], site, gene)))
                 else:  # There are multiple matches
                     if not new_pep_mod_seq in mod_dict:
-                        print("\033[91m {}\033[00m".format(f"{pep_seq} does not have the PTM(s) selected!"))
+                        print("\033[91m {}\033[00m".format(f"{raw_seq} does not have the PTM(s) selected!"))
                         missing_PTM += 1
                         continue
                     mods = mod_dict[new_pep_mod_seq]
@@ -752,7 +775,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                         #match[0][3],
                                         ' '.join(gene_list), 
                                         ' '.join([i[0] for i in match]), 
-                                        raw_seq, 
+                                        new_pep_seq, 
                                         new_pep_mod_seq, 
                                         annotDict[current_match[2]] if current_match[2] in annotDict else "", 
                                         ' '.join([i[2] for i in match])
@@ -766,7 +789,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                         current_match[3], 
                                         ' '.join(gene_list), 
                                         "", 
-                                        raw_seq, 
+                                        new_pep_seq, 
                                         new_pep_mod_seq, 
                                         annotDict[current_match[2]] if current_match[2] in annotDict else "", 
                                         ' '.join([i[2] for i in match])
