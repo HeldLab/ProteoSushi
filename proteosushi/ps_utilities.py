@@ -8,9 +8,83 @@ import csv
 from collections import defaultdict
 import ntpath
 import os
+from re import finditer
 
 from .ps_digest import digest, fasta_producer, cleave_rule_determination
 
+
+def clean_pep_seq(rule: tuple, pep_mod_seq: str, user_PTMs: list, old_pep_seq: str) -> str:
+    """Removes the missed cleavages without selected PTMs
+
+    Arguments:
+        rule {tuple} -- contains info about the protease
+        pep_mod_seq {str} -- the peptide sequence with modifications
+        user_PTMs {list} -- a list of PTMs that the user has selected for Analysis
+    Returns:
+        str -- the cleaned peptide
+    """
+    #print(user_PTMs)
+    # Puts break points for unmodified sequence in a list
+    breaks = finditer(rule[0], old_pep_seq)
+    cut_unmod_sites = []
+    cut_unmod_peptides = []
+    for breakp in breaks:
+        cut_unmod_sites.append(breakp.start())
+    # Adds the unmodified cut peptides in one at a time
+    last_site = 0
+    if rule[1].lower() == 'c':
+        for i in cut_unmod_sites:
+            cut_unmod_peptides.append(old_pep_seq[last_site:i+1])
+            last_site = i + 1
+        cut_unmod_peptides.append(old_pep_seq[last_site:])
+    elif rule[1].lower() == 'n':
+        for i in cut_unmod_sites:
+            cut_unmod_peptides.append(old_pep_seq[last_site:i])
+            last_site = i
+        cut_unmod_peptides.append(old_pep_seq[last_site:])
+
+    # Puts the break points for modified sequence in a list
+    breaks = finditer(rule[0], pep_mod_seq)
+    cut_sites = []
+    cut_peptides = []
+    for breakp in breaks:
+        cut_sites.append(breakp.start())
+    # Adds the cut peptides in one at a time
+    last_site = 0
+    if rule[1].lower() == 'c':
+        for i in cut_sites:
+            cut_peptides.append(pep_mod_seq[last_site:i+1])
+            last_site = i + 1
+        cut_peptides.append(pep_mod_seq[last_site:])
+    elif rule[1].lower() == 'n':
+        for i in cut_sites:
+            cut_peptides.append(pep_mod_seq[last_site:i])
+            last_site = i
+        cut_peptides.append(pep_mod_seq[last_site:])
+    #print(cut_peptides)
+
+    # This gets the range of the first and last pep_slice with a PTM
+    start = 0
+    while start < len(cut_peptides):
+        if any(user_PTM in cut_peptides[start] for user_PTM in user_PTMs):
+            break
+        else:
+            start += 1
+    
+    end = len(cut_peptides) - 1
+    while end > start:
+        if any(user_PTM in cut_peptides[end] for user_PTM in user_PTMs):
+            break
+        else:
+            end -= 1
+
+    if start == end:
+        new_pep_mod_seq = cut_peptides[start]
+        new_pep_seq = cut_unmod_peptides[start]
+    else:
+        new_pep_mod_seq = ''.join(cut_peptides[start:end])
+        new_pep_seq = ''.join(cut_unmod_peptides[start:end])
+    return new_pep_mod_seq, new_pep_seq
 
 def parse_maxquant_summary(infile: str) -> list:
     """Pulls out information needed from the MaxQuant files

@@ -190,3 +190,8 @@ proteosushi/examples/fastas/UNI-HUMAN-REF-20190731.pepdict
 proteosushi/examples/miss_cleavage_puzzler_1.csv
 proteosushi/lib/__pycache__/__init__.cpython-37.pyc
 unmatched_sequences_generic.csv
+unmatched_sequences_mascot.csv
+unmatched_sequences_maxquant.csv
+proteosushi_output.csv
+proteosushi/examples/txt/.~lock.evidence.txt#
+proteosushi/9606_annot_score.tsv

@@ -6,7 +6,7 @@ import os
 from re import match
 from time import sleep
 
-from .ps_utilities import parse_mascot, load_pepdict #most of the parsing actually happens here 
+from .ps_utilities import clean_pep_seq, parse_mascot, load_pepdict #most of the parsing actually happens here 
 
 '''
 def __promptFile() -> str:
@@ -24,7 +24,7 @@ def __promptFile() -> str:
     return filename
 '''
 
-def __create_mod_dict(filename: str, mod_ids: list, var_mod_map: dict) -> dict:
+def __create_mod_dict(filename: str, mod_ids: list, var_mod_map: dict, cleave_rule: tuple) -> dict:
     """Makes the PTM dictionary that connects a peptide sequence with its modifications
     Arguments:
         filename {str} -- the name of the output file
@@ -98,7 +98,7 @@ def __promptPTMs(PTMs: list) -> list:
     return modPTMs
 '''
 
-def compile_data_mascot(search_engine_filepath: str, PTMs: list) -> list:
+def compile_data_mascot(search_engine_filepath: str, PTMs: list, cleave_rule: tuple) -> list:
     """Takes the lists and dictionaries needed to parse files
 
     Arguments:
@@ -158,7 +158,7 @@ def compile_data_mascot(search_engine_filepath: str, PTMs: list) -> list:
 
     #psm_contributions = defaultdict(int) #count number of psms that end up being rolled up
 
-    mod_dict = __create_mod_dict(input_filename, [var_mod_map[mod] for mod in mods_for_quant], var_mod_map)
+    mod_dict = __create_mod_dict(input_filename, [var_mod_map[mod] for mod in mods_for_quant], var_mod_map, cleave_rule)
 
     if quant_range[1] <= quant_range[0]:
         return sequence, var_mods, mod_dict, None, input_filename, var_mod_map

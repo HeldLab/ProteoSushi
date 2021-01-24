@@ -8,9 +8,29 @@ import os.path
 from re import match
 from time import sleep
 
+from .ps_utilities import clean_pep_seq
 from .ps_utilities import load_pepdict, parse_maxquant_summary
 
-def parse_evidence(filename: str) -> dict:
+
+def get_MQ_PTMs(filename: str) -> list:
+    """Parses evidence file for just the PTMs available for selection
+    Arguments:
+        filename {str} -- name of the evidence file with the location
+    Returns:
+        list -- a list of the PTMs we can use for the analysis
+    """
+    PTMs = list()
+    with open(filename, 'r') as evidence_file:
+        tsv_reader = csv.reader(evidence_file, delimiter='\t', quotechar='"')
+        header = next(tsv_reader)
+        header_lower = [s.lower() for s in header]
+        start_index = header_lower.index([ptm for ptm in header_lower if "score diffs" in ptm][-1]) + 1
+        end_index = header_lower.index("missed cleavages")
+        PTMs = header[start_index:end_index]
+    return PTMs
+
+
+def parse_evidence(filename: str, user_PTMs: list, cleave_rule: tuple) -> dict:
     """parses the evidence file and builds a dictionary for PTMs
     Arguments:
         filename {str} -- name of the evidence file with the location
@@ -30,16 +50,17 @@ def parse_evidence(filename: str) -> dict:
         modified_index = header_lower.index("modified sequence")
         mods_index = header_lower.index("modifications")
         #PTMs = [ptm.split(" Probabilities")[0] for ptm in header if "Probabilities" in ptm]
-        start_index = header_lower.index([ptm for ptm in header if "score diffs" in ptm][-1]) + 1
+        start_index = header_lower.index([ptm for ptm in header_lower if "score diffs" in ptm][-1]) + 1
         end_index = header_lower.index("missed cleavages")
-        PTMs = header_lower[start_index:end_index]
+        PTMs = header[start_index:end_index]
         for row in tsv_reader:
             pep_mods = dict()
-            sequence = row[seq_index].replace('L', 'I')
+            #sequence = row[seq_index].replace('L', 'I')
             #if sequence == "MAPACQIIR":
             #    print("peptide found")
             for PTM in PTMs:
                 modified_sequence = row[modified_index].strip('_')
+                new_mod_seq, new_pep_seq = clean_pep_seq(cleave_rule, modified_sequence, user_PTMs, row[seq_index])
                 mods_B4_mod = 0
                 # Grabs the first two letters of PTM that maxquant uses in mod_seq
                 abr_ptm = PTM[:2].lower()  # NOTE: I could possibly imagine this not working in certain circumstances...
@@ -110,7 +131,7 @@ def __prompt_PTMs(PTMs: list) -> list:
         return __prompt_PTMs(PTMs)
     return mod_PTMs
 '''
-def compile_data_maxquant(search_engine_filepath: str, user_PTMs: list) -> list:
+def compile_data_maxquant(search_engine_filepath: str, user_PTMs: list, cleave_rule: tuple) -> list:
     """Takes the lists and dictionaries needed to parse files
     Returns:
         int -- index of unmodified sequence
@@ -124,7 +145,7 @@ def compile_data_maxquant(search_engine_filepath: str, user_PTMs: list) -> list:
     sum_file = os.path.join(MQ_dir, "summary.txt")
     enzyme, max_missed_cleaves = parse_maxquant_summary(sum_file)
     evidence_filename = os.path.join(MQ_dir, "evidence.txt")
-    mod_dict, PTMs = parse_evidence(evidence_filename)  # This grabs the PTMs from the evidence file
+    mod_dict, PTMs = parse_evidence(evidence_filename, user_PTMs, cleave_rule)  # This grabs the PTMs from the evidence file
     PTMs = user_PTMs#__prompt_PTMs(PTMs)
     evidence_file = open(evidence_filename, 'r')
     tsv_reader = csv.reader(evidence_file, delimiter='\t', quotechar='"')

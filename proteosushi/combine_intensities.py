@@ -10,12 +10,11 @@ from time import sleep
 
 from .download_uniprot_AS import download_AS_file
 from .parse_mascot import compile_data_mascot
-from .parse_MaxQuant import compile_data_maxquant, parse_evidence
+from .parse_MaxQuant import compile_data_maxquant, get_MQ_PTMs
 from .parse_generic import compile_data_generic, get_PTMs
 from .sparql import process_sparql_output, sparql_request
 from .proteoSushi_constants import cleave_rules, annotation_type_dict, secondary_annotations
-#from ruputilities import load_pepdict, parse_mascot, parse_maxquant_summary
-from .ps_utilities import parse_mascot, load_pepdict, parse_maxquant_summary
+from .ps_utilities import clean_pep_seq, parse_mascot, load_pepdict, parse_maxquant_summary
 
 '''
 def __promptCleavenMissed() -> list:
@@ -157,75 +156,6 @@ def __chooseTup(tuples: list, annot_dict: dict) -> list:
                 return None, None'''
 
 
-def __clean_pep_seq(rule: tuple, pep_mod_seq: str, user_PTMs: list, old_pep_seq: str) -> str:
-    """Removes the missed cleavages without selected PTMs
-
-    Arguments:
-        rule {tuple} -- contains info about the protease
-        pep_mod_seq {str} -- the peptide sequence with modifications
-        user_PTMs {list} -- a list of PTMs that the user has selected for Analysis
-    Returns:
-        str -- the cleaned peptide
-    """
-    # Puts break points for unmodified sequence in a list
-    breaks = finditer(rule[0], old_pep_seq)
-    cut_unmod_sites = []
-    cut_unmod_peptides = []
-    for breakp in breaks:
-        cut_unmod_sites.append(breakp.start())
-    # Adds the unmodified cut peptides in one at a time
-    last_site = 0
-    if rule[1].lower() == 'c':
-        for i in cut_unmod_sites:
-            cut_unmod_peptides.append(old_pep_seq[last_site:i+1])
-            last_site = i + 1
-        cut_unmod_peptides.append(old_pep_seq[last_site:])
-    elif rule[1].lower() == 'n':
-        for i in cut_unmod_sites:
-            cut_unmod_peptides.append(old_pep_seq[last_site:i])
-            last_site = i
-        cut_unmod_peptides.append(old_pep_seq[last_site:])
-
-    # Puts the break points for modified sequence in a list
-    breaks = finditer(rule[0], pep_mod_seq)
-    cut_sites = []
-    cut_peptides = []
-    for breakp in breaks:
-        cut_sites.append(breakp.start())
-    # Adds the cut peptides in one at a time
-    last_site = 0
-    if rule[1].lower() == 'c':
-        for i in cut_sites:
-            cut_peptides.append(pep_mod_seq[last_site:i+1])
-            last_site = i + 1
-        cut_peptides.append(pep_mod_seq[last_site:])
-    elif rule[1].lower() == 'n':
-        for i in cut_sites:
-            cut_peptides.append(pep_mod_seq[last_site:i])
-            last_site = i
-        cut_peptides.append(pep_mod_seq[last_site:])
-    # This gets the range of the first and last pep_slice with a PTM
-    start = 0
-    while start < len(cut_peptides):
-        if any(user_PTM in cut_peptides[start] for user_PTM in user_PTMs):
-            break
-        else:
-            start += 1
-    
-    end = len(cut_peptides) - 1
-    while end > start:
-        if any(user_PTM in cut_peptides[end] for user_PTM in user_PTMs):
-            break
-        else:
-            end -= 1
-
-    if start == end:
-        new_pep_mod_seq = cut_peptides[0]
-        new_pep_seq = cut_unmod_peptides[0]
-    else:
-        new_pep_mod_seq = ''.join(cut_peptides[start:end])
-        new_pep_seq = ''.join(cut_unmod_peptides[start:end])
-    return new_pep_mod_seq, new_pep_seq
 
 def consolidate_sequence(new_pep_mod_seq: str, new_user_PTMs: list) -> str:
     """Changes the modified peptide sequence to only have the relevant PTMs for indexing
@@ -357,7 +287,7 @@ def parse_output(search_engine: str, search_engine_filepath: str) -> list:
         MQ_dir = search_engine_filepath
         sum_file = os.path.join(MQ_dir, "summary.txt")
         enzyme, missed_cleavages = parse_maxquant_summary(sum_file)
-        mod_dict, PTMs = parse_evidence(os.path.join(MQ_dir, "evidence.txt"))  # This grabs the PTMs from the evidence file
+        PTMs = get_MQ_PTMs(os.path.join(MQ_dir, "evidence.txt"))  # This grabs the PTMs from the evidence file
     elif rollup_file == "mascot":
         enzyme, quant_range, var_mod_map, missed_cleavages = parse_mascot(search_engine_filepath)
         if enzyme == -5:
@@ -500,6 +430,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     threshold = fdr_threshold
     use_target = use_target_list
     use_intensities = use_quant
+    enzyme = protease
     if species_id != "":
         annot_filename = download_AS_file(species_id)
     else:
@@ -509,19 +440,19 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     if rollup_file == "generic":
         #output_filename = "generic_rollup.csv"
         sequence_index, modified_sequence_index, mod_dict, intensity_start, data_filename, \
-            var_mod_dict = compile_data_generic(search_engine_filepath, user_PTMs)
+            var_mod_dict = compile_data_generic(search_engine_filepath, user_PTMs, cleave_rules[enzyme])
         data_file = open(data_filename, 'r')
         tsv_reader = csv.reader(data_file, quotechar='"')
     elif rollup_file == "maxquant":
         #output_filename = "maxquant_rollup.csv"
         sequence_index, modified_sequence_index, mod_dict, intensity_start, data_filename, \
-            var_mod_dict = compile_data_maxquant(search_engine_filepath, user_PTMs)
+            var_mod_dict = compile_data_maxquant(search_engine_filepath, user_PTMs, cleave_rules[enzyme])
         data_file = open(data_filename, 'r')
         tsv_reader = csv.reader(data_file, delimiter='\t', quotechar='"')
     elif rollup_file == "mascot":
         #output_filename = "mascot_rollup.csv"
         sequence_index, modified_sequence_index, mod_dict, intensity_start, data_filename, \
-            var_mod_dict = compile_data_mascot(search_engine_filepath, user_PTMs)
+            var_mod_dict = compile_data_mascot(search_engine_filepath, user_PTMs, cleave_rules[enzyme])
         data_file = open(data_filename, 'r')
         tsv_reader = csv.reader(data_file, quotechar='"')
         if intensity_start is None and use_quant:
@@ -529,7 +460,6 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     else:
         assert False, "Not a valid file from search"
 
-    enzyme = protease
     missed_cleavages = max_missed_cleavages
     pep_dict = load_pepdict(proteome_fasta_filepath, enzyme, missed_cleavages)
     annotDict = __load_annot_dict(annot_filename)
@@ -617,7 +547,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         new_user_PTMs = user_PTMs
         if rollup_file == "maxquant":
             new_user_PTMs = [ptm.lower()[:2] for ptm in user_PTMs]
-        new_pep_mod_seq, new_pep_seq = __clean_pep_seq(cleave_rules[enzyme], pep_mod_seq, new_user_PTMs, raw_seq)
+        new_pep_mod_seq, new_pep_seq = clean_pep_seq(cleave_rules[enzyme], pep_mod_seq, new_user_PTMs, raw_seq)
         if genes_positions and len(genes_positions) == 1:
             gene, start_pos, unpid, protein_name = list(genes_positions)[0]
             if not new_pep_mod_seq in mod_dict:
@@ -625,6 +555,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                 missing_PTM += 1
                 continue
             mods = mod_dict[new_pep_mod_seq]
+            # Skip any peptide sequences without a user-chosen PTM
             if not (any(mods) and set([m[0] for m in mods]) & set(user_PTMs)): 
                 continue
             for mod in list(set(mods)):

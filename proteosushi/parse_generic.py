@@ -9,6 +9,7 @@ from re import findall, finditer, match
 import sys
 from time import sleep
 
+from .ps_utilities import clean_pep_seq
 from .proteoSushi_constants import cleave_rules
 from .ps_utilities import load_pepdict
 
@@ -66,7 +67,7 @@ def get_PTMs(sky_filename: str) -> list:
                     mod_list.append(stripped_mod)
     return mod_list
 
-def create_mod_dict(sky_filename: str, user_PTMs: list) -> dict:
+def create_mod_dict(sky_filename: str, user_PTMs: list, cleave_rule: tuple) -> dict:
     """Parses the generic output to retrieve the modification info
 
     Arguments:
@@ -102,19 +103,24 @@ def create_mod_dict(sky_filename: str, user_PTMs: list) -> dict:
                     return -4
         
         for row in tsv_reader:
+            #print(row)
             # This grabs the PTMs in each sequence and builds a list of all of them
-            sequence = row[seq_index].replace("L","I")
+            #sequence = row[seq_index].replace("L","I")
             #if sequence == "FACAVVCIQK":
             #    print("here")
             mod_seq = row[mod_index]
             mods = findall(r"(\w?\[.+?\])|(\w?\(.+?\(?.\)?\))", mod_seq)
             if len(mods) < 1:
                 raise ValueError("A sequence in the Peptide Modified Sequence column is missing PTMs")
-
-            breaks = finditer(r"(\w?\[.+?\])|(\w?\(.+?\(?.\)?\))", mod_seq)
+            
+            new_mod_seq, new_pep_seq = clean_pep_seq(cleave_rule, mod_seq, user_PTMs, row[seq_index])
+            #print(new_mod_seq)
+            mods = findall(r"(\w?\[.+?\])|(\w?\(.+?\(?.\)?\))", new_mod_seq)
+            breaks = finditer(r"(\w?\[.+?\])|(\w?\(.+?\(?.\)?\))", new_mod_seq)
             cut_sites = []
             for breakp in breaks:
                 cut_sites.append(breakp.start())
+            #print(cut_sites)
             # This fixes the indices of each mod to connect with the unmodified sequence
             correction = 0
             fixed_indices = []
@@ -126,14 +132,17 @@ def create_mod_dict(sky_filename: str, user_PTMs: list) -> dict:
             
             i = 0
             while i < len(cut_sites):
+                #print(new_mod_seq)
                 if not mods[i][0] in user_PTMs:
                     i += 1
                     continue
+                #print(new_mod_seq)
                 try:
-                    mod_dict[mod_seq].append(tuple((mods[i][0], fixed_indices[i])))  # TODO: Check This!
+                    mod_dict[new_mod_seq].append(tuple((mods[i][0], fixed_indices[i])))  # TODO: Check This!
                 except KeyError:
-                    mod_dict[mod_seq] = [tuple((mods[i][0], fixed_indices[i]))]
+                    mod_dict[new_mod_seq] = [tuple((mods[i][0], fixed_indices[i]))]
                 i += 1
+    #print(mod_dict)
     return mod_dict
 
 def __chooseHit(genes_positions: list, mito_genes: list, annotDict: dict) -> list:
@@ -254,7 +263,7 @@ def __prompt_PTMs(PTMs: list) -> list:
     return mod_PTMs
 '''
 
-def compile_data_generic(search_engine_filepath: str, user_PTMs: list) -> list:
+def compile_data_generic(search_engine_filepath: str, user_PTMs: list, cleave_rule: tuple) -> list:
     """Takes the lists and dictionaries needed to parse files
 
     Arguments:
@@ -271,8 +280,8 @@ def compile_data_generic(search_engine_filepath: str, user_PTMs: list) -> list:
         dict -- mascot var mod dict (blank)
     """
     sky_filename = search_engine_filepath #__prompt_file()
-    mod_dict = create_mod_dict(sky_filename, user_PTMs)
-    PTMs = user_PTMs#__prompt_PTMs(mod_list)
+    mod_dict = create_mod_dict(sky_filename, user_PTMs, cleave_rule)
+    #PTMs = user_PTMs#__prompt_PTMs(mod_list)
     #Collecting the PTM analysis list from the user
     # NOTE: is it possible to not use PTMs for this analysis?
     #cleave_rule, maxMissed = __promptCleavenMissed()
