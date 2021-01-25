@@ -24,7 +24,7 @@ def __promptFile() -> str:
     return filename
 '''
 
-def __create_mod_dict(filename: str, mod_ids: list, var_mod_map: dict, cleave_rule: tuple) -> dict:
+def __create_mod_dict(filename: str, mod_ids: list, var_mod_map: dict, cleave_rule: tuple, PTMs: list) -> dict:
     """Makes the PTM dictionary that connects a peptide sequence with its modifications
     Arguments:
         filename {str} -- the name of the output file
@@ -61,6 +61,7 @@ def __create_mod_dict(filename: str, mod_ids: list, var_mod_map: dict, cleave_ru
                     new_seq = new_seq[:i+1] + '(' + inv_mod_dict[pep_mod_seq[i]] + ')' + new_seq[i+1:]
                 i -= 1
             pep_mod_seq = new_seq
+            new_mod_seq, new_pep_seq, missed_cleave_fix = clean_pep_seq(cleave_rule, pep_mod_seq, PTMs, row[sequence])
 
             if mods:
                 n, center, c = [x for x in mods.split(".")]
@@ -68,9 +69,9 @@ def __create_mod_dict(filename: str, mod_ids: list, var_mod_map: dict, cleave_ru
                     if aa in mod_ids:
                         try:
                             if not tuple((str(aa), i)) in modDict[pep_mod_seq]:
-                                modDict[pep_mod_seq].append(tuple((inv_mod_map[aa], i)))
+                                modDict[new_mod_seq].append(tuple((inv_mod_map[aa], i)))
                         except KeyError:
-                            modDict[pep_mod_seq] = [tuple((inv_mod_map[aa], i))]
+                            modDict[new_mod_seq] = [tuple((inv_mod_map[aa], i))]
     return modDict
 
 '''
@@ -158,7 +159,7 @@ def compile_data_mascot(search_engine_filepath: str, PTMs: list, cleave_rule: tu
 
     #psm_contributions = defaultdict(int) #count number of psms that end up being rolled up
 
-    mod_dict = __create_mod_dict(input_filename, [var_mod_map[mod] for mod in mods_for_quant], var_mod_map, cleave_rule)
+    mod_dict = __create_mod_dict(input_filename, [var_mod_map[mod] for mod in mods_for_quant], var_mod_map, cleave_rule, PTMs)
 
     if quant_range[1] <= quant_range[0]:
         return sequence, var_mods, mod_dict, None, input_filename, var_mod_map

@@ -60,7 +60,7 @@ def parse_evidence(filename: str, user_PTMs: list, cleave_rule: tuple) -> dict:
             #    print("peptide found")
             for PTM in PTMs:
                 modified_sequence = row[modified_index].strip('_')
-                new_mod_seq, new_pep_seq = clean_pep_seq(cleave_rule, modified_sequence, user_PTMs, row[seq_index])
+                new_mod_seq, new_pep_seq, missed_cleave_fix = clean_pep_seq(cleave_rule, modified_sequence, user_PTMs, row[seq_index])
                 mods_B4_mod = 0
                 # Grabs the first two letters of PTM that maxquant uses in mod_seq
                 abr_ptm = PTM[:2].lower()  # NOTE: I could possibly imagine this not working in certain circumstances...

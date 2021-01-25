@@ -547,7 +547,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         new_user_PTMs = user_PTMs
         if rollup_file == "maxquant":
             new_user_PTMs = [ptm.lower()[:2] for ptm in user_PTMs]
-        new_pep_mod_seq, new_pep_seq = clean_pep_seq(cleave_rules[enzyme], pep_mod_seq, new_user_PTMs, raw_seq)
+        
+        new_pep_mod_seq, new_pep_seq, missed_cleave_fix = clean_pep_seq(cleave_rules[enzyme], pep_mod_seq, new_user_PTMs, raw_seq)
         if genes_positions and len(genes_positions) == 1:
             gene, start_pos, unpid, protein_name = list(genes_positions)[0]
             if not new_pep_mod_seq in mod_dict:
@@ -561,7 +562,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             for mod in list(set(mods)):
                 if not mod[0] in user_PTMs:
                     continue
-                site = start_pos + mod[1] + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
+                site = start_pos + mod[1] + missed_cleave_fix + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
                 #if gene.upper() == "ACTL6A":
                 #    print("ACTL6A")
                 if use_intensities:  # If the user chose to combine/average intensities
@@ -620,7 +621,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                     for mod in list(set(mods)):
                         if not mod[0] in user_PTMs:
                             continue
-                        site = match[1] + mod[1] + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
+                        site = match[1] + mod[1] + missed_cleave_fix + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
                         #if gene.upper() == "ACTL6A":
                         #    print("ACTL6A")
                         to_add = None
@@ -680,7 +681,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                         assert len(additGenes) > 1, "The # of matches should be >1, but isn't"
                         additGenes = list(set(additGenes))
                         #gene_true_pos = f"{match[0][0]}|{match[0][1]+mod[1]}"
-                        site = match[0][1] + mod[1] + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
+                        site = match[0][1] + mod[1] + missed_cleave_fix + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
                         if use_intensities:
                             intensity_dict, to_add = __add_intensity(intensity_dict,
                                                                      new_pep_mod_seq, 

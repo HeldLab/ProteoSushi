@@ -82,9 +82,9 @@ def clean_pep_seq(rule: tuple, pep_mod_seq: str, user_PTMs: list, old_pep_seq: s
         new_pep_mod_seq = cut_peptides[start]
         new_pep_seq = cut_unmod_peptides[start]
     else:
-        new_pep_mod_seq = ''.join(cut_peptides[start:end])
-        new_pep_seq = ''.join(cut_unmod_peptides[start:end])
-    return new_pep_mod_seq, new_pep_seq
+        new_pep_mod_seq = ''.join(cut_peptides[start:end+1])
+        new_pep_seq = ''.join(cut_unmod_peptides[start:end+1])
+    return new_pep_mod_seq, new_pep_seq, len(''.join(cut_unmod_peptides[0:start]))  #Check this isn't modded instead
 
 def parse_maxquant_summary(infile: str) -> list:
     """Pulls out information needed from the MaxQuant files

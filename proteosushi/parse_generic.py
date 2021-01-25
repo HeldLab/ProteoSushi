@@ -113,7 +113,7 @@ def create_mod_dict(sky_filename: str, user_PTMs: list, cleave_rule: tuple) -> d
             if len(mods) < 1:
                 raise ValueError("A sequence in the Peptide Modified Sequence column is missing PTMs")
             
-            new_mod_seq, new_pep_seq = clean_pep_seq(cleave_rule, mod_seq, user_PTMs, row[seq_index])
+            new_mod_seq, new_pep_seq, missed_cleave_fix = clean_pep_seq(cleave_rule, mod_seq, user_PTMs, row[seq_index])
             #print(new_mod_seq)
             mods = findall(r"(\w?\[.+?\])|(\w?\(.+?\(?.\)?\))", new_mod_seq)
             breaks = finditer(r"(\w?\[.+?\])|(\w?\(.+?\(?.\)?\))", new_mod_seq)
