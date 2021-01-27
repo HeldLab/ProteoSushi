@@ -113,6 +113,13 @@ class App(QMainWindow):
 
         self.options_label = QLabel("Options", self)
 
+        self.localization_checkbox = QCheckBox("Localization Threshold", self)
+        self.localization_checkbox.stateChanged.connect(self.check_localization_checkbox)
+        self.localization_checkbox.setToolTip("Set a threshold for the localization probability for all PTM sites")
+        self.localization_edit = QLineEdit(self)
+        self.localization_edit.setHidden(True)
+        self.localization_edit.setToolTip("Set a threshold for the localization probability for all PTM sites")
+
         self.target_checkbox = QCheckBox("Use Target Genes", self)
         self.target_checkbox.stateChanged.connect(self.checkTargetBox)
         self.target_checkbox.setToolTip("Use a list of genes that will be prioritized given multiple matches")
@@ -218,9 +225,15 @@ class App(QMainWindow):
     
     def check_fdr_CB(self, state):
         if state == QtCore.Qt.Checked:
-            self.fdr_CB.setHidden(False)
+            self.fdr_edit.setHidden(False)
         else:
-            self.fdr_CB.setHidden(True)
+            self.fdr_edit.setHidden(True)
+
+    def check_localization_checkbox(self, state):
+        if state == QtCore.Qt.Checked:
+            self.localization_edit.setHidden(False)
+        else:
+            self.localization_edit.setHidden(True)
 
     def update_species_name(self):
         if not self.species_id_edit.text(): 
@@ -708,7 +721,8 @@ class App(QMainWindow):
         row += 1
         self.layout.addWidget(self.options_label, row, 0)
         row += 1
-        # This is where the MQ localization probability threshold will be
+        self.layout.addWidget(self.localization_checkbox, row, 0)
+        self.layout.addWidget(self.localization_edit, row, 1)
         row += 1
         self.layout.addWidget(self.target_checkbox, row, 0)
         self.layout.addWidget(self.target_button, row, 1)
