@@ -883,4 +883,5 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         for i in unmatched_sequences:
             writable_row = list(i)
             out_writer.writerow(writable_row)
+    return 0
 #EOF

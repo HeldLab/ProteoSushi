@@ -195,3 +195,8 @@ unmatched_sequences_maxquant.csv
 proteosushi_output.csv
 proteosushi/examples/txt/.~lock.evidence.txt#
 proteosushi/9606_annot_score.tsv
+dist/proteosushi-1.2.0.tar.gz
+proteosushi/examples/txt_carbo_study/.~lock.evidence.txt#
+proteosushi/examples/LH_carb_study_rollup.csv
+proteosushi/examples/txt_carbo_study/evidence.txt
+proteosushi/examples/txt_carbo_study/summary.txt
