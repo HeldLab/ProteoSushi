@@ -149,9 +149,11 @@ class App(QMainWindow):
         self.max_missed_edit = QLineEdit(self)
         self.max_missed_edit.setToolTip("The maximum allowed missed cleavages for a given peptide")
 
-        self.fdr_label = QLabel("FDR Threshold", self)
-        self.fdr_label.setToolTip("[OPTIONAL] The threshold for pep_expect column for Mascot or PEP column for Maxquant.\nMust be between 0 and 1, but can be left blank.")
+        self.fdr_CB = QCheckBox("FDR Threshold", self)
+        self.fdr_CB.stateChanged.connect(self.check_fdr_CB)
+        self.fdr_CB.setToolTip("[OPTIONAL] The threshold for pep_expect column for Mascot or PEP column for Maxquant.\nMust be between 0 and 1, but can be left blank.")
         self.fdr_edit = QLineEdit(self)  # TODO: Error check for a number
+        self.fdr_edit.setHidden(True)
         self.fdr_edit.setToolTip("[OPTIONAL] The threshold for pep_expect column for Mascot or PEP column for Maxquant.\nMust be between 0 and 1, but can be left blank.")
 
         self.protease_label = QLabel("Protease used in sample digestion", self)
@@ -214,6 +216,12 @@ class App(QMainWindow):
             self.average_RB.setHidden(True)
             self.sum_RB.setHidden(True)
     
+    def check_fdr_CB(self, state):
+        if state == QtCore.Qt.Checked:
+            self.fdr_CB.setHidden(False)
+        else:
+            self.fdr_CB.setHidden(True)
+
     def update_species_name(self):
         if not self.species_id_edit.text(): 
             self.species_name_label.setStyleSheet("background-color : white")
@@ -684,11 +692,23 @@ class App(QMainWindow):
         self.layout.addWidget(self.proteome_filepath_button, row, 1)
         self.layout.addWidget(self.proteome_filepath, row, 2)
         row += 1
+        self.layout.addWidget(self.species_id_label, row, 0)
+        self.layout.addWidget(self.species_id_edit, row, 1)
+        self.layout.addWidget(self.species_name_label, row, 2)
+        row += 1
+        self.layout.addWidget(self.max_missed_label, row, 0)
+        self.layout.addWidget(self.max_missed_edit, row, 1)
+        row += 1
+        self.layout.addWidget(self.protease_label, row, 0)
+        self.layout.addWidget(self.protease_combo_box, row, 1)
+        row += 1
         self.layout.addWidget(QLabel("Output Name & Location", self), row, 0)
         self.layout.addWidget(self.output_filepath_button, row, 1)
         self.layout.addWidget(self.output_filepath, row, 2)
         row += 1
         self.layout.addWidget(self.options_label, row, 0)
+        row += 1
+        # This is where the MQ localization probability threshold will be
         row += 1
         self.layout.addWidget(self.target_checkbox, row, 0)
         self.layout.addWidget(self.target_button, row, 1)
@@ -700,18 +720,8 @@ class App(QMainWindow):
         row += 1
         self.layout.addWidget(self.uniprot_annot_CB, row, 0)
         row += 1
-        self.layout.addWidget(self.species_id_label, row, 0)
-        self.layout.addWidget(self.species_id_edit, row, 1)
-        self.layout.addWidget(self.species_name_label, row, 2)
-        row += 1
-        self.layout.addWidget(self.max_missed_label, row, 0)
-        self.layout.addWidget(self.max_missed_edit, row, 1)
-        row += 1
-        self.layout.addWidget(self.fdr_label, row, 0)
+        self.layout.addWidget(self.fdr_CB, row, 0)
         self.layout.addWidget(self.fdr_edit, row, 1)
-        row += 1
-        self.layout.addWidget(self.protease_label, row, 0)
-        self.layout.addWidget(self.protease_combo_box, row, 1)
         row += 1
         self.layout.addWidget(self.run_button, row, 0)
 
