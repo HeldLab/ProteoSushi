@@ -407,7 +407,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
            target_list_filepath: str, max_missed_cleavages: int, protease: str, 
            fdr_threshold: float, use_quant: bool, user_PTMs: list, 
            proteome_fasta_filepath: str, intensity_method: str, add_annotation: bool, 
-           species_id: str, output_filename: str) -> int:
+           species_id: str, output_filename: str, localization_threshold: float) -> int:
     """starts proteoSushi rollup when called by run_proteoSushi
 
     Arguments:
@@ -424,6 +424,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         intensity_method {str} -- whether to "sum" or "average" the peaks for combined peptides
         add_annotation {bool} -- whether to query uniprot and add the annotation onto the results
         species_id {str} -- the species ID (e.g. 9606) to get the annotation score dictionary from Uniprot
+        localization {float} -- the threshold for maxquant localization probability
     Returns:
         int -- possible error flag
     """

@@ -115,6 +115,7 @@ class App(QMainWindow):
 
         self.localization_checkbox = QCheckBox("Localization Threshold", self)
         self.localization_checkbox.stateChanged.connect(self.check_localization_checkbox)
+        self.localization_checkbox.setHidden(True)
         self.localization_checkbox.setToolTip("Set a threshold for the localization probability for all PTM sites")
         self.localization_edit = QLineEdit(self)
         self.localization_edit.setHidden(True)
@@ -187,9 +188,14 @@ class App(QMainWindow):
         if self.maxquant_RB.isChecked():
             self.maxquant_filepath.setHidden(False)
             self.maxquant_button.setHidden(False)
+            self.localization_checkbox.setHidden(False)
+            if self.localization_checkbox.isChecked():
+                self.localization_edit.setHidden(False)
         else:
             self.maxquant_filepath.setHidden(True)
             self.maxquant_button.setHidden(True)
+            self.localization_checkbox.setHidden(True)
+            self.localization_edit.setHidden(True)
 
     def check_mascot_RB(self, state):
         if self.mascot_RB.isChecked():
@@ -230,7 +236,7 @@ class App(QMainWindow):
             self.fdr_edit.setHidden(True)
 
     def check_localization_checkbox(self, state):
-        if state == QtCore.Qt.Checked:
+        if state == QtCore.Qt.Checked and self.maxquant_RB.isChecked():
             self.localization_edit.setHidden(False)
         else:
             self.localization_edit.setHidden(True)
@@ -430,7 +436,7 @@ class App(QMainWindow):
             self.PTM_CBs = []
             for ptm in PTMs:
                 self.PTM_CBs.append(QCheckBox(ptm, self))
-            # Removes the label
+            # Removes the label# This is where the MQ localization probability threshold will be
             i = 0
             if not self.layout.itemAtPosition(5, i) is None:
                 label_to_remove = self.layout.itemAtPosition(5, i).widget()
@@ -480,7 +486,7 @@ class App(QMainWindow):
             self.target_filepath.setText(filename)
         self.statusBar().showMessage("")
 
-    def __run_async(self, fdr, combine_method, species_id):
+    def __run_async(self, fdr: float, combine_method, species_id, localization: float):
         """Function that runs the backend on a separate thread"""
         # If the maxquant option was chosen, it sends that info to be run
         if self.maxquant_RB.isChecked() and os.path.exists(self.maxquant_filepath.text()):
@@ -499,7 +505,8 @@ class App(QMainWindow):
                             combine_method,
                             self.uniprot_annot_CB.isChecked(),
                             species_id,
-                            self.output_filepath.text())
+                            self.output_filepath.text(),
+                            localization)
             # If there is a 502 proxy error (server side error)
             if self.uniprot_annot_CB.isChecked() and output == 502:
                 self.statusBar().showMessage("ERROR: Uniprot server error! Please try again later.")
@@ -525,7 +532,8 @@ class App(QMainWindow):
                             combine_method,
                             self.uniprot_annot_CB.isChecked(),
                             species_id,
-                            self.output_filepath.text())
+                            self.output_filepath.text(), 
+                            None)
             # If the mascot file has no intensity values and user tried to analyze them
             if self.quant_CB.isChecked() and output == 2:
                 self.statusBar().showMessage("ERROR: Mascot file has no detectable intensity values!")
@@ -556,7 +564,8 @@ class App(QMainWindow):
                             combine_method,
                             self.uniprot_annot_CB.isChecked(),
                             species_id,
-                            self.output_filepath.text())
+                            self.output_filepath.text(),
+                            None)
             # If there is a 502 proxy error (server side error)
             if self.uniprot_annot_CB.isChecked() and output == 502:
                 self.statusBar().showMessage("ERROR: Uniprot server error! Please try again later.")
@@ -618,7 +627,21 @@ class App(QMainWindow):
                 self.statusBar().showMessage("ERROR: Invalid number for max allowed missed cleavages!")
                 self.statusBar().setStyleSheet("background-color : red")
                 return
-            
+            # Checks that the localization prob threshold is between 0 and 1
+            try:
+                if self.localization_edit.text() != "":
+                    localization = float(self.localization_edit.text())
+                    if localization < 0 or localization > 1:
+                        self.statusBar().showMessage("ERROR: Localization threshold must be between 0 and 1!")
+                        self.statusBar().setStyleSheet("background-color : red")
+                        return
+                else:
+                    localization = None
+            except ValueError:
+                self.statusBar().showMessage("ERROR: Localization threshold must be a number between 0 and 1!")
+                self.statusBar().setStyleSheet("background-color : red")
+                return
+
             try:  # Checks to see if the provided FDR threshold is legal
                 if self.fdr_edit.text() != "":
                     fdr = float(self.fdr_edit.text())
@@ -662,7 +685,8 @@ class App(QMainWindow):
                 self.mascot_button.setEnabled(False)
                 self.generic_button.setEnabled(False)
                 # Starts a new thread for the backend analysis
-                worker = Worker(self.__run_async, fdr, combine_method, species_id)
+                print("\033[96m {}\033[00m".format("Analysis Started!"))
+                worker = Worker(self.__run_async, fdr, combine_method, species_id, localization)
                 worker.signals.end.connect(self.__cut_thread)
                 self.threadpool.start(worker)
                 
