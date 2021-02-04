@@ -1,7 +1,10 @@
 """run_proteoSushi.py: The starting point to run proteoSushi"""
-
-from proteosushi.proteosushi_gui import run_gui
-from proteosushi.combine_intensities import rollup
+try:
+    from proteosushi.proteosushi_gui import run_gui
+    from proteosushi.combine_intensities import rollup
+except ImportError:
+    from .proteosushi_gui import run_gui
+    from .combine_intensities import rollup
 '''
 def run_proteoSushi(search_engine: str, search_engine_filepath: str, use_target_list: bool, 
                     target_list_filepath: str, max_missed_cleavages: int, protease: str, fdr_threshold: float):
