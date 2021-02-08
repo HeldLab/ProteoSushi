@@ -200,3 +200,7 @@ proteosushi/examples/txt_carbo_study/.~lock.evidence.txt#
 proteosushi/examples/LH_carb_study_rollup.csv
 proteosushi/examples/txt_carbo_study/evidence.txt
 proteosushi/examples/txt_carbo_study/summary.txt
+localization_test.csv
+proteosushi/examples/fastas/Uni-Hum-Ref-20141022_trypsin|p.pepdict
+proteosushi/examples/fastas/UNI-HUMAN-REF-20190731_trypsin|p.pepdict
+.~lock.localization_test.csv#

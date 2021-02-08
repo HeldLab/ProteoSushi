@@ -12,11 +12,16 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QMainWindow, QPushButton,
                              QRadioButton, QButtonGroup, QComboBox)
 from PyQt5.QtCore import pyqtSlot, QSize, Qt, QRunnable, QObject, QThreadPool, pyqtSignal
 from PyQt5.QtGui import QIcon
-
-from .combine_intensities import parse_output, rollup
-from . import lib
-from .parse_proteome import parse_proteome
-from .proteoSushi_constants import cleave_rules
+try:
+    from .combine_intensities import parse_output, rollup
+    from . import lib
+    from .parse_proteome import parse_proteome
+    from .proteoSushi_constants import cleave_rules
+except ImportError:
+    from combine_intensities import parse_output, rollup
+    import lib
+    from parse_proteome import parse_proteome
+    from proteoSushi_constants import cleave_rules
 
 
 class WorkerSignals(QObject):
@@ -340,9 +345,9 @@ class App(QMainWindow):
         #if self.maxquant_filepath.text() != "":
         if os.path.exists(filename):
             self.maxquant_filepath.setText(filename)
-            missed_cleavages, enzyme, PTMs = parse_output("maxquant", filename)
+            missed_cleavages, protease, PTMs = parse_output("maxquant", filename)
             self.max_missed_edit.setText(str(missed_cleavages))
-            self.protease_combo_box.setEditText(enzyme)
+            self.protease_combo_box.setEditText(protease)
             #Remove the previous PTM checkboxes (if there were any)
             if self.PTM_CBs != []:
                 for cb in self.PTM_CBs:
@@ -376,14 +381,14 @@ class App(QMainWindow):
         #if self.mascot_filepath.text() != "":
         if os.path.exists(filename):
             self.mascot_filepath.setText(filename)
-            missed_cleavages, enzyme, PTMs = parse_output("mascot", filename)
+            missed_cleavages, protease, PTMs = parse_output("mascot", filename)
             if missed_cleavages == -5:
                 self.statusBar().showMessage("Invalid Mascot file")
                 self.statusBar().setStyleSheet("background-color : red")
                 self.mascot_filepath.setText("")
                 return
             self.max_missed_edit.setText(str(missed_cleavages))
-            self.protease_combo_box.setEditText(enzyme)
+            self.protease_combo_box.setEditText(protease)
             #Remove the previous PTM checkboxes (if there were any)
             if self.PTM_CBs != []:
                 for cb in self.PTM_CBs:
@@ -416,7 +421,7 @@ class App(QMainWindow):
         #if self.generic_filepath.text() != "":
         if os.path.exists(filename):
             self.generic_filepath.setText(filename)
-            missed_cleavages, enzyme, PTMs = parse_output("generic", filename)
+            missed_cleavages, protease, PTMs = parse_output("generic", filename)
             if missed_cleavages == -3:
                 self.statusBar().showMessage("A sequence in the Peptide Modified Sequence column is missing PTMs")
                 self.statusBar().setStyleSheet("background-color : red")
