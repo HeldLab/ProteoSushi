@@ -216,7 +216,7 @@ These include:
 
 - asp-n
 
-- asp-nc
+- asp-ne
 
 - lys-n
 

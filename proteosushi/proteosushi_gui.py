@@ -170,10 +170,10 @@ class App(QMainWindow):
         self.fdr_edit.setToolTip("[OPTIONAL] The threshold for pep_expect column for Mascot or PEP column for Maxquant.\nMust be between 0 and 1, but can be left blank.")
 
         self.protease_label = QLabel("Protease used in sample digestion", self)
-        self.protease_label.setToolTip("The protease used to digest the sample\nExamples include: trypsin/p, trypsin!p, lys-c, asp-n, asp-nc, lys-n")
+        self.protease_label.setToolTip("The protease used to digest the sample\nExamples include: trypsin/p, trypsin!p, lys-c, asp-n, asp-ne, lys-n")
         self.protease_combo_box = QComboBox()
-        self.protease_combo_box.setToolTip("The protease used to digest the sample\nExamples include: trypsin/p, trypsin!p, lys-c, asp-n, asp-nc, lys-n")
-        self.protease_combo_box.addItems(["trypsin/p", "trypsin!p", "lys-c", "asp-n", "asp-nc", "lys-n"])
+        self.protease_combo_box.setToolTip("The protease used to digest the sample\nExamples include: trypsin/p, trypsin!p, lys-c, asp-n, asp-ne, lys-n")
+        self.protease_combo_box.addItems(["trypsin/p", "trypsin!p", "lys-c", "asp-n", "asp-ne", "lys-n"])
         self.protease_combo_box.setEditable(True)
 
 
