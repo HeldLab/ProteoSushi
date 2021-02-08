@@ -157,7 +157,7 @@ def digest(sequence: str, min_length: int, max_length: int,
         cut_peptides.append(sequence[last_site:])
     cut_and_missed = list(cut_peptides)  # duplicate to add to for iteration
     #begin_sites = [y - len(x) + 2 for x, y in zip(cut_peptides, cut_sites)]  # Wouldn't it be simpler to add a 1 first and go from there?
-    begin_sites = [0] + [y + 2 for x, y in zip(cut_peptides, cut_sites)]
+    begin_sites = [0] + [y for x, y in zip(cut_peptides, cut_sites)]
     #if begin_sites:
     #    begin_sites.append(begin_sites[-1] + 1)
     cut_and_missed = [(seq, pos)
