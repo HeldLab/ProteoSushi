@@ -447,6 +447,8 @@ def __localization_rollup(search_engine: str, search_engine_filepath: str, use_t
             print("HALT!")  # A handled exception would be preferable here
             break
         genes_positions = pep_dict.get(pep_seq)
+        #if raw_seq == "YCGSCVDGR":
+        #    print(genes_positions)
         if search_engine == "maxquant":
             if use_quant:
                 intensities = [e for i, e in enumerate(row) if i in intensity_start]
@@ -481,8 +483,8 @@ def __localization_rollup(search_engine: str, search_engine_filepath: str, use_t
                 if not mod[0] in user_PTMs:
                     continue
                 site = start_pos + mod[1] + missed_cleave_fix + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
-                #if gene.upper() == "ACTL6A":
-                #    print("ACTL6A")
+                #if raw_seq == "YCGSCVDGR":
+                #    print(f"{str(site)}: {str(start_pos)}, {str(mod[1])}, {str(missed_cleave_fix)}")
                 if use_quant:  # If the user chose to combine/average intensities
                     intensity_dict, to_add = __add_intensity(intensity_dict, 
                                                              new_pep_mod_seq, 

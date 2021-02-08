@@ -97,6 +97,8 @@ def parse_evidence_localization(filename: str, user_PTMs: list, cleave_rule: tup
                 
                 index_correction = 0
                 j = 0
+                #if mod_seq == "YC(ca)GSC(ca)VDGR":
+                #    print(loc_indices)
                 # Go through each of the PTM sites
                 while j < len(loc_probs):
                     #print(loc_probs)
@@ -107,12 +109,12 @@ def parse_evidence_localization(filename: str, user_PTMs: list, cleave_rule: tup
                         j += 1
                         continue
                     try:
-                        mod_dict[new_mod_seq].append(tuple((PTMs[index], loc_indices[j] + index_correction)))
+                        mod_dict[new_mod_seq].append(tuple((PTMs[index], loc_indices[j] - index_correction)))
                         index_correction += len(loc_probs[j][1])
                         j += 1
                     except KeyError:
                         #print(new_mod_seq)
-                        mod_dict[new_mod_seq] = [tuple((PTMs[index], loc_indices[j] + index_correction))]
+                        mod_dict[new_mod_seq] = [tuple((PTMs[index], loc_indices[j] - index_correction))]
                         index_correction += len(loc_probs[j][1])
                         j += 1
                 index += 1
