@@ -7,7 +7,7 @@ cleave_rules = {
     'lys-c': (r'[K]', 'c'),
     # N terminal proteases
     'asp-n': (r'[D]', 'n'),
-    'asp-nc': (r'[DC]', 'n'),
+    'asp-ne': (r'[DE]', 'n'),
     'lys-n': (r'[K]', 'n')
     }
 

@@ -8,10 +8,14 @@ import os.path
 from re import findall, finditer, match
 import sys
 from time import sleep
-
-from .ps_utilities import clean_pep_seq
-from .proteoSushi_constants import cleave_rules
-from .ps_utilities import load_pepdict
+try:
+    from .ps_utilities import clean_pep_seq
+    from .proteoSushi_constants import cleave_rules
+    from .ps_utilities import load_pepdict
+except ImportError:
+    from ps_utilities import clean_pep_seq
+    from proteoSushi_constants import cleave_rules
+    from ps_utilities import load_pepdict
 
 
 def get_PTMs(sky_filename: str) -> list:

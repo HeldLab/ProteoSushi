@@ -5,24 +5,11 @@ from collections import defaultdict
 import os
 from re import match
 from time import sleep
+try:
+    from .ps_utilities import clean_pep_seq, parse_mascot, load_pepdict #most of the parsing actually happens here 
+except ImportError:
+    from ps_utilities import clean_pep_seq, parse_mascot, load_pepdict
 
-from .ps_utilities import clean_pep_seq, parse_mascot, load_pepdict #most of the parsing actually happens here 
-
-'''
-def __promptFile() -> str:
-    """Prompts the user for the file name
-    Returns:
-        str -- the filename
-    """
-    print("\033[96m {}\033[00m".format("Please provide the filename of the Mascot file"))
-    print("\033[96m {}\033[00m".format("For example: \nC:/experiment1/Combined/F011000.csv, or"))
-    filename = input("\033[96m {}\033[00m".format("/home/[user]/Documents/experiment1/F011000.csv\n"))
-    if not os.path.exists(filename):
-        print("\033[91m {}\033[00m".format("Invalid path, try again!\n"))
-        sleep(.5)
-        return __promptFile()
-    return filename
-'''
 
 def __create_mod_dict(filename: str, mod_ids: list, var_mod_map: dict, cleave_rule: tuple, PTMs: list) -> dict:
     """Makes the PTM dictionary that connects a peptide sequence with its modifications
@@ -117,7 +104,7 @@ def compile_data_mascot(search_engine_filepath: str, PTMs: list, cleave_rule: tu
 
     #in_file = "MascotExportForRollup-UniHumanRefFASTA-20190731_4Rob.csv"
     in_file = search_engine_filepath #__promptFile()
-    enzyme, quant_range, var_mod_map, missed_cleaves = parse_mascot(in_file)
+    protease, quant_range, var_mod_map, missed_cleaves = parse_mascot(in_file)
 
     ###Change this to a variable for later, perhaps let the user choose from var_mod_map
     ###See code below
@@ -135,7 +122,7 @@ def compile_data_mascot(search_engine_filepath: str, PTMs: list, cleave_rule: tu
     #assert mod_for_quant in var_mod_map, "Make sure mod is in original file"
     #mod_for_quant_id = var_mod_map.get(mod_for_quant)
 
-    #pep_dict = load_pepdict(enzyme, missed_cleaves)
+    #pep_dict = load_pepdict(protease, missed_cleaves)
 
     #lociDict = dict()
 

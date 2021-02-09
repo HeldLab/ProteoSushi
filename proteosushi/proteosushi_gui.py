@@ -12,11 +12,16 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QMainWindow, QPushButton,
                              QRadioButton, QButtonGroup, QComboBox)
 from PyQt5.QtCore import pyqtSlot, QSize, Qt, QRunnable, QObject, QThreadPool, pyqtSignal
 from PyQt5.QtGui import QIcon
-
-from .combine_intensities import parse_output, rollup
-from . import lib
-from .parse_proteome import parse_proteome
-from .proteoSushi_constants import cleave_rules
+try:
+    from .combine_intensities import parse_output, rollup
+    from . import lib
+    from .parse_proteome import parse_proteome
+    from .proteoSushi_constants import cleave_rules
+except ImportError:
+    from combine_intensities import parse_output, rollup
+    import lib
+    from parse_proteome import parse_proteome
+    from proteoSushi_constants import cleave_rules
 
 
 class WorkerSignals(QObject):
@@ -113,6 +118,14 @@ class App(QMainWindow):
 
         self.options_label = QLabel("Options", self)
 
+        self.localization_checkbox = QCheckBox("Localization Threshold", self)
+        self.localization_checkbox.stateChanged.connect(self.check_localization_checkbox)
+        self.localization_checkbox.setHidden(True)
+        self.localization_checkbox.setToolTip("Set a threshold for the localization probability for all PTM sites")
+        self.localization_edit = QLineEdit(self)
+        self.localization_edit.setHidden(True)
+        self.localization_edit.setToolTip("Set a threshold for the localization probability for all PTM sites")
+
         self.target_checkbox = QCheckBox("Use Target Genes", self)
         self.target_checkbox.stateChanged.connect(self.checkTargetBox)
         self.target_checkbox.setToolTip("Use a list of genes that will be prioritized given multiple matches")
@@ -149,16 +162,18 @@ class App(QMainWindow):
         self.max_missed_edit = QLineEdit(self)
         self.max_missed_edit.setToolTip("The maximum allowed missed cleavages for a given peptide")
 
-        self.fdr_label = QLabel("FDR Threshold", self)
-        self.fdr_label.setToolTip("[OPTIONAL] The threshold for pep_expect column for Mascot or PEP column for Maxquant.\nMust be between 0 and 1, but can be left blank.")
+        self.fdr_CB = QCheckBox("FDR Threshold", self)
+        self.fdr_CB.stateChanged.connect(self.check_fdr_CB)
+        self.fdr_CB.setToolTip("[OPTIONAL] The threshold for pep_expect column for Mascot or PEP column for Maxquant.\nMust be between 0 and 1, but can be left blank.")
         self.fdr_edit = QLineEdit(self)  # TODO: Error check for a number
+        self.fdr_edit.setHidden(True)
         self.fdr_edit.setToolTip("[OPTIONAL] The threshold for pep_expect column for Mascot or PEP column for Maxquant.\nMust be between 0 and 1, but can be left blank.")
 
         self.protease_label = QLabel("Protease used in sample digestion", self)
-        self.protease_label.setToolTip("The protease used to digest the sample\nExamples include: trypsin/p, trypsin!p, lys-c, asp-n, asp-nc, lys-n")
+        self.protease_label.setToolTip("The protease used to digest the sample\nExamples include: trypsin/p, trypsin!p, lys-c, asp-n, asp-ne, lys-n")
         self.protease_combo_box = QComboBox()
-        self.protease_combo_box.setToolTip("The protease used to digest the sample\nExamples include: trypsin/p, trypsin!p, lys-c, asp-n, asp-nc, lys-n")
-        self.protease_combo_box.addItems(["trypsin/p", "trypsin!p", "lys-c", "asp-n", "asp-nc", "lys-n"])
+        self.protease_combo_box.setToolTip("The protease used to digest the sample\nExamples include: trypsin/p, trypsin!p, lys-c, asp-n, asp-ne, lys-n")
+        self.protease_combo_box.addItems(["trypsin/p", "trypsin!p", "lys-c", "asp-n", "asp-ne", "lys-n"])
         self.protease_combo_box.setEditable(True)
 
 
@@ -178,9 +193,14 @@ class App(QMainWindow):
         if self.maxquant_RB.isChecked():
             self.maxquant_filepath.setHidden(False)
             self.maxquant_button.setHidden(False)
+            self.localization_checkbox.setHidden(False)
+            if self.localization_checkbox.isChecked():
+                self.localization_edit.setHidden(False)
         else:
             self.maxquant_filepath.setHidden(True)
             self.maxquant_button.setHidden(True)
+            self.localization_checkbox.setHidden(True)
+            self.localization_edit.setHidden(True)
 
     def check_mascot_RB(self, state):
         if self.mascot_RB.isChecked():
@@ -214,6 +234,18 @@ class App(QMainWindow):
             self.average_RB.setHidden(True)
             self.sum_RB.setHidden(True)
     
+    def check_fdr_CB(self, state):
+        if state == QtCore.Qt.Checked:
+            self.fdr_edit.setHidden(False)
+        else:
+            self.fdr_edit.setHidden(True)
+
+    def check_localization_checkbox(self, state):
+        if state == QtCore.Qt.Checked and self.maxquant_RB.isChecked():
+            self.localization_edit.setHidden(False)
+        else:
+            self.localization_edit.setHidden(True)
+
     def update_species_name(self):
         if not self.species_id_edit.text(): 
             self.species_name_label.setStyleSheet("background-color : white")
@@ -313,9 +345,9 @@ class App(QMainWindow):
         #if self.maxquant_filepath.text() != "":
         if os.path.exists(filename):
             self.maxquant_filepath.setText(filename)
-            missed_cleavages, enzyme, PTMs = parse_output("maxquant", filename)
+            missed_cleavages, protease, PTMs = parse_output("maxquant", filename)
             self.max_missed_edit.setText(str(missed_cleavages))
-            self.protease_combo_box.setEditText(enzyme)
+            self.protease_combo_box.setEditText(protease)
             #Remove the previous PTM checkboxes (if there were any)
             if self.PTM_CBs != []:
                 for cb in self.PTM_CBs:
@@ -349,14 +381,14 @@ class App(QMainWindow):
         #if self.mascot_filepath.text() != "":
         if os.path.exists(filename):
             self.mascot_filepath.setText(filename)
-            missed_cleavages, enzyme, PTMs = parse_output("mascot", filename)
+            missed_cleavages, protease, PTMs = parse_output("mascot", filename)
             if missed_cleavages == -5:
                 self.statusBar().showMessage("Invalid Mascot file")
                 self.statusBar().setStyleSheet("background-color : red")
                 self.mascot_filepath.setText("")
                 return
             self.max_missed_edit.setText(str(missed_cleavages))
-            self.protease_combo_box.setEditText(enzyme)
+            self.protease_combo_box.setEditText(protease)
             #Remove the previous PTM checkboxes (if there were any)
             if self.PTM_CBs != []:
                 for cb in self.PTM_CBs:
@@ -389,7 +421,7 @@ class App(QMainWindow):
         #if self.generic_filepath.text() != "":
         if os.path.exists(filename):
             self.generic_filepath.setText(filename)
-            missed_cleavages, enzyme, PTMs = parse_output("generic", filename)
+            missed_cleavages, protease, PTMs = parse_output("generic", filename)
             if missed_cleavages == -3:
                 self.statusBar().showMessage("A sequence in the Peptide Modified Sequence column is missing PTMs")
                 self.statusBar().setStyleSheet("background-color : red")
@@ -409,7 +441,7 @@ class App(QMainWindow):
             self.PTM_CBs = []
             for ptm in PTMs:
                 self.PTM_CBs.append(QCheckBox(ptm, self))
-            # Removes the label
+            # Removes the label# This is where the MQ localization probability threshold will be
             i = 0
             if not self.layout.itemAtPosition(5, i) is None:
                 label_to_remove = self.layout.itemAtPosition(5, i).widget()
@@ -459,7 +491,7 @@ class App(QMainWindow):
             self.target_filepath.setText(filename)
         self.statusBar().showMessage("")
 
-    def __run_async(self, fdr, combine_method, species_id):
+    def __run_async(self, fdr: float, combine_method, species_id, localization: float):
         """Function that runs the backend on a separate thread"""
         # If the maxquant option was chosen, it sends that info to be run
         if self.maxquant_RB.isChecked() and os.path.exists(self.maxquant_filepath.text()):
@@ -478,7 +510,8 @@ class App(QMainWindow):
                             combine_method,
                             self.uniprot_annot_CB.isChecked(),
                             species_id,
-                            self.output_filepath.text())
+                            self.output_filepath.text(),
+                            localization)
             # If there is a 502 proxy error (server side error)
             if self.uniprot_annot_CB.isChecked() and output == 502:
                 self.statusBar().showMessage("ERROR: Uniprot server error! Please try again later.")
@@ -504,7 +537,8 @@ class App(QMainWindow):
                             combine_method,
                             self.uniprot_annot_CB.isChecked(),
                             species_id,
-                            self.output_filepath.text())
+                            self.output_filepath.text(), 
+                            None)
             # If the mascot file has no intensity values and user tried to analyze them
             if self.quant_CB.isChecked() and output == 2:
                 self.statusBar().showMessage("ERROR: Mascot file has no detectable intensity values!")
@@ -535,7 +569,8 @@ class App(QMainWindow):
                             combine_method,
                             self.uniprot_annot_CB.isChecked(),
                             species_id,
-                            self.output_filepath.text())
+                            self.output_filepath.text(),
+                            None)
             # If there is a 502 proxy error (server side error)
             if self.uniprot_annot_CB.isChecked() and output == 502:
                 self.statusBar().showMessage("ERROR: Uniprot server error! Please try again later.")
@@ -597,7 +632,21 @@ class App(QMainWindow):
                 self.statusBar().showMessage("ERROR: Invalid number for max allowed missed cleavages!")
                 self.statusBar().setStyleSheet("background-color : red")
                 return
-            
+            # Checks that the localization prob threshold is between 0 and 1
+            try:
+                if self.localization_edit.text() != "":
+                    localization = float(self.localization_edit.text())
+                    if localization < 0 or localization > 1:
+                        self.statusBar().showMessage("ERROR: Localization threshold must be between 0 and 1!")
+                        self.statusBar().setStyleSheet("background-color : red")
+                        return
+                else:
+                    localization = None
+            except ValueError:
+                self.statusBar().showMessage("ERROR: Localization threshold must be a number between 0 and 1!")
+                self.statusBar().setStyleSheet("background-color : red")
+                return
+
             try:  # Checks to see if the provided FDR threshold is legal
                 if self.fdr_edit.text() != "":
                     fdr = float(self.fdr_edit.text())
@@ -641,7 +690,8 @@ class App(QMainWindow):
                 self.mascot_button.setEnabled(False)
                 self.generic_button.setEnabled(False)
                 # Starts a new thread for the backend analysis
-                worker = Worker(self.__run_async, fdr, combine_method, species_id)
+                print("\033[96m {}\033[00m".format("Analysis Started!"))
+                worker = Worker(self.__run_async, fdr, combine_method, species_id, localization)
                 worker.signals.end.connect(self.__cut_thread)
                 self.threadpool.start(worker)
                 
@@ -684,11 +734,24 @@ class App(QMainWindow):
         self.layout.addWidget(self.proteome_filepath_button, row, 1)
         self.layout.addWidget(self.proteome_filepath, row, 2)
         row += 1
+        self.layout.addWidget(self.species_id_label, row, 0)
+        self.layout.addWidget(self.species_id_edit, row, 1)
+        self.layout.addWidget(self.species_name_label, row, 2)
+        row += 1
+        self.layout.addWidget(self.max_missed_label, row, 0)
+        self.layout.addWidget(self.max_missed_edit, row, 1)
+        row += 1
+        self.layout.addWidget(self.protease_label, row, 0)
+        self.layout.addWidget(self.protease_combo_box, row, 1)
+        row += 1
         self.layout.addWidget(QLabel("Output Name & Location", self), row, 0)
         self.layout.addWidget(self.output_filepath_button, row, 1)
         self.layout.addWidget(self.output_filepath, row, 2)
         row += 1
         self.layout.addWidget(self.options_label, row, 0)
+        row += 1
+        self.layout.addWidget(self.localization_checkbox, row, 0)
+        self.layout.addWidget(self.localization_edit, row, 1)
         row += 1
         self.layout.addWidget(self.target_checkbox, row, 0)
         self.layout.addWidget(self.target_button, row, 1)
@@ -700,18 +763,8 @@ class App(QMainWindow):
         row += 1
         self.layout.addWidget(self.uniprot_annot_CB, row, 0)
         row += 1
-        self.layout.addWidget(self.species_id_label, row, 0)
-        self.layout.addWidget(self.species_id_edit, row, 1)
-        self.layout.addWidget(self.species_name_label, row, 2)
-        row += 1
-        self.layout.addWidget(self.max_missed_label, row, 0)
-        self.layout.addWidget(self.max_missed_edit, row, 1)
-        row += 1
-        self.layout.addWidget(self.fdr_label, row, 0)
+        self.layout.addWidget(self.fdr_CB, row, 0)
         self.layout.addWidget(self.fdr_edit, row, 1)
-        row += 1
-        self.layout.addWidget(self.protease_label, row, 0)
-        self.layout.addWidget(self.protease_combo_box, row, 1)
         row += 1
         self.layout.addWidget(self.run_button, row, 0)
 
