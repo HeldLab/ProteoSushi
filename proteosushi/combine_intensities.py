@@ -310,18 +310,12 @@ def __compress_annotations(annotation_list: list) -> list:
     new_type_index = 8
     new_comment_index = 9
     secondary_structure = ""
-    #index_fix = 1  # Fixes the index after I combine the begin and end into range
     i = 1  # Basically which group it is on
     while (i * length_uniprot_annotations) + 3 < len(annotation_list):  # Essentially, we are moving through the annotation list and compressing it to new annotations
         if not f"{annotation_list[new_begin_index+(i*length_uniprot_annotations) + 3]}-{annotation_list[new_end_index+(i*length_uniprot_annotations)+3]}" in new_annotations[range_index].split(','):
             new_annotations[range_index] += f",{annotation_list[new_begin_index+(i*length_uniprot_annotations) + 3]}-{annotation_list[new_end_index+(i*length_uniprot_annotations)+3]}"
         if not f"{annotation_list[region_index-2+(i*length_uniprot_annotations) + 3]}" in new_annotations[region_index].split(','):
             new_annotations[region_index] += f",{annotation_list[region_index-2+(i*length_uniprot_annotations) + 3]}"
-        #if annotation_list[catalytic_index-2+(i*length_uniprot_annotations)+3] != new_annotations[catalytic_index]:
-        #    if annotation_list[catalytic_index-2+(i*length_uniprot_annotations)+3] == "nan":
-        #        new_annotations[catalytic_index] += ','
-        #    else:
-        #        new_annotations[catalytic_index] += f",{annotation_list[catalytic_index-2+(i*length_uniprot_annotations)+3]}"
         if not f"{annotation_list[location_index-2+(i*length_uniprot_annotations)+3]}" in new_annotations[location_index].split(','):
             new_annotations[location_index] += f",{annotation_list[location_index-2+(i*length_uniprot_annotations)+3]}"
         if not f"{annotation_list[ec_index-2+(i*length_uniprot_annotations)+3]}" in new_annotations[ec_index].split(','):
@@ -371,15 +365,111 @@ def __compress_annotations(annotation_list: list) -> list:
     return [s.replace("nan", "") for s in new_annotations[:8]] + [secondary_structure] + [s.replace("nan", "") for s in new_annotations[8:]]
 
 
+def batch_write(batch_results: list, search_engine: str, user_PTMs: list, use_quant: bool,
+                intensity_method: str, intensity_dict: dict, add_annotation: bool, sparql_input: list):
+    """Write a batch to the output to save memory (RAM)
+    Arguments:
+        batch_results {list} -- a portion of the results to be written
+        search_engine {str} -- the string of the search engine ("maxquant", "mascot", "generic")
+        user_PTMs {list} -- a list of the user chosen PTMs
+        use_quant {bool} -- whether the user chose to use quant
+        intensity_method {str} -- whether to sum or average the quant
+        intensity_dict {dict} -- a dictionary that connects site info to quant
+        add_annotation {bool} -- whether to provide uniprot annotations to the results
+    Returns:
+        list -- row to write
+    """
+    writable_rows = list()
+    if add_annotation:
+        sparql_dict = batch_annotate(sparql_input)
+    # This builds the rollup output file depending on what the user chose
+    for i in sorted(batch_results, key=lambda r: r[0]):
+        if search_engine == "maxquant":
+            if not any(ptm[:2].lower() in i[6] for ptm in user_PTMs):
+                continue
+        elif not any(ptm in i[6] for ptm in user_PTMs):  # If none of the chosen ptms are in the rollup line
+            continue
+        # Start by adding in the base data
+        writable_row = i
+        if use_quant:  # Add to that the intensity data if requested
+            if intensity_method == "sum":  # Reports the sum of each peak
+                writable_row += intensity_dict[f"{i[6]}|{i[0].upper()}|{i[1]}"][:-1]
+            elif intensity_method == "average":  # Calculates the average for each peak and reports
+                N = intensity_dict[f"{i[6]}|{i[0].upper()}|{i[1]}"][-1]
+                intensities = intensity_dict[f"{i[6]}|{i[0].upper()}|{i[1]}"][:-1]
+                writable_row += [float(x)/N for x in intensities]
+        if add_annotation:
+            try:
+                compressed_annotations = __compress_annotations(sparql_dict[i[8].split(' ')[0] + '|' + str(i[1])])
+                writable_row += compressed_annotations[2:]
+                #print("\033[96m {}\033[00m" .format(f"{round(float(results_annotated)/len(sparql_input)*100, 2)}% of results annotated"))
+            except KeyError:
+                pass
+        writable_rows.append(writable_row)
+    return writable_rows
+
+def batch_annotate(sparql_input: list) -> dict:
+    """Annotates the provided rollup results returning a dictionary
+    Arguments:
+        sparql_input {list} -- a segment of rollup results
+    Returns:
+        dict -- dictionary connecting rollup to annotation
+    """
+    # If the user chose, it combines the annotation onto the rollup results (eventually)
+    #print("\033[95m {}\033[00m".format("\nQuerying Uniprot for Annotations!"))
+    batch = 50
+    i = 0
+    results_annotated = 0
+    sparql_input = sorted(list(set(sparql_input)), key=lambda x: x[2])
+    sparql_dict = dict()
+    # Separates the input into batches then sends those batches
+    while i + batch <= len(sparql_input):
+        # Makes the request and sends it to uniprot
+        batch_output = sparql_request(sparql_input[i:i+batch])
+
+        #If there is a 502 error, send that to the GUI to display
+        if isinstance(batch_output, int) and batch_output == 502:
+            return 502
+
+        # If after all attempts to get annotations for this batch has failed, this is reported and the next batch will be sent
+        if batch_output is None or (not isinstance(batch_output, str) and batch_output.empty):
+            #print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+batch+1} not annotated!"))
+            i += batch
+            continue
+
+        # This processes and combines the annotations to 1 per site
+        sparql_output, sparql_dict = process_sparql_output(batch_output, sparql_dict)
+        if not sparql_output:
+            #print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+batch+1} not annotated!"))
+            i += batch
+            continue
+        i += batch
+        results_annotated += batch
+    batch_output = sparql_request(sparql_input[i:])
+
+    #If there is a 502 error, send that to the GUI to display
+    if isinstance(batch_output, int) and batch_output == 502:
+        return 502
+
+    if batch_output is None or (not isinstance(batch_output, str) and batch_output.empty):
+        #print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+len(sparql_input[i:])+1} not annotated!"))
+        pass
+    else:
+        sparql_output, sparql_dict = process_sparql_output(batch_output, sparql_dict)
+        if not sparql_output:
+            #print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+batch+1} not annotated!"))
+            pass
+        else:
+            results_annotated += len(sparql_input[i:])
+    return sparql_dict
+        
 
 def rollup(search_engine: str, search_engine_filepath: str, use_target_list: bool, 
            target_list_filepath: str, max_missed_cleavages: int, protease: str, 
            fdr_threshold: float, use_quant: bool, user_PTMs: list, 
            proteome_fasta_filepath: str, intensity_method: str, add_annotation: bool, 
            species_id: str, output_filename: str, localization_threshold: float) -> int:
-    """starts proteoSushi rollup when called by run_proteoSushi
-
-    Arguments:
+    """starts proteoSushi rollup when called by runsparql_input
         search_engine {str} -- "maxquant", "mascot", or "generic"
         search_engine_filepath {str} -- the filepath for search engine output
         use_target_list {bool} -- whether to use the target list to prioritize matches
@@ -397,7 +487,6 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     Returns:
         int -- possible error flag
     """
-
     if search_engine == "generic":
         sequence_index, modified_sequence_index, mod_dict, intensity_start, data_filename, \
             var_mod_dict = compile_data_generic(search_engine_filepath, user_PTMs, cleave_rules[protease])
@@ -443,7 +532,6 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     # Use the PEP column if the user chose Maxquant output
     if search_engine == "maxquant":
         false_disc = header.index("PEP")
-    #PTM_names = [header[i].lower().replace(" probabilities", '') for i in localization_indices]#
     intensity_dict = dict()
     gene_results = list()
     sparql_input = list()
@@ -451,343 +539,9 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     missing_PTM = 0
     total_seqs = 0
     over_threshold = 0
+    total_sites = 0
+    batch_size = 100
     unmatched_sequences = []
-
-    for row in tsv_reader:
-        # If a maxquant file is used and the false disc rate of this peptide is not below the threshold, skip it
-        if search_engine == "maxquant" and not fdr_threshold is None and float(row[false_disc]) > fdr_threshold:
-            over_threshold += 1
-            continue
-        total_seqs += 1
-        raw_seq = row[sequence_index]
-        #if raw_seq == "DLGGIVLANACGPCIGQWDR":
-        #    print("start")
-        pep_mod_seq = row[modified_sequence_index]
-        #if pep_mod_seq == "DLGGIVLANAC(ne)GPC(ca)IGQWDR":
-        #    print("start")
-        pep_seq = row[sequence_index].replace("L","I")
-        if pep_seq is None:
-            print("HALT!")  # A handled exception would be preferable here
-            break
-        genes_positions = pep_dict.get(pep_seq)
-        if use_quant and search_engine == "generic":
-            intensities = [e for i, e in enumerate(row) if i in intensity_start]
-            # If there is no intensity, skip that site
-            if intensities == '' or intensities[0] == '':
-                continue
-            intensity_header = [e for i, e in enumerate(header) if i in intensity_start]
-        elif search_engine == "maxquant":
-            pep_mod_seq = pep_mod_seq.strip('_')
-
-            if use_quant:
-                #intensities = row[intensity_start]
-                intensities = [e for i, e in enumerate(row) if i in intensity_start]
-                # If there is no intensity, skip that site
-                if intensities == '' or intensities[0] == '':
-                    continue
-                #intensities = [intensities]
-                intensity_header = [e for i, e in enumerate(header) if i in intensity_start]
-        elif search_engine == "mascot":
-            if pep_mod_seq == "":
-                continue
-            new_seq = pep_seq
-            pep_mod_seq = pep_mod_seq.split('.')[1]
-            i = len(pep_mod_seq) - 1
-            inv_mod_dict = {v:k for k, v in var_mod_dict.items()}
-            while i >= 0:
-                if pep_mod_seq[i] != "0":  # If there is a mod
-                    new_seq = new_seq[:i+1] + '(' + inv_mod_dict[pep_mod_seq[i]] + ')' + new_seq[i+1:]
-                i -= 1
-            pep_mod_seq = new_seq
-
-            if use_quant:
-                if len(row) < len(header):  # If the row is cut short (of the intensity cells), skip to the next one
-                    continue
-                while intensity_start < len(header) and '/' in row[intensity_start]:
-                    intensity_start += 2  # 
-                # NOTE: This is now an error to the GUI and this line of code shouldn't run.
-                assert intensity_start < len(header), "Mascot intensity values may be missing, please check"
-
-                intensities = row[intensity_start+1::2]
-                # If there is no intensity, skip that site
-                if intensities[0] == "---":  # If there are no intensity values in this line, go to the next one
-                    continue
-                intensity_header = row[intensity_start::2]  # Ideally, this would happen outside of this loop
-
-        new_user_PTMs = user_PTMs
-        if search_engine == "maxquant":
-            new_user_PTMs = [ptm.lower()[:2] for ptm in user_PTMs]
-        
-        new_pep_mod_seq, new_pep_seq, missed_cleave_fix = clean_pep_seq(cleave_rules[protease], pep_mod_seq, new_user_PTMs, raw_seq)
-        if genes_positions and len(genes_positions) == 1:
-            gene, start_pos, unpid, protein_name = list(genes_positions)[0]
-            if not new_pep_mod_seq in mod_dict:
-                print("\033[91m {}\033[00m".format(f"{raw_seq} does not have the PTM(s) selected!"))
-                missing_PTM += 1
-                continue
-            mods = mod_dict[new_pep_mod_seq]
-            # Skip any peptide sequences without a user-chosen PTM
-            if not (any(mods) and set([m[0] for m in mods]) & set(user_PTMs)): 
-                continue
-            for mod in list(set(mods)):
-                if not mod[0] in user_PTMs:
-                    continue
-                site = start_pos + mod[1] + missed_cleave_fix + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
-                #if gene.upper() == "ACTL6A":
-                #    print("ACTL6A")
-                if use_quant:  # If the user chose to combine/average intensities
-                    intensity_dict, to_add = __add_intensity(intensity_dict, 
-                                                             new_pep_mod_seq, 
-                                                             [gene], site, intensities)
-                else:
-                    key = f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}"
-                    if key in intensity_dict:
-                        to_add = False
-                    else:
-                        to_add = True
-                        intensity_dict[key] = 0
-                if to_add:
-                    if use_target_list and gene.upper() + '\n' in target_genes:  # TODO: fetch the uniprot ID from the match
-                        gene_results.append([
-                            gene, 
-                            site, 
-                            protein_name,
-                            "", 
-                            gene, 
-                            new_pep_seq, 
-                            new_pep_mod_seq, 
-                            annotDict[unpid] if unpid in annotDict else "", 
-                            unpid
-                            ])
-                        if len(unpid) >= 5:
-                            sparql_input.append(tuple((unpid, site, gene)))
-                    else:
-                        gene_results.append([
-                            gene, 
-                            site, 
-                            protein_name,
-                            "", 
-                            "", 
-                            new_pep_seq, 
-                            new_pep_mod_seq, 
-                            annotDict[unpid] if unpid in annotDict else "", 
-                            unpid
-                            ])  # NOTE: I changed this from a tuple, so things might be different
-                        if len(unpid) >= 5:
-                            sparql_input.append(tuple((unpid, site, gene)))
-        elif genes_positions and len(genes_positions) > 1:
-            isTarget, match = __chooseHit(genes_positions, target_genes, annotDict, use_target_list)
-            # If there was > 1 target genes, non-target genes, or a combination, AND none was chosen
-            if match is None:  
-                continue
-            if not match[0] is None:  # Checks to see that there has been a match
-                if isinstance(match, tuple):  # Checks if this is just a single match.
-                    gene = match[0]
-                    if not new_pep_mod_seq in mod_dict:
-                        print("\033[91m {}\033[00m".format(f"{raw_seq} does not have the PTM(s) selected!"))
-                        missing_PTM += 1
-                        continue
-                    mods = mod_dict[new_pep_mod_seq]
-                    for mod in list(set(mods)):
-                        if not mod[0] in user_PTMs:
-                            continue
-                        site = match[1] + mod[1] + missed_cleave_fix + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
-                        #if gene.upper() == "ACTL6A":
-                        #    print("ACTL6A")
-                        to_add = None
-                        if use_quant:
-                            intensity_dict, to_add = __add_intensity(intensity_dict, 
-                                                                     new_pep_mod_seq, 
-                                                                     [match[0]], 
-                                                                     site, intensities)
-                        else:
-                            key = f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}"
-                            if key in intensity_dict:
-                                to_add = False
-                            else:
-                                to_add = True
-                                intensity_dict[key] = 0
-                        if to_add:
-                            if isTarget:
-                                gene_results.append([
-                                    gene, 
-                                    site, 
-                                    match[3],
-                                    "", 
-                                    gene, 
-                                    new_pep_seq, 
-                                    new_pep_mod_seq, 
-                                    annotDict[match[2]] if match[2] in annotDict else "", 
-                                    match[2]
-                                    ])
-                                if len(match[2]) >= 5:
-                                    sparql_input.append(tuple((match[2], site, gene)))
-                            else:
-                                gene_results.append([
-                                    gene, 
-                                    site, 
-                                    match[3],
-                                    "", 
-                                    "", 
-                                    new_pep_seq, 
-                                    new_pep_mod_seq, 
-                                    annotDict[match[2]] if match[2] in annotDict else "", 
-                                    match[2]
-                                    ])
-                                if len(match[2]) >= 5:
-                                    sparql_input.append(tuple((match[2], site, gene)))
-                else:  # There are multiple matches
-                    if not new_pep_mod_seq in mod_dict:
-                        print("\033[91m {}\033[00m".format(f"{raw_seq} does not have the PTM(s) selected!"))
-                        missing_PTM += 1
-                        continue
-                    mods = mod_dict[new_pep_mod_seq]
-                    for mod in list(set(mods)):
-                        if not mod[0] in user_PTMs:
-                            continue
-                        additGenes = list()
-                        for tup in match:
-                            additGenes.append(tup[0])
-                        assert len(additGenes) > 1, "The # of matches should be >1, but isn't"
-                        additGenes = list(set(additGenes))
-                        #gene_true_pos = f"{match[0][0]}|{match[0][1]+mod[1]}"
-                        site = match[0][1] + mod[1] + missed_cleave_fix + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
-                        if use_quant:
-                            intensity_dict, to_add = __add_intensity(intensity_dict,
-                                                                     new_pep_mod_seq, 
-                                                                     additGenes, 
-                                                                     site, intensities)
-                        else:
-                            if any(f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}" in intensity_dict for gene in additGenes):
-                                to_add = False
-                            else:
-                                to_add = True
-                                for gene in additGenes:
-                                    intensity_dict[f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}"] = 0
-                        if to_add:
-                            for addit_gene in additGenes:
-                                #additGenes.remove(match[0][0])
-                                gene_list = [x for x in additGenes if x != addit_gene]
-                                current_match = [x for x in match if x[0] == addit_gene][0]
-                                if isTarget:
-                                    gene_results.append([
-                                        addit_gene, 
-                                        site,
-                                        current_match[3], 
-                                        #match[0][3],
-                                        ' '.join(gene_list), 
-                                        ' '.join([i[0] for i in match]), 
-                                        new_pep_seq, 
-                                        new_pep_mod_seq, 
-                                        annotDict[current_match[2]] if current_match[2] in annotDict else "", 
-                                        ' '.join([i[2] for i in match])
-                                        ])
-                                    if len(current_match[2]) >= 5:
-                                        sparql_input.append(tuple((current_match[2], site, current_match[0])))
-                                else:
-                                    gene_results.append([
-                                        addit_gene, 
-                                        site, 
-                                        current_match[3], 
-                                        ' '.join(gene_list), 
-                                        "", 
-                                        new_pep_seq, 
-                                        new_pep_mod_seq, 
-                                        annotDict[current_match[2]] if current_match[2] in annotDict else "", 
-                                        ' '.join([i[2] for i in match])
-                                        ])
-                                    if len(current_match[2]) >= 5:
-                                        sparql_input.append(tuple((current_match[2], site, current_match[0])))
-            else:  # NOTE: it generally shouldn't get here
-                unmatched_peps += 1
-                unmatched_sequences.append(tuple([raw_seq, pep_mod_seq]))
-        else:  # There was no match for the peptide in the pepdict
-            unmatched_peps += 1
-            unmatched_sequences.append(tuple([raw_seq, pep_mod_seq]))
-    data_file.close()
-    # Prints the stats from the rollup
-    print("\033[93m {}\033[00m".format(f"\nUnmatched Peptides: {unmatched_peps}\nMissing Selected PTMs: {missing_PTM}\nTotal Peptides: {total_seqs}"))
-    '''
-    ########################
-    #Just to annotate EGFR #
-    ########################
-    if add_annotation and False:
-        sparql_dict = dict()
-        #with open("EGFR_annotation_uniprot_unfixed.csv", 'r') as annotation_file:
-        
-        with open("sparql-complete.csv", 'r') as annotation_file:
-            annotations_full = pd.DataFrame(columns=annotation_file.readline().split(','))
-            #print("here")
-            for line in annotation_file:
-                if line[:5] == "entry":
-                    continue
-                else:
-                    for line_split in csv.reader([line], delimiter=',', quotechar='"'):
-                        annotations_full = annotations_full.append(pd.Series(line_split, index=annotations_full.columns), ignore_index=True)
-        
-        annotations_full = pd.read_csv("sparql-complete.csv")
-        #annotations_full = pd.read_json("sparql-complete.srj")
-        annotations_full = annotations_full[annotations_full.entry != "entry"]
-        sparql_output, sparql_dict = sparql.process_sparql_output(annotations_full, sparql_dict)
-    '''
-    # If the user chose, it combines the annotation onto the rollup results (eventually)
-    if add_annotation:
-        print("\033[95m {}\033[00m".format("\nQuerying Uniprot for Annotations!"))
-        batch = 50
-        i = 0
-        results_annotated = 0
-        sparql_output_list = list()
-        sparql_input = sorted(list(set(sparql_input)), key=lambda x: x[2])
-        sparql_dict = dict()
-        # Separates the input into batches then sends those batches
-        while i + batch <= len(sparql_input):
-            # Makes the request and sends it to uniprot
-            batch_output = sparql_request(sparql_input[i:i+batch])
-
-            #If there is a 502 error, send that to the GUI to display
-            if isinstance(batch_output, int) and batch_output == 502:
-                return 502
-
-            # If after all attempts to get annotations for this batch has failed, this is reported and the next batch will be sent
-            if batch_output is None or (not isinstance(batch_output, str) and batch_output.empty):
-                print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+batch+1} not annotated!"))
-                i += batch
-                continue
-
-            # This processes and combines the annotations to 1 per site
-            sparql_output, sparql_dict = process_sparql_output(batch_output, sparql_dict)
-            if not sparql_output:
-                print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+batch+1} not annotated!"))
-                i += batch
-                continue
-            sparql_output_list.append(sparql_output)
-            i += batch
-            results_annotated += batch
-            print("\033[96m {}\033[00m" .format(f"{round(float(results_annotated)/len(sparql_input)*100, 2)}% of results annotated"))
-        batch_output = sparql_request(sparql_input[i:])
-
-        #If there is a 502 error, send that to the GUI to display
-        if isinstance(batch_output, int) and batch_output == 502:
-            return 502
-
-        if batch_output is None or (not isinstance(batch_output, str) and batch_output.empty):
-            print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+len(sparql_input[i:])+1} not annotated!"))
-            pass
-        else:
-            sparql_output, sparql_dict = process_sparql_output(batch_output, sparql_dict)
-            if not sparql_output:
-                print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+batch+1} not annotated!"))
-                pass
-            else:
-                sparql_output_list.append(sparql_output)
-                results_annotated += len(sparql_input[i:])
-        print("\033[92m {}\033[00m" .format(f"\n{round(float(results_annotated)/len(sparql_input)*100, 2)}% of results annotated"))
-        # Writes the annotations to a separate file in case the user wants to view those in a more vertical way
-        with open("sparql_annotations.csv", 'w') as spql_annot:
-            out_writer = csv.writer(spql_annot)
-            for line in sparql_output_list:
-                out_writer.writerow(line)
-    print("\033[95m {}\033[00m".format("\nWriting the rollup output file"))
 
     # Prints out the completed rollup with annotations from Uniprot (if requested)
     with open(output_filename, 'w', newline = '') as w1:
@@ -795,19 +549,9 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         header2 = ["Gene", "Site", "Protein_Name", "Shared_Genes", "Target_Genes", "Peptide_Sequence", 
             "Peptide_Modified_Sequence", "Annotation_Score", "Uniprot_Accession_ID"]
         if use_quant:
+            intensity_header = [e for i, e in enumerate(header) if i in intensity_start]
             header2 += [ih + f" ({intensity_method})" for ih in intensity_header]
         if add_annotation:
-            # TODO: Change the header to be just one group of annotations
-            '''
-            annotations_length = max(len(v) for k, v in sparql_dict.items())
-            if annotations_length > 0:
-                header2 += ["entry", "position", "lengthOfSequence"]
-                annotations_length -= 3
-            while annotations_length > 0:
-                header2 += ["begin", "end", "regionOfInterest", "catalyicActivity", "location", 
-                            "ec", "rhea", "type", "comment"]
-                annotations_length -= 9
-            '''
             header2 += ["Length_Of_Sequence", "Range_of_Interest", "Region_of_Interest", 
                         "Subcellular_Location", "Enzyme_Class", "rhea", "Secondary_Structure", 
                         "Active_Site_Annotation", "Alternative_Sequence_Annotation", 
@@ -819,32 +563,267 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                         "NP_Binding_Annotation", "Other", "Region_Annotation", "Repeat_Annotation", 
                         "Topological_Domain_Annotation", "Zinc_Finger_Annotation"]
         out_writer.writerow(header2)
-        # This builds the rollup output file depending on what the user chose
-        for i in sorted(gene_results, key=lambda r: r[0]):
-            if search_engine == "maxquant":
-                if not any(ptm[:2].lower() in i[6] for ptm in user_PTMs):
-                    continue
-            elif not any(ptm in i[6] for ptm in user_PTMs):  # If none of the chosen ptms are in the rollup line
-                continue
-            # Start by adding in the base data
-            writable_row = i
-            if use_quant:  # Add to that the intensity data if requested
-                if intensity_method == "sum":  # Reports the sum of each peak
-                    writable_row += intensity_dict[f"{i[6]}|{i[0].upper()}|{i[1]}"][:-1]
-                elif intensity_method == "average":  # Calculates the average for each peak and reports
-                    N = intensity_dict[f"{i[6]}|{i[0].upper()}|{i[1]}"][-1]
-                    intensities = intensity_dict[f"{i[6]}|{i[0].upper()}|{i[1]}"][:-1]
-                    writable_row += [float(x)/N for x in intensities]
-            if add_annotation:
-                try:
-                    compressed_annotations = __compress_annotations(sparql_dict[i[8].split(' ')[0] + '|' + str(i[1])])
-                    writable_row += compressed_annotations[2:]#5]# + compressed_annotations[6:]
-                except KeyError:
-                    #print(i[6] + '|' + str(i[1]) + " not in dict")
-                    pass
-            out_writer.writerow(writable_row)
-        #print(sparql_dict)
 
+        for row in tsv_reader:
+            if len(gene_results) >= batch_size:
+                writable_rows = batch_write(gene_results, search_engine, user_PTMs, use_quant, 
+                                                intensity_method, intensity_dict, add_annotation, sparql_input)
+                for writable_row in writable_rows:
+                    out_writer.writerow(writable_row)
+                gene_results = list()
+                sparql_input = list()
+                print("\033[92m {}\033[00m".format(f"\n{total_sites} sites rolled-up and written"), end='')
+            # If a maxquant file is used and the false disc rate of this peptide is not below the threshold, skip it
+            if search_engine == "maxquant" and not fdr_threshold is None and float(row[false_disc]) > fdr_threshold:
+                over_threshold += 1
+                continue
+            total_seqs += 1
+            raw_seq = row[sequence_index]
+            pep_mod_seq = row[modified_sequence_index]
+            pep_seq = row[sequence_index].replace("L","I")
+            if pep_seq is None:
+                print("HALT!")  # A handled exception would be preferable here
+                break
+            genes_positions = pep_dict.get(pep_seq)
+            if use_quant and search_engine == "generic":
+                intensities = [e for i, e in enumerate(row) if i in intensity_start]
+                # If there is no intensity, skip that site
+                if intensities == '' or intensities[0] == '':
+                    continue
+                intensity_header = [e for i, e in enumerate(header) if i in intensity_start]
+            elif search_engine == "maxquant":
+                pep_mod_seq = pep_mod_seq.strip('_')
+
+                if use_quant:
+                    intensities = [e for i, e in enumerate(row) if i in intensity_start]
+                    # If there is no intensity, skip that site
+                    if intensities == '' or intensities[0] == '':
+                        continue
+                    intensity_header = [e for i, e in enumerate(header) if i in intensity_start]
+            elif search_engine == "mascot":
+                if pep_mod_seq == "":
+                    continue
+                new_seq = pep_seq
+                pep_mod_seq = pep_mod_seq.split('.')[1]
+                i = len(pep_mod_seq) - 1
+                inv_mod_dict = {v:k for k, v in var_mod_dict.items()}
+                while i >= 0:
+                    if pep_mod_seq[i] != "0":  # If there is a mod
+                        new_seq = new_seq[:i+1] + '(' + inv_mod_dict[pep_mod_seq[i]] + ')' + new_seq[i+1:]
+                    i -= 1
+                pep_mod_seq = new_seq
+
+                if use_quant:
+                    if len(row) < len(header):  # If the row is cut short (of the intensity cells), skip to the next one
+                        continue
+                    while intensity_start < len(header) and '/' in row[intensity_start]:
+                        intensity_start += 2  # 
+                    # NOTE: This is now an error to the GUI and this line of code shouldn't run.
+                    assert intensity_start < len(header), "Mascot intensity values may be missing, please check"
+
+                    intensities = row[intensity_start+1::2]
+                    # If there is no intensity, skip that site
+                    if intensities[0] == "---":  # If there are no intensity values in this line, go to the next one
+                        continue
+                    intensity_header = row[intensity_start::2]  # Ideally, this would happen outside of this loop
+
+            new_user_PTMs = user_PTMs
+            if search_engine == "maxquant":
+                new_user_PTMs = [ptm.lower()[:2] for ptm in user_PTMs]
+            
+            new_pep_mod_seq, new_pep_seq, missed_cleave_fix = clean_pep_seq(cleave_rules[protease], pep_mod_seq, new_user_PTMs, raw_seq)
+            if genes_positions and len(genes_positions) == 1:
+                gene, start_pos, unpid, protein_name = list(genes_positions)[0]
+                if not new_pep_mod_seq in mod_dict:
+                    print("\033[91m {}\033[00m".format(f"\n{raw_seq} does not have the PTM(s) selected!"), end='')
+                    missing_PTM += 1
+                    continue
+                mods = mod_dict[new_pep_mod_seq]
+                # Skip any peptide sequences without a user-chosen PTM
+                if not (any(mods) and set([m[0] for m in mods]) & set(user_PTMs)): 
+                    continue
+                for mod in list(set(mods)):
+                    if not mod[0] in user_PTMs:
+                        continue
+                    site = start_pos + mod[1] + missed_cleave_fix + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
+                    if use_quant:  # If the user chose to combine/average intensities
+                        intensity_dict, to_add = __add_intensity(intensity_dict, 
+                                                                new_pep_mod_seq, 
+                                                                [gene], site, intensities)
+                    else:
+                        key = f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}"
+                        if key in intensity_dict:
+                            to_add = False
+                        else:
+                            to_add = True
+                            intensity_dict[key] = 0
+                    if to_add:
+                        if use_target_list and gene.upper() + '\n' in target_genes:  # TODO: fetch the uniprot ID from the match
+                            gene_results.append([
+                                gene, 
+                                site, 
+                                protein_name,
+                                "", 
+                                gene, 
+                                new_pep_seq, 
+                                new_pep_mod_seq, 
+                                annotDict[unpid] if unpid in annotDict else "", 
+                                unpid
+                                ])
+                            total_sites += 1
+                            if len(unpid) >= 5:
+                                sparql_input.append(tuple((unpid, site, gene)))
+                        else:
+                            gene_results.append([
+                                gene, 
+                                site, 
+                                protein_name,
+                                "", 
+                                "", 
+                                new_pep_seq, 
+                                new_pep_mod_seq, 
+                                annotDict[unpid] if unpid in annotDict else "", 
+                                unpid
+                                ])  # NOTE: I changed this from a tuple, so things might be different
+                            total_sites += 1
+                            if len(unpid) >= 5:
+                                sparql_input.append(tuple((unpid, site, gene)))
+            elif genes_positions and len(genes_positions) > 1:
+                isTarget, match = __chooseHit(genes_positions, target_genes, annotDict, use_target_list)
+                # If there was > 1 target genes, non-target genes, or a combination, AND none was chosen
+                if match is None:  
+                    continue
+                if not match[0] is None:  # Checks to see that there has been a match
+                    if isinstance(match, tuple):  # Checks if this is just a single match.
+                        gene = match[0]
+                        if not new_pep_mod_seq in mod_dict:
+                            print("\033[91m {}\033[00m".format(f"\n{raw_seq} does not have the PTM(s) selected!"), end='')
+                            missing_PTM += 1
+                            continue
+                        mods = mod_dict[new_pep_mod_seq]
+                        for mod in list(set(mods)):
+                            if not mod[0] in user_PTMs:
+                                continue
+                            site = match[1] + mod[1] + missed_cleave_fix + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
+                            to_add = None
+                            if use_quant:
+                                intensity_dict, to_add = __add_intensity(intensity_dict, 
+                                                                        new_pep_mod_seq, 
+                                                                        [match[0]], 
+                                                                        site, intensities)
+                            else:
+                                key = f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}"
+                                if key in intensity_dict:
+                                    to_add = False
+                                else:
+                                    to_add = True
+                                    intensity_dict[key] = 0
+                            if to_add:
+                                if isTarget:
+                                    gene_results.append([
+                                        gene, 
+                                        site, 
+                                        match[3],
+                                        "", 
+                                        gene, 
+                                        new_pep_seq, 
+                                        new_pep_mod_seq, 
+                                        annotDict[match[2]] if match[2] in annotDict else "", 
+                                        match[2]
+                                        ])
+                                    total_sites += 1
+                                    if len(match[2]) >= 5:
+                                        sparql_input.append(tuple((match[2], site, gene)))
+                                else:
+                                    gene_results.append([
+                                        gene, 
+                                        site, 
+                                        match[3],
+                                        "", 
+                                        "", 
+                                        new_pep_seq, 
+                                        new_pep_mod_seq, 
+                                        annotDict[match[2]] if match[2] in annotDict else "", 
+                                        match[2]
+                                        ])
+                                    total_sites += 1
+                                    if len(match[2]) >= 5:
+                                        sparql_input.append(tuple((match[2], site, gene)))
+                    else:  # There are multiple matches
+                        if not new_pep_mod_seq in mod_dict:
+                            print("\033[91m {}\033[00m".format(f"\n{raw_seq} does not have the PTM(s) selected!"), end='')
+                            missing_PTM += 1
+                            continue
+                        mods = mod_dict[new_pep_mod_seq]
+                        for mod in list(set(mods)):
+                            if not mod[0] in user_PTMs:
+                                continue
+                            additGenes = list()
+                            for tup in match:
+                                additGenes.append(tup[0])
+                            assert len(additGenes) > 1, "The # of matches should be >1, but isn't"
+                            additGenes = list(set(additGenes))
+                            site = match[0][1] + mod[1] + missed_cleave_fix + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
+                            if use_quant:
+                                intensity_dict, to_add = __add_intensity(intensity_dict,
+                                                                        new_pep_mod_seq, 
+                                                                        additGenes, 
+                                                                        site, intensities)
+                            else:
+                                if any(f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}" in intensity_dict for gene in additGenes):
+                                    to_add = False
+                                else:
+                                    to_add = True
+                                    for gene in additGenes:
+                                        intensity_dict[f"{new_pep_mod_seq}|{gene.upper()}|{str(site)}"] = 0
+                            if to_add:
+                                for addit_gene in additGenes:
+                                    gene_list = [x for x in additGenes if x != addit_gene]
+                                    current_match = [x for x in match if x[0] == addit_gene][0]
+                                    if isTarget:
+                                        gene_results.append([
+                                            addit_gene,
+                                            site,
+                                            current_match[3],
+                                            ' '.join(gene_list),
+                                            ' '.join([i[0] for i in match]),
+                                            new_pep_seq,
+                                            new_pep_mod_seq,
+                                            annotDict[current_match[2]] if current_match[2] in annotDict else "",
+                                            ' '.join([i[2] for i in match])
+                                            ])
+                                        total_sites += 1
+                                        if len(current_match[2]) >= 5:
+                                            sparql_input.append(tuple((current_match[2], site, current_match[0])))
+                                    else:
+                                        gene_results.append([
+                                            addit_gene, 
+                                            site, 
+                                            current_match[3], 
+                                            ' '.join(gene_list), 
+                                            "", 
+                                            new_pep_seq, 
+                                            new_pep_mod_seq, 
+                                            annotDict[current_match[2]] if current_match[2] in annotDict else "", 
+                                            ' '.join([i[2] for i in match])
+                                            ])
+                                        total_sites += 1
+                                        if len(current_match[2]) >= 5:
+                                            sparql_input.append(tuple((current_match[2], site, current_match[0])))
+                else:  # NOTE: it generally shouldn't get here
+                    unmatched_peps += 1
+                    unmatched_sequences.append(tuple([raw_seq, pep_mod_seq]))
+            else:  # There was no match for the peptide in the pepdict
+                unmatched_peps += 1
+                unmatched_sequences.append(tuple([raw_seq, pep_mod_seq]))
+        
+    data_file.close()
+    # Prints the stats from the rollup
+    print("\033[93m {}\033[00m".format(f"\n\nUnmatched Peptides: {unmatched_peps}\nMissing Selected PTMs: {missing_PTM}\nTotal Peptides: {total_seqs}"))
+    
+    
+    #print("\033[95m {}\033[00m".format("\nWriting the rollup output file"))
+    
     # Puts all of the unmatched sequences into a new file
     with open(f"unmatched_sequences_{search_engine}.csv", 'w', newline = '') as w2:
         out_writer = csv.writer(w2)
@@ -853,5 +832,6 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         for i in unmatched_sequences:
             writable_row = list(i)
             out_writer.writerow(writable_row)
+    print("\nUnmatched sequences written\n", end='')
     return 0
 #EOF

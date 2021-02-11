@@ -308,7 +308,7 @@ def request_annot(query: str, attempts_left=10):
         if "<!DOCTYPE html SYSTEM \"about:legacy-compat\">" in r.text:  # This just means it returned a 500 error
             if attempts_left > 0:
                 sleep(time_to_sleep)
-                print("\033[93m {}\033[00m".format(f"Attempts used: {11 - attempts_left}"))
+                print("\033[93m {}\033[00m".format(f"\nAttempts used: {11 - attempts_left}"), end='')
                 return request_annot(query, attempts_left - 1)
             else:
                 return None  # TODO: remove this once Uniprot fixes their stuff
@@ -318,7 +318,7 @@ def request_annot(query: str, attempts_left=10):
     except (pd.errors.ParserError, requests.exceptions.ConnectionError):
         if attempts_left > 0:
             sleep(time_to_sleep)
-            print("\033[93m {}\033[00m".format(f"Attempts used: {11 - attempts_left}"))
+            print("\033[93m {}\033[00m".format(f"\nAttempts used: {11 - attempts_left}"), end='')
             return request_annot(query, attempts_left - 1)
         else:
             return None  # TODO: remove this once Uniprot fixes their stuff
@@ -367,13 +367,13 @@ def process_sparql_output(output_df, sparql_dict: dict) -> list:
     #sparql_dict = dict()  # This gets used by the main program to connect these annotations to the rest of the data.
     output_lines = output_df
     if len(output_lines) == 1 or (not isinstance(output_lines, str) and output_lines.empty):
-        print("Failed to get annotations")
+        print("\nFailed to get annotations", end='')
         return output_list, sparql_dict
     
     try:
         position_index = output_lines.columns.get_loc(" position")
     except (AttributeError, KeyError):
-        print("Missing the Position column")
+        print("\nMissing the Position column", end='')
         return output_list, sparql_dict
 
     # get the subcellular location from UniProt

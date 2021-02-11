@@ -519,7 +519,7 @@ class App(QMainWindow):
                 return
             self.statusBar().showMessage("Analysis Complete!")
             self.statusBar().setStyleSheet("background-color : green")
-            print("\033[92m {}\033[00m".format("Analysis Complete!"))
+            print("\033[92m {}\033[00m".format("\nAnalysis Complete!"))
             #sys.exit()
         elif self.mascot_RB.isChecked() and os.path.exists(self.mascot_filepath.text()):
             self.statusBar().showMessage("Analysis in Progress")
@@ -551,7 +551,7 @@ class App(QMainWindow):
                 return
             self.statusBar().showMessage("Analysis Complete!")
             self.statusBar().setStyleSheet("background-color : green")
-            print("\033[92m {}\033[00m".format("Analysis Complete!"))
+            print("\033[92m {}\033[00m".format("\nAnalysis Complete!"))
             #sys.exit()
         elif self.generic_RB.isChecked() and os.path.exists(self.generic_filepath.text()):
             self.statusBar().showMessage("Analysis in Progress")
@@ -578,7 +578,7 @@ class App(QMainWindow):
                 return
             self.statusBar().showMessage("Analysis Complete!")
             self.statusBar().setStyleSheet("background-color : green")
-            print("\033[92m {}\033[00m".format("Analysis Complete!"))
+            print("\033[92m {}\033[00m".format("\nAnalysis Complete!"))
             #sys.exit()
         else:
             self.statusBar().showMessage("ERROR: Missing Search Engine Output!")
