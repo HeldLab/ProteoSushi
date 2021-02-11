@@ -519,7 +519,7 @@ class App(QMainWindow):
                 return
             self.statusBar().showMessage("Analysis Complete!")
             self.statusBar().setStyleSheet("background-color : green")
-            print("\033[92m {}\033[00m".format("Analysis Complete!"))
+            print("\033[92m {}\033[00m".format("\nAnalysis Complete!"))
             #sys.exit()
         elif self.mascot_RB.isChecked() and os.path.exists(self.mascot_filepath.text()):
             self.statusBar().showMessage("Analysis in Progress")
@@ -551,7 +551,7 @@ class App(QMainWindow):
                 return
             self.statusBar().showMessage("Analysis Complete!")
             self.statusBar().setStyleSheet("background-color : green")
-            print("\033[92m {}\033[00m".format("Analysis Complete!"))
+            print("\033[92m {}\033[00m".format("\nAnalysis Complete!"))
             #sys.exit()
         elif self.generic_RB.isChecked() and os.path.exists(self.generic_filepath.text()):
             self.statusBar().showMessage("Analysis in Progress")
@@ -576,9 +576,14 @@ class App(QMainWindow):
                 self.statusBar().showMessage("ERROR: Uniprot server error! Please try again later.")
                 self.statusBar().setStyleSheet("background-color : red")
                 return
+            # If the generic file has no intensity values and user tried to analyze them
+            if self.quant_CB.isChecked() and output == 2:
+                self.statusBar().showMessage("ERROR: Generic file has no detectable intensity values!")
+                self.statusBar().setStyleSheet("background-color : red")
+                return
             self.statusBar().showMessage("Analysis Complete!")
             self.statusBar().setStyleSheet("background-color : green")
-            print("\033[92m {}\033[00m".format("Analysis Complete!"))
+            print("\033[92m {}\033[00m".format("\nAnalysis Complete!"))
             #sys.exit()
         else:
             self.statusBar().showMessage("ERROR: Missing Search Engine Output!")
