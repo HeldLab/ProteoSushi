@@ -576,6 +576,11 @@ class App(QMainWindow):
                 self.statusBar().showMessage("ERROR: Uniprot server error! Please try again later.")
                 self.statusBar().setStyleSheet("background-color : red")
                 return
+            # If the generic file has no intensity values and user tried to analyze them
+            if self.quant_CB.isChecked() and output == 2:
+                self.statusBar().showMessage("ERROR: Generic file has no detectable intensity values!")
+                self.statusBar().setStyleSheet("background-color : red")
+                return
             self.statusBar().showMessage("Analysis Complete!")
             self.statusBar().setStyleSheet("background-color : green")
             print("\033[92m {}\033[00m".format("\nAnalysis Complete!"))

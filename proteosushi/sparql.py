@@ -352,7 +352,10 @@ def process_sparql_output(output_df, sparql_dict: dict) -> list:
                 new_str.append(chunk.replace("http://purl.uniprot.org/core/", ""))
             elif isinstance(chunk, str) and "http://purl.uniprot.org/locations/" in chunk:
                 new_chunk = chunk.replace("http://purl.uniprot.org/locations/", "")
-                new_str.append(subcellular_location_dict[new_chunk.zfill(4)])  # Converts the number location to descriptor
+                try:
+                    new_str.append(subcellular_location_dict[new_chunk.zfill(4)])  # Converts the number location to descriptor
+                except KeyError:
+                    new_str.append("")
             elif isinstance(chunk, str) and "http://purl.uniprot.org/enzyme/" in chunk:
                 new_chunk = chunk.replace("http://purl.uniprot.org/enzyme/", "")
                 new_str.append(ec_id_to_description_dict[new_chunk])

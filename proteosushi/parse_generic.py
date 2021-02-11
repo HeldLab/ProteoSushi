@@ -146,7 +146,6 @@ def create_mod_dict(sky_filename: str, user_PTMs: list, cleave_rule: tuple) -> d
                 except KeyError:
                     mod_dict[new_mod_seq] = [tuple((mods[i][0], fixed_indices[i]))]
                 i += 1
-    #print(mod_dict)
     return mod_dict
 
 def __chooseHit(genes_positions: list, mito_genes: list, annotDict: dict) -> list:
@@ -242,30 +241,7 @@ def __chooseTup(tuples: list, annotDict: dict) -> list:
                 return paralogs
             else:
                 return None, None'''
-'''
-def __prompt_PTMs(PTMs: list) -> list:
-    """prompts the user for which PTMs should be used
-    Arguments:
-        PTMs {list} -- a list of PTM names
-    Returns:
-        list -- a list of PTMs specified by the user
-    """
-    print("\033[96m {}\033[00m".format("Possible PTMs for analysis include:"))
-    print("\033[93m {}\033[00m".format("\n ".join([f"[{i}] {ptm}" for i, ptm in enumerate(PTMs)])))
-    print("\033[96m {}\033[00m".format("Enter the number for each of the PTMs of interest separated by a comma."))
-    ptm_indices = input("\033[96m {}\033[00m".format("For example: 0,1,2\n"))
-    if match(r"{^0-9|,}", ptm_indices):  # r"[0-9](?:,[0-9])*"
-        print("\033[91m {}\033[00m".format("Invalid input, try again!\n"))
-        sleep(.5)
-        return __prompt_PTMs(PTMs)  # NOTE: the end of this recursion is getting it right
-    try:
-        mod_PTMs = [PTMs[int(x.strip())] for x in ptm_indices.strip().split(',')]
-    except (ValueError, IndexError):
-        print("\033[91m {}\033[00m".format("Invalid input, try again!\n"))
-        sleep(.5)
-        return __prompt_PTMs(PTMs)
-    return mod_PTMs
-'''
+
 
 def compile_data_generic(search_engine_filepath: str, user_PTMs: list, cleave_rule: tuple) -> list:
     """Takes the lists and dictionaries needed to parse files
@@ -327,7 +303,7 @@ def compile_data_generic(search_engine_filepath: str, user_PTMs: list, cleave_ru
     #    print("Proceeding regardless.\n")
     intensity_values = [i for i, h in enumerate(header) if "intensit" in h.lower()]  # NOTE: This makes the assumption that the intensity columns are directly after the charge column
     if len(intensity_values) == 0:
-        intensity_values = -1
+        intensity_values = None
     #psm_contributions = defaultdict(int)
     #unmatchedPeps = 0
     #missingPTM = 0

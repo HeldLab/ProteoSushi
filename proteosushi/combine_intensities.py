@@ -492,6 +492,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             var_mod_dict = compile_data_generic(search_engine_filepath, user_PTMs, cleave_rules[protease])
         data_file = open(data_filename, 'r')
         tsv_reader = csv.reader(data_file, quotechar='"')
+        if intensity_start is None and use_quant:
+            return 2
     elif search_engine == "maxquant":
         if not localization_threshold is None:
             sequence_index, modified_sequence_index, localization_indices, mod_dict, intensity_start, \
@@ -549,8 +551,11 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         header2 = ["Gene", "Site", "Protein_Name", "Shared_Genes", "Target_Genes", "Peptide_Sequence", 
             "Peptide_Modified_Sequence", "Annotation_Score", "Uniprot_Accession_ID"]
         if use_quant:
-            intensity_header = [e for i, e in enumerate(header) if i in intensity_start]
-            header2 += [ih + f" ({intensity_method})" for ih in intensity_header]
+            if search_engine == "mascot":
+                header2 += [header[intensity_start] + f" ({intensity_method})"]
+            else:
+                intensity_header = [e for i, e in enumerate(header) if i in intensity_start]
+                header2 += [ih + f" ({intensity_method})" for ih in intensity_header]
         if add_annotation:
             header2 += ["Length_Of_Sequence", "Range_of_Interest", "Region_of_Interest", 
                         "Subcellular_Location", "Enzyme_Class", "rhea", "Secondary_Structure", 

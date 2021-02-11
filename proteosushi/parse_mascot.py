@@ -61,30 +61,6 @@ def __create_mod_dict(filename: str, mod_ids: list, var_mod_map: dict, cleave_ru
                             modDict[new_mod_seq] = [tuple((inv_mod_map[aa], i))]
     return modDict
 
-'''
-def __promptPTMs(PTMs: list) -> list:
-    """prompts the user for which PTMs should be used
-    Arguments:
-        PTMs {list} -- a list of PTM names
-    Returns:
-        list -- a list of PTMs specified by the user
-    """
-    print("\033[96m {}\033[00m".format("Possible PTMs for analysis include:"))
-    print("\033[93m {}\033[00m".format("\n ".join([f"[{i}] {ptm}" for i, ptm in enumerate(PTMs)])))
-    print("\033[96m {}\033[00m".format("Enter the number for each of the PTMs of interest separated by a comma."))
-    ptmIndices = input("\033[96m {}\033[00m".format("For example: 0,1,2\n"))
-    if match(r"{^0-9|,}", ptmIndices):  # r"[0-9](?:,[0-9])*"
-        print("\033[91m {}\033[00m".format("Invalid input, try again!\n"))
-        sleep(.5)
-        return __promptPTMs(PTMs)  # NOTE: the end of this recursion is getting it right
-    try:
-        modPTMs = [PTMs[int(x.strip())] for x in ptmIndices.strip().split(',')]
-    except (ValueError, IndexError):
-        print("\033[91m {}\033[00m".format("Invalid input, try again!\n"))
-        sleep(.5)
-        return __promptPTMs(PTMs)
-    return modPTMs
-'''
 
 def compile_data_mascot(search_engine_filepath: str, PTMs: list, cleave_rule: tuple) -> list:
     """Takes the lists and dictionaries needed to parse files
@@ -100,37 +76,11 @@ def compile_data_mascot(search_engine_filepath: str, PTMs: list, cleave_rule: tu
         str -- data_filename
         dict -- dictionary of the mods to the index
     """
-    ###Set input file; perhaps change to an argument and put in function
-
-    #in_file = "MascotExportForRollup-UniHumanRefFASTA-20190731_4Rob.csv"
-    in_file = search_engine_filepath #__promptFile()
+    in_file = search_engine_filepath
     protease, quant_range, var_mod_map, missed_cleaves = parse_mascot(in_file)
 
-    ###Change this to a variable for later, perhaps let the user choose from var_mod_map
-    ###See code below
-    #mod_for_quant = "IYn_CleavedPC_TMT6 (C)".lower()
-    '''
-    if not mod_for_quant: #make this a choice for later
-        print(*var_mod_map.items(), sep = '\n')
-        mod_choice = input("Choose which modification you want to use for quant (use number): ")
-        mod_for_quant = [key for key, value in var_mod_map.items() if value == mod_choice][0]
-        print(mod_for_quant)
-        input()
-    '''
-    mods_for_quant = PTMs #__promptPTMs(list(var_mod_map.keys()))
+    mods_for_quant = PTMs
 
-    #assert mod_for_quant in var_mod_map, "Make sure mod is in original file"
-    #mod_for_quant_id = var_mod_map.get(mod_for_quant)
-
-    #pep_dict = load_pepdict(protease, missed_cleaves)
-
-    #lociDict = dict()
-
-    #print("Quant range", quant_range)#Just see if it found the correct quant columns
-
-    #gene_results = dict()
-    #dup_check_set = set()
-    #threshold = 0.01 #Make this a mod, too
 
     input_filename = "quant_parsed.csv"
     input_file =  open(input_filename, 'r')
@@ -139,12 +89,6 @@ def compile_data_mascot(search_engine_filepath: str, PTMs: list, cleave_rule: tu
 
     sequence = header.index('pep_seq') #assert this exists later on
     var_mods = header.index('pep_var_mod_pos')
-    #score = header.index('pep_expect')
-    #print(sequence, var_mods)
-    #failedSeqs = 0
-    #totalSeqs = 0
-
-    #psm_contributions = defaultdict(int) #count number of psms that end up being rolled up
 
     mod_dict = __create_mod_dict(input_filename, [var_mod_map[mod] for mod in mods_for_quant], var_mod_map, cleave_rule, PTMs)
 
