@@ -695,7 +695,7 @@ class App(QMainWindow):
                 self.mascot_button.setEnabled(False)
                 self.generic_button.setEnabled(False)
                 # Starts a new thread for the backend analysis
-                print("\033[96m {}\033[00m".format("Analysis Started!"))
+                print("\033[96m {}\033[00m".format("\nAnalysis Started!"))
                 worker = Worker(self.__run_async, fdr, combine_method, species_id, localization)
                 worker.signals.end.connect(self.__cut_thread)
                 self.threadpool.start(worker)

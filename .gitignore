@@ -204,3 +204,7 @@ localization_test.csv
 proteosushi/examples/fastas/Uni-Hum-Ref-20141022_trypsin|p.pepdict
 proteosushi/examples/fastas/UNI-HUMAN-REF-20190731_trypsin|p.pepdict
 .~lock.localization_test.csv#
+dist/proteosushi-1.3.1.tar.gz
+proteosushi/9606_annot_score.tsv
+proteosushi/83333_annot_score.tsv
+proteosushi/annotation_issue_210215.csv
