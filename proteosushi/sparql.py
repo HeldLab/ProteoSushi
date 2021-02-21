@@ -206,8 +206,6 @@ SELECT
     ?position
     ?ec
     ?rhea
-    ?type
-    ?comment
 FROM <http://sparql.uniprot.org/uniprot>
 WHERE {
     VALUES (?entry ?position) {""" + unpid_site_list_str + """
@@ -240,6 +238,28 @@ WHERE {
 #Order desc by entry and ascending by position afterwards
 } ORDER BY DESC(?entry) ASC(?position)"""
 
+    query_comment = prefix + """
+SELECT
+    ?entry
+    ?position
+    ?type
+    ?comment
+FROM <http://sparql.uniprot.org/uniprot>
+WHERE {
+    VALUES (?entry ?position) {""" + unpid_site_list_str + """}
+    ?entry up:sequence ?sequence .
+    ?entry up:annotation ?annotation .
+    ?annotation up:range ?range ;
+               a ?type .
+    ?range faldo:begin
+        [ faldo:position ?begin ; faldo:reference ?sequence ] ;
+            faldo:end
+        [ faldo:position ?end ; faldo:reference ?sequence ] .
+    FILTER (?begin <= ?position && ?position <= ?end)
+	?annotation rdfs:comment ?comment .
+#Order desc by entry and ascending by position afterwards
+} ORDER BY DESC(?entry) ASC(?position)"""
+
     # Grabs the annotation by parts to maximize the amount we receive from the uniprot server
     region_annot = request_annot(new_entry_length_pos_query)
     #print(region_annot.head(15))
@@ -255,6 +275,8 @@ WHERE {
     subcell_annot = request_annot(query_entry_subcellular)
     #print(subcell_annot.head(15))
     extras_annot = request_annot(query_ec_rhea_type)
+    comment_annot = request_annot(query_comment)
+    #print(comment_annot.head(15))
     # Creates blank dataframes if uniprot did not return that info
     if region_annot is None:
         region_annot = pd.DataFrame(columns=["entry", " position", " lengthOfSequence", " begin", " end", " regionOfInterest"])
@@ -269,9 +291,14 @@ WHERE {
     else:
         subcell_annot.dropna(how="any", inplace=True)
     if extras_annot is None:
-       extras_annot = pd.DataFrame(columns=["entry", " position", " ec", " rhea", " type", " comment"])
+       extras_annot = pd.DataFrame(columns=["entry", " position", " ec", " rhea"])
     else:
         extras_annot.dropna(how="all", inplace=True)  # TODO: I will likely need to change this back to all later
+    
+    if comment_annot is None:
+        comment_annot = pd.DataFrame(columns=["entry", " position", " type", " comment"])
+    else:
+        comment_annot.dropna(how="all", inplace=True)
 
     # Full outer joins the annotations to preserve all info possible
     full_annot = region_annot
@@ -284,6 +311,8 @@ WHERE {
         del(subcell_annot)
         full_annot = full_annot.merge(extras_annot, how="outer", on=["entry", " position"])
         del(extras_annot)
+        full_annot = full_annot.merge(comment_annot, how="outer", on=["entry", " position"])
+        del(comment_annot)
     except KeyError:
         print(full_annot)
         #print(isinstance(full_annot, pd.DataFrame))
