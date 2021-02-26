@@ -256,7 +256,9 @@ WHERE {
             faldo:end
         [ faldo:position ?end ; faldo:reference ?sequence ] .
     FILTER (?begin <= ?position && ?position <= ?end)
-	?annotation rdfs:comment ?comment .
+	OPTIONAL {
+        ?annotation rdfs:comment ?comment .
+    }
 #Order desc by entry and ascending by position afterwards
 } ORDER BY DESC(?entry) ASC(?position)"""
 
