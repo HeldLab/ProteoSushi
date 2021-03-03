@@ -366,7 +366,7 @@ class App(QMainWindow):
                 label_to_remove.deleteLater()
 
             # Inserts the new PTM checkboxes
-            self.layout.addWidget(QLabel("PTMs for Analysis"), 5, i)
+            self.layout.addWidget(QLabel("PTMs for Current Analysis"), 5, i)
             for widget in self.PTM_CBs:
                 self.layout.addWidget(widget, 6, i)
                 i += 1
@@ -407,7 +407,7 @@ class App(QMainWindow):
                 label_to_remove.deleteLater()
             
             # Inserts the new PTM checkboxes
-            self.layout.addWidget(QLabel("PTMs for Analysis"), 5, i)
+            self.layout.addWidget(QLabel("PTMs for Current Analysis"), 5, i)
             for widget in self.PTM_CBs:
                 self.layout.addWidget(widget, 6, i)
                 i += 1
@@ -449,7 +449,7 @@ class App(QMainWindow):
                 label_to_remove.deleteLater()
 
             # Inserts the new PTM checkboxes
-            self.layout.addWidget(QLabel("PTMs for Analysis"), 5, i)
+            self.layout.addWidget(QLabel("PTMs for Current Analysis"), 5, i)
             for widget in self.PTM_CBs:
                 self.layout.addWidget(widget, 6, i)
                 i += 1
@@ -460,7 +460,6 @@ class App(QMainWindow):
         self.statusBar().showMessage("Choose the Uniprot Proteome FASTA file")
         self.statusBar().setStyleSheet("background-color : white")
         filename = self.openFASTAFileNameDialog()
-        #if self.proteome_filepath.text() != "":
         if os.path.exists(filename):
             # Parse the file to check it is valid and grab the species
             was_error, species_ID = parse_proteome(filename)
