@@ -174,53 +174,69 @@ First, choose the search engine used and select the output to use with the windo
 
 - MaxQuant
 
-    - Choose the MaxQuant output folder with the evidence.txt and summary.txt files inside
+    - Choose the MaxQuant output folder with the evidence.txt and summary.txt files inside (any extra files will not be used)
 
 - Generic
 
     - Choose the output from any search engine, however, it must have a peptide sequence and peptide modified sequence columns (along with a quantitation column labeled “Intensity” if you choose that option)
 
-ProteoSushi will then parse the file to autofill some information (Max missed cleavages, protease) and add the option to choose the PTM(s) to use in the analysis
+ProteoSushi will then parse the file to autofill some information (Species ID, Max missed cleavages, protease) and add the option to choose the PTM(s) to use in the analysis
 
 ![GUI with Search Engine Selected](search_engine_gui.png)
 
-Choose the PTM(s) that will be used in the analysis. The options available are dynamic and will change based on the file provided. ( note: If there are many different PTMs in the file, you may need to move the ProteoSushi window horizontally as they will all be in the same line)
+Choose the PTM(s) that will be used in the analysis. The options available are dynamic and will change based on the file provided. (Note: If there are many different PTMs in the file, you may need to move the ProteoSushi window horizontally as they will all be in the same line)
 
 Next, choose the FASTA Uniprot proteome to use in ProteoSushi.
-
-After that, choose the ProteoSushi output file name and location.
-
-Following this is the **Options** section with some settings that can be added or ignored based on your analysis.
-
-First, choose whether to use a prioritized gene list. If so, choose the file to be used. 
-These genes will be used if there is a tie of annotation score between multiple matches for a PTM site of a peptide. 
-If one of the PTM sites is part of a gene from this list, it will be chosen.
-
-Second, choose whether to use the quantitation values. 
-You will need to specify whether to sum or average values that will be combined. 
-The columns used for quantitation must have "intensity" in the header.
 
 If not already filled in, specify the number of maximum allowed missed cleavages for a given peptide (usually about 3). 
 A higher number will cause the analysis to take longer, but can allow for more matches (possibly). 
 It is usually best to stay consistent with what was chosen for the search engine originally.
 
-If not already filled in, specify the protease used in the sample digestion step. 
+If not correctly filled in, specify the protease used in the sample digestion step. 
 Possible proteases are specified if you hover the cursor over the text here. 
 These include:
 
 - trypsin/p
 
+    - Cleaves after Lysine (K) or Arginine (R)
+
 - trypsin!p
+
+    - Cleaves after Lysine (K) or Arginine (R), but not before Proline (P)
 
 - lys-c
 
+    - Cleaves after Lysine (K)
+
 - asp-n
+
+    - Cleaves before Aspartate (D)
 
 - asp-ne
 
+    - Cleaves before Aspartate (D) and Glutamate (E)
+
 - lys-n
 
-Specify the threshold for FDR, if using Mascot or Maxquant. This value can be left blank if you do not want to specify a threshold.
+    - Cleaves before Lysine (K)
+
+After that, choose the ProteoSushi output file name and location.
+
+Following this is the **Options** section with some settings that can be added or ignored based on your analysis.
+
+First, if using MaxQuant, a localization threshold can be set as a number between 0 and 1. Any PTM sites with a localization probability below that threshold will not be rolled up. If this is not provided, ProteoSushi will use the localization determination by MaxQuant.
+
+Second, choose whether to use a prioritized gene list. If so, choose the file to be used. 
+These genes will be used if there is a tie of annotation score between multiple matches for a PTM site of a peptide. 
+If one of the PTM sites is part of a gene from this list, it will be chosen.
+
+Third, choose whether to use the quantitation values. 
+You will need to specify whether to sum or average values that will be combined. 
+**The columns used for quantitation must have "intensity" or "intensities" in the header.**
+
+Fourth, choose whether ProteoSushi should annotated the rolled-up sites using data from Uniprot
+
+Fifth, if using Mascot or Maxquant, you can optionally specify an FDR threshold between 0 and 1
 
 Once all of the necessary options are included, click on the **“Rollup!”** button to start the analysis.
 
@@ -228,11 +244,11 @@ Once all of the necessary options are included, click on the **“Rollup!”** b
 
 Results will be returned as a CSV spreadsheet with the name and location based on what the user chose earlier.
 
-The resulting file will include information for each modified residue of interest including:
-
 ![Image of sample results](sample_results.png)
 
-- Peptide
+The resulting file will include information for each modified residue of interest including:
+
+- Peptide (Note that each cleaved peptide must have a minimum length of 5 and a maximum length of 55)
 
 - Uniprot ID
 
