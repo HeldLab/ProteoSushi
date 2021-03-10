@@ -291,7 +291,7 @@ def load_pepdict(proteome_fasta_filepath: str, protease: str, missed_cleaves: in
     pep_dict = None
     #wd = os.getcwd()
     fasta_dir = os.path.dirname(os.path.abspath(proteome_fasta_filepath))
-    pep_dict_file = f"{proteome_fasta_filepath.split('.')[0]}_{protease.replace('/','|')}.pepdict"
+    pep_dict_file = f"{proteome_fasta_filepath.split('.')[0]}_{protease.replace('/','^')}.pepdict"
     #print(os.listdir(fasta_dir))
     if not any([x == ntpath.basename(pep_dict_file) for x in os.listdir(fasta_dir)]):
         print("Pepdict not found in the FASTA directory. Trying to generate from the FASTA file")
