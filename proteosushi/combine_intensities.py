@@ -541,6 +541,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     missing_PTM = 0
     total_seqs = 0
     over_threshold = 0
+    missing_intensities = 0
     total_sites = 0
     batch_size = 100
     unmatched_sequences = []
@@ -594,6 +595,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                 intensities = [e for i, e in enumerate(row) if i in intensity_start]
                 # If there is no intensity, skip that site
                 if intensities == '' or intensities[0] == '':
+                    missing_intensities += 1
                     continue
                 intensity_header = [e for i, e in enumerate(header) if i in intensity_start]
             elif search_engine == "maxquant":
@@ -603,10 +605,12 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                     intensities = [e for i, e in enumerate(row) if i in intensity_start]
                     # If there is no intensity, skip that site
                     if intensities == '' or intensities[0] == '':
+                        missing_intensities += 1
                         continue
                     intensity_header = [e for i, e in enumerate(header) if i in intensity_start]
             elif search_engine == "mascot":
                 if pep_mod_seq == "":
+                    missing_PTM += 1
                     continue
                 new_seq = pep_seq
                 pep_mod_seq = pep_mod_seq.split('.')[1]
@@ -620,6 +624,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
 
                 if use_quant:
                     if len(row) < len(header):  # If the row is cut short (of the intensity cells), skip to the next one
+                        missing_intensities += 1
                         continue
                     while intensity_start < len(header) and '/' in row[intensity_start]:
                         intensity_start += 2  # 
@@ -629,6 +634,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                     intensities = row[intensity_start+1::2]
                     # If there is no intensity, skip that site
                     if intensities[0] == "---":  # If there are no intensity values in this line, go to the next one
+                        missing_intensities += 1
                         continue
                     intensity_header = row[intensity_start::2]  # Ideally, this would happen outside of this loop
 
@@ -646,9 +652,11 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                 mods = mod_dict[new_pep_mod_seq]
                 # Skip any peptide sequences without a user-chosen PTM
                 if not (any(mods) and set([m[0] for m in mods]) & set(user_PTMs)): 
+                    missing_PTM += 1
                     continue
                 for mod in list(set(mods)):
                     if not mod[0] in user_PTMs:
+                        missing_PTM += 1
                         continue
                     site = start_pos + mod[1] + missed_cleave_fix + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
                     if use_quant:  # If the user chose to combine/average intensities
@@ -696,7 +704,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             elif genes_positions and len(genes_positions) > 1:
                 isTarget, match = __chooseHit(genes_positions, target_genes, annotDict, use_target_list)
                 # If there was > 1 target genes, non-target genes, or a combination, AND none was chosen
-                if match is None:  
+                if match is None:
+                    unmatched_peps += 1
                     continue
                 if not match[0] is None:  # Checks to see that there has been a match
                     if isinstance(match, tuple):  # Checks if this is just a single match.
@@ -824,9 +833,16 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         
     data_file.close()
     # Prints the stats from the rollup
-    print("\033[93m {}\033[00m".format(f"\n\nUnmatched Peptides: {unmatched_peps}\nMissing Selected PTMs: {missing_PTM}\nTotal Peptides: {total_seqs}"))
-    
-    
+    if unmatched_peps > 0:
+        print("\033[93m {}\033[00m".format(f"\n\nUnmatched Peptides: {unmatched_peps}"), end='')
+    if missing_PTM > 0:
+        print("\033[93m {}\033[00m".format(f"\nMissing Selected PTMs: {missing_PTM}"), end='')
+    if over_threshold > 0:
+        print("\033[93m {}\033[00m".format(f"\nOver the FDR Threshold: {over_threshold}"), end='')
+    if missing_intensities > 0:
+        print("\033[93m {}\033[00m".format(f"\nMissing Intensity Value(s): {missing_intensities}"), end='')
+    print("\033[93m {}\033[00m".format(f"\nTotal Peptides: {total_seqs}"))
+
     #print("\033[95m {}\033[00m".format("\nWriting the rollup output file"))
     
     # Puts all of the unmatched sequences into a new file
