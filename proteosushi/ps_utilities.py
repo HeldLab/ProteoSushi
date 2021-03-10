@@ -331,6 +331,6 @@ def digest_if_needed(proteome_fasta_filepath: str, protease: str, mcleave: bool,
             peptide, position = result
             peptide = peptide.replace("L", "I")
             pep_dict[peptide].add((gene, position, unpid, protein_name))  # careful with site specificity here
-    with open(f"{proteome_fasta_filepath.split('.')[0]}_{protease.replace('/','|')}.pepdict", "wb") as w1:
+    with open(f"{proteome_fasta_filepath.split('.')[0]}_{protease.replace('/','^')}.pepdict", "wb") as w1:
         pickle.dump(pep_dict, w1)
     del pep_dict  # Free memory for later
