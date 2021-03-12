@@ -658,7 +658,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                     if not mod[0] in user_PTMs:
                         missing_PTM += 1
                         continue
-                    site = start_pos + mod[1] + missed_cleave_fix + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
+                    site = start_pos + mod[1] + missed_cleave_fix + 2  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
+                    input("1: " + unpid + ' ' + str(site))
                     if use_quant:  # If the user chose to combine/average intensities
                         intensity_dict, to_add = __add_intensity(intensity_dict, 
                                                                 new_pep_mod_seq, 
@@ -718,7 +719,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                         for mod in list(set(mods)):
                             if not mod[0] in user_PTMs:
                                 continue
-                            site = match[1] + mod[1] + missed_cleave_fix + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
+                            site = match[1] + mod[1] + missed_cleave_fix + 2  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
+                            input("2: " + match[2] + ' ' + str(site))
                             to_add = None
                             if use_quant:
                                 intensity_dict, to_add = __add_intensity(intensity_dict, 
@@ -737,13 +739,13 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                     gene_results.append([
                                         gene, 
                                         site, 
-                                        match[3],
+                                        match[3],  # Protein name
                                         "", 
                                         gene, 
                                         new_pep_seq, 
                                         new_pep_mod_seq, 
                                         annotDict[match[2]] if match[2] in annotDict else "", 
-                                        match[2]
+                                        match[2]  # UNPID
                                         ])
                                     total_sites += 1
                                     if len(match[2]) >= 5:
@@ -777,7 +779,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                 additGenes.append(tup[0])
                             assert len(additGenes) > 1, "The # of matches should be >1, but isn't"
                             additGenes = list(set(additGenes))
-                            site = match[0][1] + mod[1] + missed_cleave_fix + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
+                            site = match[0][1] + mod[1] + missed_cleave_fix + 2  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
+                            input("3: " + match[0][2] + ' ' + str(site))
                             if use_quant:
                                 intensity_dict, to_add = __add_intensity(intensity_dict,
                                                                         new_pep_mod_seq, 
