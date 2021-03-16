@@ -108,13 +108,13 @@ def parse_evidence_localization(filename: str, user_PTMs: list, cleave_rule: tup
                         index_correction += len(loc_probs[j][1])
                         j += 1
                         continue
-                    try:
-                        mod_dict[new_mod_seq].append(tuple((PTMs[index], loc_indices[j] - index_correction)))
+                    try:  # The - 1 is a hotfix as I'm not sure why it is just 1 off.
+                        mod_dict[new_mod_seq].append(tuple((PTMs[index], loc_indices[j] - index_correction - 1)))
                         index_correction += len(loc_probs[j][1])
                         j += 1
                     except KeyError:
                         #print(new_mod_seq)
-                        mod_dict[new_mod_seq] = [tuple((PTMs[index], loc_indices[j] - index_correction))]
+                        mod_dict[new_mod_seq] = [tuple((PTMs[index], loc_indices[j] - index_correction - 1))]
                         index_correction += len(loc_probs[j][1])
                         j += 1
                 index += 1
