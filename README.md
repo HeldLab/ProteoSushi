@@ -144,9 +144,9 @@ In order to run ProteoSushi, there are some required files in specific formats. 
 
   - This file must have a column for peptide sequence named “peptide sequence”
 
-  - Also a column for peptide modified sequence (with PTMs included) named “peptide modified sequence”
+  - Also a column for peptide modified sequence (with PTMs included in parenthesis () or brackets []) named “peptide modified sequence”
 
-  - If you elect to use the quantitation values in the analysis, there must be a column for this as well
+  - If you elect to use the quantitation values in the analysis, there must be a column with numbers (presumably positive) with "intensity" or "intensities" in the name
 
   - Add these columns in if needed
 
@@ -158,7 +158,7 @@ In order to run ProteoSushi, there are some required files in specific formats. 
 
   - A **list of gene names** in a TXT file, one gene name per line
 
-    - This file can be used to prioritize the provided genes whenever there are multiple matches once ProteoSushi performs a search
+    - This file can be used to prioritize the provided genes whenever there are multiple matches once ProteoSushi performs a search. For example, this can be used to highlight mitochondrial genes if the sample was from the mitochondria
 
 ## Using ProteoSushi
 
@@ -166,15 +166,15 @@ Run ProteoSushi and the GUI should pop up and look like this:
 
 ![Blank GUI](empty_gui.png)
 
-First, choose the search engine used and select the output to use with the window that pops up. For a given search engine, they will need to be one of the following:
-
-- Mascot
-
-    - Choose the annotated Mascot output file, should be a CSV file
+First, choose the **search engine** used and select the output to use with the window that pops up. For a given search engine, they will need to be one of the following:
 
 - MaxQuant
 
     - Choose the MaxQuant output folder with the evidence.txt and summary.txt files inside (any extra files will not be used)
+
+- Mascot
+
+    - Choose the annotated Mascot output file, should be a CSV file
 
 - Generic
 
@@ -188,11 +188,11 @@ Choose the PTM(s) that will be used in the analysis. The options available are d
 
 Next, choose the FASTA Uniprot proteome to use in ProteoSushi.
 
-If not already filled in, specify the number of maximum allowed missed cleavages for a given peptide (usually about 3). 
+If not already filled in, specify the number of **maximum allowed missed cleavages** for a given peptide (usually about 3). 
 A higher number will cause the analysis to take longer, but can allow for more matches (possibly). 
 It is usually best to stay consistent with what was chosen for the search engine originally.
 
-If not correctly filled in, specify the protease used in the sample digestion step. 
+If not correctly filled in, specify the **protease** used in the sample digestion step. 
 Possible proteases are specified if you hover the cursor over the text here. 
 These include:
 
@@ -224,21 +224,29 @@ After that, choose the ProteoSushi output file name and location.
 
 Following this is the **Options** section with some settings that can be added or ignored based on your analysis.
 
-First, if using MaxQuant, a localization threshold can be set as a number between 0 and 1. Any PTM sites with a localization probability below that threshold will not be rolled up. If this is not provided, ProteoSushi will use the localization determination by MaxQuant.
+First, if using MaxQuant, a **localization threshold** can be set as a number between 0 and 1. 
+In the maxquant *evidence.txt* file, the localization probability is in the columns "*PTM* Probabilities". 
+The localization probability indicates the likelihood that the PTM referenced in the header is at the indicated site. 
+Any PTM sites with a localization probability below the provided threshold will not be rolled up. 
+If this is not provided, ProteoSushi will use the localization determination by MaxQuant.
 
-Second, choose whether to use a prioritized gene list. If so, choose the file to be used. 
+Second, choose whether to use a prioritized **gene list**. If so, choose the file to be used. 
 These genes will be used if there is a tie of annotation score between multiple matches for a PTM site of a peptide. 
 If one of the PTM sites is part of a gene from this list, it will be chosen.
+This may be helpful if the user is specifically interested in proteins from a specific organelle or pathway.
 
-Third, choose whether to use the quantitation values. 
+Third, choose whether to use the **quantitation values**. 
 You will need to specify whether to sum or average values that will be combined. 
 **The columns used for quantitation must have "intensity" or "intensities" in the header.**
 
-Fourth, choose whether ProteoSushi should annotated the rolled-up sites using data from Uniprot
+Fourth, choose whether ProteoSushi should **annotated** the rolled-up sites using data from Uniprot
 
-Fifth, if using Mascot or Maxquant, you can optionally specify an FDR threshold between 0 and 1
+Fifth, if using Mascot or Maxquant, you can optionally specify a **False Discovery Rate (FDR) threshold** between 0 and 1.
+In Maxquant, this is taken from the "PEP" column and in Mascot, this is taken from the "pep_expect" column.
+More specifically, the PEP column in maxquant means Posterior Error Probability and is the likelihood that the peptide is wrongly assigned when using a target decoy database.
+The pep_expect column in Mascot is the [Expectation value of the protein match (PMF only)](https://www.matrixscience.com/help/csv_headers.html).
 
-Once all of the necessary options are included, click on the **“Rollup!”** button to start the analysis.
+Once all of the necessary options are included, click on the **Rollup!** button to start the analysis.
 
 ## Results
 
