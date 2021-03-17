@@ -219,3 +219,5 @@ dist/proteosushi-1.3.3.tar.gz
 dist/proteosushi-1.3.4.tar.gz
 .gitignore
 proteosushi/examples/.~lock.MascotEGFR.csv#
+proteosushi/ecoli_output.csv
+proteosushi/maxquant_rollup_loc.csv

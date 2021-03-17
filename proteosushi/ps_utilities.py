@@ -277,14 +277,14 @@ def parse_mascot(in_file: str) -> list:
         return protease, quant_range, var_mod_map, missed_cleaves
 
 
-def load_pepdict(proteome_fasta_filepath: str, protease: str, missed_cleaves: int) -> dict:
+def load_pepdict(proteome_fasta_filepath: str, protease: str, missed_cleavages: int) -> dict:
     """Looks for pep_dict; if it doesn't find, it looks for a FASTA to make one.
     Fasta would be in current directory but this can be changed.
 
     Arguments:
         proteome_fasta_filepath {str} -- the filepath for the proteome fasta file
         protease {str} -- protease used in the sample digestion
-        missed_cleaves {int} -- the max number of allowed missed cleavages
+        missed_cleavages {int} -- the max number of allowed missed cleavages
     Returns:
         dict -- a dictionary that connects peptide sequence to gene, position, protein name and unpid
     """
@@ -295,7 +295,7 @@ def load_pepdict(proteome_fasta_filepath: str, protease: str, missed_cleaves: in
     #print(os.listdir(fasta_dir))
     if not any([x == ntpath.basename(pep_dict_file) for x in os.listdir(fasta_dir)]):
         print("Pepdict not found in the FASTA directory. Trying to generate from the FASTA file")
-        digest_if_needed(proteome_fasta_filepath, protease, missed_cleaves)
+        digest_if_needed(proteome_fasta_filepath, protease, missed_cleavages)
     
     print(f"Loading {pep_dict_file} into memory")
     with open(pep_dict_file, 'rb') as f:
@@ -304,7 +304,7 @@ def load_pepdict(proteome_fasta_filepath: str, protease: str, missed_cleaves: in
     return pep_dict
 
 
-def digest_if_needed(proteome_fasta_filepath: str, protease: str, mcleave: bool, minlen=5, maxlen=55, 
+def digest_if_needed(proteome_fasta_filepath: str, protease: str, missed_cleavages: int, minlen=5, maxlen=55, 
                      m_excise="Both"):
     """Runs digest and dumps pickle file (dict)"""
     seq_list = []  # (gene, organism, sequence, unpid)
@@ -315,16 +315,16 @@ def digest_if_needed(proteome_fasta_filepath: str, protease: str, mcleave: bool,
         gene, _organism, seq, unpid, protein_name = i
         if m_excise == "Both":
             # Run digest results twice and combine; inefficient but gets job done
-            digest_results_true = digest(seq, minlen, maxlen, mcleave, True,
+            digest_results_true = digest(seq, minlen, maxlen, missed_cleavages, True,
                                          li_swap=True, rule_to_use=rule,
                                          reverse=False)
-            digest_results_false = digest(seq, minlen, maxlen, mcleave, False,
+            digest_results_false = digest(seq, minlen, maxlen, missed_cleavages, False,
                                           li_swap=True, rule_to_use=rule,
                                           reverse=False)
             digest_results = set().union(digest_results_true,
                                          digest_results_false)
         else:
-            digest_results = digest(seq, minlen, maxlen, mcleave, m_excise,
+            digest_results = digest(seq, minlen, maxlen, missed_cleavages, m_excise,
                                     li_swap=True, rule_to_use=rule,
                                     reverse=False)
         for result in digest_results:

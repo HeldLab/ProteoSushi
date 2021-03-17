@@ -101,7 +101,7 @@ def cleave_rule_determination(rule):
 
 
 def digest(sequence: str, min_length: int, max_length: int,
-           missed_cleavages: int, m_cleave: bool, li_swap: bool,
+           missed_cleavages: int, m_excise: bool, li_swap: bool,
            rule_to_use: tuple, reverse: bool) -> set:
     '''Take a protein sequence and cut it into pieces, then hash for database
     insertion.
@@ -114,7 +114,7 @@ def digest(sequence: str, min_length: int, max_length: int,
         database.
         missed_cleavages {int} -- Number of times a protease is allowed to miss
         a specific site.
-        m_cleave {bool} -- Whether or not protein N-terminal methionines are
+        m_excise {bool} -- Whether or not protein N-terminal methionines are
         removed.
         li_swap {bool} -- Whether peptides will be stored with all leucines
         converted to isoleucines.
@@ -127,37 +127,39 @@ def digest(sequence: str, min_length: int, max_length: int,
         cut_set {set} -- Set of integers (hashed peptides) that result from the
         cut rules used.
     '''
-    #AMVSEFLKQAWFIENEEQEYVQTVKSSKGGPGSAVSPYPTFNPSSDVAALHKAIMVKGVDEATIIDILTKRNNAQRQQIKAAYLQETGKPLDETLKKALTGHLEEVVLALLKTPAQFDADELRAAMKGLGTDEDTLIEILASRTNKEIRDINRVYREELKRDLAKDITSDTSGDFRNALLSLAKGDRSEDFGVNEDLADSDARALYEAGERRKGTDVNVFNTILTTRSYPQLRRVFQKYTKYSKHDMNKVLDLELKGDIEKCLTAIVKCATSKPAFFAEKLHQAMKGVGTRHKALIRIMVSRSEIDMNDIKAFYQKMYGISLCQAILDETKGDYEKILVALCGGN
-    #if "ILVALCGGN" in sequence:
-    #    print("ILVALCGGN")
     site_specificity, cut_terminus = rule_to_use
     # Set parameters for a decoy database; only used for ProteoClade really
     if reverse:
-        if m_cleave and sequence[-1] == 'M':
+        if m_excise and sequence[-1] == 'M':
             sequence = sequence[:-1]
     else:
-        if m_cleave and sequence[0] == 'M':
+        if m_excise and sequence[0] == 'M':
             sequence = sequence[1:]
     cut_sites = []
     cut_peptides = []
     sites_matched = re.finditer(site_specificity, sequence)
     for site in sites_matched:
-        cut_sites.append(site.start())
+        cut_sites.append(site.start() if cut_terminus.lower() == 'n' else site.start() + 1)
     # Find sites
     last_site = 0
+    '''
     if cut_terminus.lower() == 'c':
         for i in cut_sites:
             cut_peptides.append(sequence[last_site:i+1])
             last_site = i + 1
         cut_peptides.append(sequence[last_site:])
-    elif cut_terminus.lower() == 'n':
-        for i in cut_sites:
-            cut_peptides.append(sequence[last_site:i])
-            last_site = i
-        cut_peptides.append(sequence[last_site:])
+    '''
+    #elif cut_terminus.lower() == 'n':
+    for i in cut_sites:
+        cut_peptides.append(sequence[last_site:i])
+        last_site = i
+    cut_peptides.append(sequence[last_site:])
     cut_and_missed = list(cut_peptides)  # duplicate to add to for iteration
     #begin_sites = [y - len(x) + 2 for x, y in zip(cut_peptides, cut_sites)]  # Wouldn't it be simpler to add a 1 first and go from there?
-    begin_sites = [0] + [y for x, y in zip(cut_peptides, cut_sites)]
+    if cut_terminus == 'c':
+        begin_sites = [0] + [y for x, y in zip(cut_peptides, cut_sites)]
+    else:
+        begin_sites = [-1] + [y-1 for x, y in zip(cut_peptides, cut_sites)]
     #if begin_sites:
     #    begin_sites.append(begin_sites[-1] + 1)
     cut_and_missed = [(seq, pos)
@@ -170,7 +172,7 @@ def digest(sequence: str, min_length: int, max_length: int,
             ]  # subtract missed counter here to not duplicate c-terminal peps
         cut_and_missed += missed_peptides
         missed_counter += 1
-    if m_cleave is True:
+    if m_excise is True:
         cut_and_missed = [(x, y + 1) for x, y in cut_and_missed]
     # Filter peptides by length and swap Leucine to Isoleucine, since Mass Spec
     # Can't tell the difference
@@ -179,7 +181,7 @@ def digest(sequence: str, min_length: int, max_length: int,
             (i[0].replace("L", "I"), i[1])
             for i in cut_and_missed
             if min_length <= len(i[0]) <= max_length  # Chaining multiple comparators is allowed in python... technically.
-            ])
+            ] )
     else:
         cut_set = set([
             (i[0], i[1])
