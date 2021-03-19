@@ -643,6 +643,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                 new_user_PTMs = [ptm.lower()[:2] for ptm in user_PTMs]
             
             new_pep_mod_seq, new_pep_seq, missed_cleave_fix = clean_pep_seq(cleave_rules[protease], pep_mod_seq, new_user_PTMs, raw_seq)
+            #if raw_seq == "AHEILPNLVCCSAK":
+            #    input(new_pep_mod_seq + ' ' + new_pep_seq + ' ' + str(missed_cleave_fix))
             if genes_positions and len(genes_positions) == 1:
                 gene, start_pos, unpid, protein_name = list(genes_positions)[0]
                 if not new_pep_mod_seq in mod_dict:
@@ -658,7 +660,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                     if not mod[0] in user_PTMs:
                         missing_PTM += 1
                         continue
-                    site = start_pos + mod[1] + missed_cleave_fix + 2  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
+                    site = start_pos + mod[1] + missed_cleave_fix + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
                     #input("1: " + unpid + ' ' + str(site))
                     if use_quant:  # If the user chose to combine/average intensities
                         intensity_dict, to_add = __add_intensity(intensity_dict, 
@@ -719,7 +721,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                         for mod in list(set(mods)):
                             if not mod[0] in user_PTMs:
                                 continue
-                            site = match[1] + mod[1] + missed_cleave_fix + 2  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
+                            site = match[1] + mod[1] + missed_cleave_fix + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
                             #input("2: " + match[2] + ' ' + str(site))
                             to_add = None
                             if use_quant:
@@ -779,7 +781,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                 additGenes.append(tup[0])
                             assert len(additGenes) > 1, "The # of matches should be >1, but isn't"
                             additGenes = list(set(additGenes))
-                            site = match[0][1] + mod[1] + missed_cleave_fix + 2  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
+                            site = match[0][1] + mod[1] + missed_cleave_fix + 1  # The last +1 is to change from 0-indexing to 1-indexing (like humans use)
                             #input("3: " + match[0][2] + ' ' + str(site))
                             if use_quant:
                                 intensity_dict, to_add = __add_intensity(intensity_dict,
@@ -833,7 +835,14 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             else:  # There was no match for the peptide in the pepdict
                 unmatched_peps += 1
                 unmatched_sequences.append(tuple([raw_seq, pep_mod_seq]))
-        
+        # Adds in the last few results
+        if len(gene_results) >= 1:
+            writable_rows = batch_write(gene_results, search_engine, user_PTMs, use_quant, 
+                                            intensity_method, intensity_dict, add_annotation, sparql_input)
+            for writable_row in writable_rows:
+                out_writer.writerow(writable_row)
+            print("\033[92m {}\033[00m".format(f"\n{total_sites} sites rolled-up and written"), end='')
+
     data_file.close()
     # Prints the stats from the rollup
     if unmatched_peps > 0:

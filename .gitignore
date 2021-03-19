@@ -221,3 +221,13 @@ dist/proteosushi-1.3.4.tar.gz
 proteosushi/examples/.~lock.MascotEGFR.csv#
 proteosushi/ecoli_output.csv
 proteosushi/maxquant_rollup_loc.csv
+proteosushi/thousand_lines_2014.csv
+proteosushi/thousand_lines_2019.csv
+proteosushi/examples/fastas/UNI-HUMAN-REF-20190731_trypsin^p.pepdict
+proteosushi/examples/txt_1000/evidence.txt
+proteosushi/examples/txt_1000/summary.txt
+proteosushi/.~lock.ecoli_output.csv#
+proteosushi/.~lock.thousand_lines_2014.csv#
+proteosushi/.~lock.thousand_lines_2019.csv#
+proteosushi/.~lock.skyline_test.csv#
+dist/proteosushi-1.3.5.tar.gz

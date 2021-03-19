@@ -159,7 +159,9 @@ def digest(sequence: str, min_length: int, max_length: int,
     if cut_terminus == 'c':
         begin_sites = [0] + [y for x, y in zip(cut_peptides, cut_sites)]
     else:
-        begin_sites = [-1] + [y-1 for x, y in zip(cut_peptides, cut_sites)]
+        begin_sites = [0] + [y-0 for x, y in zip(cut_peptides, cut_sites)]
+    #print(sequence)
+    #input(begin_sites)  # Delete later
     #if begin_sites:
     #    begin_sites.append(begin_sites[-1] + 1)
     cut_and_missed = [(seq, pos)
