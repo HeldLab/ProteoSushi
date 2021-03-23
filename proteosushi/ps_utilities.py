@@ -127,7 +127,7 @@ def clean_pep_seq(rule: tuple, pep_mod_seq: str, user_PTMs: list, old_pep_seq: s
     cut_unmod_peptides = []
     for breakp in breaks:
         cut_unmod_sites.append(breakp.start())
-    # Adds the unmodified cut peptides in one at a time
+    # Adds the unmodified cut peptides in the list one at a time
     last_site = 0
     if rule[1].lower() == 'c':
         for i in cut_unmod_sites:
@@ -146,7 +146,7 @@ def clean_pep_seq(rule: tuple, pep_mod_seq: str, user_PTMs: list, old_pep_seq: s
     cut_peptides = []
     for breakp in breaks:
         cut_sites.append(breakp.start())
-    # Adds the cut peptides in one at a time
+    # Adds the cut peptides in the list one at a time
     last_site = 0
     if rule[1].lower() == 'c':
         for i in cut_sites:
@@ -195,6 +195,24 @@ def clean_pep_seq(rule: tuple, pep_mod_seq: str, user_PTMs: list, old_pep_seq: s
         new_pep_mod_seq = ''.join(cut_peptides[start:end+1])
         new_pep_seq = ''.join(cut_unmod_peptides[start:end+1])
         #print(new_pep_mod_seq)
+    # I haven't checked for the ending index, but I don't think I'll need to
+    while len(new_pep_seq) < 6:
+        if start <= 0:
+            end += 1
+            new_pep_mod_seq = ''.join(cut_peptides[start:end+1])
+            new_pep_seq = ''.join(cut_unmod_peptides[start:end+1])
+        elif end >= len(cut_unmod_peptides) - 1:
+            start -= 1
+            new_pep_mod_seq = ''.join(cut_peptides[start:end+1])
+            new_pep_seq = ''.join(cut_unmod_peptides[start:end+1])
+        elif len(cut_unmod_peptides[start-1]) >= len(cut_unmod_peptides[end+1]):
+            start -= 1
+            new_pep_mod_seq = ''.join(cut_peptides[start:end+1])
+            new_pep_seq = ''.join(cut_unmod_peptides[start:end+1])
+        else:
+            end += 1
+            new_pep_mod_seq = ''.join(cut_peptides[start:end+1])
+            new_pep_seq = ''.join(cut_unmod_peptides[start:end+1])
     return new_pep_mod_seq, new_pep_seq, len(''.join(cut_unmod_peptides[0:start]))
 
 def parse_maxquant_summary(infile: str) -> list:

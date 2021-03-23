@@ -54,17 +54,10 @@ def parse_evidence_localization(filename: str, user_PTMs: list, cleave_rule: tup
         seq_index = header_lower.index("sequence")
         mod_indices = [i for i, s in enumerate(header) if "Probabilities" in s]
         modified_index = header_lower.index("modified sequence")
-        #mods_index = header_lower.index("modifications")
         PTMs = [ptm.split(" Probabilities")[0] for ptm in header if "Probabilities" in ptm]
-        #start_index = header_lower.index([ptm for ptm in header_lower if "score diffs" in ptm][-1]) + 1
-        #end_index = header_lower.index("missed cleavages")
-        #PTMs = header[start_index:end_index]
         # Go through each line of the evidence file
         for row in tsv_reader:
             mod_seq = row[modified_index].strip('_')
-            #sequence = row[seq_index].replace('L', 'I')
-            #if sequence == "MAPACQIIR":
-            #    print("peptide found")
             
             loc_seqs = [row[i] if header[i].split(" Probabilities")[0] in user_PTMs else "" for i in mod_indices]
             new_mod_seq, new_pep_seq, missed_cleave_fix = clean_pep_seq(cleave_rule, 
@@ -97,14 +90,10 @@ def parse_evidence_localization(filename: str, user_PTMs: list, cleave_rule: tup
                 
                 index_correction = 0
                 j = 0
-                #if mod_seq == "YC(ca)GSC(ca)VDGR":
-                #    print(loc_indices)
                 # Go through each of the PTM sites
                 while j < len(loc_probs):
-                    #print(loc_probs)
                     # Skips sites below the threshold
                     if float(loc_probs[j][1].replace('(','').replace(')','').replace('[','').replace(']','')) < localization_threshold:
-                        #print(loc_probs[j][1])
                         index_correction += len(loc_probs[j][1])
                         j += 1
                         continue
@@ -113,12 +102,10 @@ def parse_evidence_localization(filename: str, user_PTMs: list, cleave_rule: tup
                         index_correction += len(loc_probs[j][1])
                         j += 1
                     except KeyError:
-                        #print(new_mod_seq)
                         mod_dict[new_mod_seq] = [tuple((PTMs[index], loc_indices[j] - index_correction - 1))]
                         index_correction += len(loc_probs[j][1])
                         j += 1
                 index += 1
-    #print(mod_dict)
     return mod_dict, PTMs
 
 def parse_evidence(filename: str, user_PTMs: list, cleave_rule: tuple) -> dict:
@@ -137,18 +124,13 @@ def parse_evidence(filename: str, user_PTMs: list, cleave_rule: tuple) -> dict:
         header = next(tsv_reader)
         header_lower = [s.lower() for s in header]
         seq_index = header_lower.index("sequence")
-        #modIndices = [i for i, s in enumerate(header) if "Probabilities" in s]
         modified_index = header_lower.index("modified sequence")
         mods_index = header_lower.index("modifications")
-        #PTMs = [ptm.split(" Probabilities")[0] for ptm in header if "Probabilities" in ptm]
         start_index = header_lower.index([ptm for ptm in header_lower if "score diffs" in ptm][-1]) + 1
         end_index = header_lower.index("missed cleavages")
         PTMs = header[start_index:end_index]
         for row in tsv_reader:
             pep_mods = dict()
-            #sequence = row[seq_index].replace('L', 'I')
-            #if sequence == "MAPACQIIR":
-            #    print("peptide found")
             for PTM in PTMs:
                 modified_sequence = row[modified_index].strip('_')
                 new_mod_seq, new_pep_seq, missed_cleave_fix = clean_pep_seq(cleave_rule, modified_sequence, user_PTMs, row[seq_index])
@@ -233,12 +215,12 @@ def compile_data_maxquant(search_engine_filepath: str, user_PTMs: list, cleave_r
         str -- evidence_filename
         list -- PTMs the user has chosen to be used
     """
-    MQ_dir = search_engine_filepath #__prompt_dir()
+    MQ_dir = search_engine_filepath
     sum_file = os.path.join(MQ_dir, "summary.txt")
     protease, max_missed_cleaves = parse_maxquant_summary(sum_file)
     evidence_filename = os.path.join(MQ_dir, "evidence.txt")
     mod_dict, PTMs = parse_evidence(evidence_filename, user_PTMs, cleave_rule)  # This grabs the PTMs from the evidence file
-    PTMs = user_PTMs#__prompt_PTMs(PTMs)
+    PTMs = user_PTMs
     evidence_file = open(evidence_filename, 'r')
     tsv_reader = csv.reader(evidence_file, delimiter='\t', quotechar='"')
     header = next(tsv_reader)
@@ -247,7 +229,6 @@ def compile_data_maxquant(search_engine_filepath: str, user_PTMs: list, cleave_r
     mod_seq = header_lower.index("modified sequence")
     reporter_intensities = [i for i, h in enumerate(header) if "intensit" in h.lower() and 
                                                                not "max intensity m/z" in h.lower()]
-    #reporter_intensity = header.index("Intensity")
     evidence_file.close()
     return sequence, mod_seq, mod_dict, reporter_intensities, evidence_filename, PTMs
 #EOF

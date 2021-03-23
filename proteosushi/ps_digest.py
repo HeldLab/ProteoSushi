@@ -142,28 +142,12 @@ def digest(sequence: str, min_length: int, max_length: int,
         cut_sites.append(site.start() if cut_terminus.lower() == 'n' else site.start() + 1)
     # Find sites
     last_site = 0
-    '''
-    if cut_terminus.lower() == 'c':
-        for i in cut_sites:
-            cut_peptides.append(sequence[last_site:i+1])
-            last_site = i + 1
-        cut_peptides.append(sequence[last_site:])
-    '''
-    #elif cut_terminus.lower() == 'n':
     for i in cut_sites:
         cut_peptides.append(sequence[last_site:i])
         last_site = i
     cut_peptides.append(sequence[last_site:])
     cut_and_missed = list(cut_peptides)  # duplicate to add to for iteration
-    #begin_sites = [y - len(x) + 2 for x, y in zip(cut_peptides, cut_sites)]  # Wouldn't it be simpler to add a 1 first and go from there?
-    if cut_terminus == 'c':
-        begin_sites = [0] + [y for x, y in zip(cut_peptides, cut_sites)]
-    else:
-        begin_sites = [0] + [y-0 for x, y in zip(cut_peptides, cut_sites)]
-    #print(sequence)
-    #input(begin_sites)  # Delete later
-    #if begin_sites:
-    #    begin_sites.append(begin_sites[-1] + 1)
+    begin_sites = [0] + [y for x, y in zip(cut_peptides, cut_sites)]
     cut_and_missed = [(seq, pos)
                       for seq, pos in zip(cut_and_missed, begin_sites)]
     missed_counter = 1
@@ -178,6 +162,7 @@ def digest(sequence: str, min_length: int, max_length: int,
         cut_and_missed = [(x, y + 1) for x, y in cut_and_missed]
     # Filter peptides by length and swap Leucine to Isoleucine, since Mass Spec
     # Can't tell the difference
+    
     if li_swap:
         cut_set = set([
             (i[0].replace("L", "I"), i[1])
