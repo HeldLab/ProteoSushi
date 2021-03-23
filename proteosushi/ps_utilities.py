@@ -195,24 +195,24 @@ def clean_pep_seq(rule: tuple, pep_mod_seq: str, user_PTMs: list, old_pep_seq: s
         new_pep_mod_seq = ''.join(cut_peptides[start:end+1])
         new_pep_seq = ''.join(cut_unmod_peptides[start:end+1])
         #print(new_pep_mod_seq)
-    # I haven't checked for the ending index, but I don't think I'll need to
+    new_start = start
     while len(new_pep_seq) < 6:
-        if start <= 0:
+        if new_start <= 0:
             end += 1
-            new_pep_mod_seq = ''.join(cut_peptides[start:end+1])
-            new_pep_seq = ''.join(cut_unmod_peptides[start:end+1])
+            new_pep_mod_seq = ''.join(cut_peptides[new_start:end+1])
+            new_pep_seq = ''.join(cut_unmod_peptides[new_start:end+1])
         elif end >= len(cut_unmod_peptides) - 1:
-            start -= 1
-            new_pep_mod_seq = ''.join(cut_peptides[start:end+1])
-            new_pep_seq = ''.join(cut_unmod_peptides[start:end+1])
-        elif len(cut_unmod_peptides[start-1]) >= len(cut_unmod_peptides[end+1]):
-            start -= 1
-            new_pep_mod_seq = ''.join(cut_peptides[start:end+1])
-            new_pep_seq = ''.join(cut_unmod_peptides[start:end+1])
+            new_start -= 1
+            new_pep_mod_seq = ''.join(cut_peptides[new_start:end+1])
+            new_pep_seq = ''.join(cut_unmod_peptides[new_start:end+1])
+        elif len(cut_unmod_peptides[new_start-1]) >= len(cut_unmod_peptides[end+1]):
+            new_start -= 1
+            new_pep_mod_seq = ''.join(cut_peptides[new_start:end+1])
+            new_pep_seq = ''.join(cut_unmod_peptides[new_start:end+1])
         else:
             end += 1
-            new_pep_mod_seq = ''.join(cut_peptides[start:end+1])
-            new_pep_seq = ''.join(cut_unmod_peptides[start:end+1])
+            new_pep_mod_seq = ''.join(cut_peptides[new_start:end+1])
+            new_pep_seq = ''.join(cut_unmod_peptides[new_start:end+1])
     return new_pep_mod_seq, new_pep_seq, len(''.join(cut_unmod_peptides[0:start]))
 
 def parse_maxquant_summary(infile: str) -> list:
