@@ -58,7 +58,8 @@ def parse_evidence_localization(filename: str, user_PTMs: list, cleave_rule: tup
         # Go through each line of the evidence file
         for row in tsv_reader:
             mod_seq = row[modified_index].strip('_')
-            
+            if len(row[seq_index]) < 6:
+                continue
             loc_seqs = [row[i] if header[i].split(" Probabilities")[0] in user_PTMs else "" for i in mod_indices]
             new_mod_seq, new_pep_seq, missed_cleave_fix = clean_pep_seq(cleave_rule, 
                                                                         mod_seq, 

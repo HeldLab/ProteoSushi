@@ -27,7 +27,6 @@ def clean_localization_pep_seq(rule: tuple, pep_mod_seqs: list, user_PTMs: list,
         str -- the cleaned peptide
         int -- length of the front part of peptide that was removed
     """
-    #print(user_PTMs)
     # Puts break points for unmodified sequence in a list
     breaks = finditer(rule[0], old_pep_seq)
     cut_unmod_sites = []
@@ -71,9 +70,7 @@ def clean_localization_pep_seq(rule: tuple, pep_mod_seqs: list, user_PTMs: list,
                 last_site = i
             cut_peptides.append(pep_mod_seq[last_site:])
         PTM_cut_peptides.append(cut_peptides)
-        #print(cut_peptides)
-
-    #print(PTM_cut_peptides)
+        
     try:
         cut_peptides = [s for s in PTM_cut_peptides if s != ""][0]
     except IndexError:
@@ -120,7 +117,6 @@ def clean_pep_seq(rule: tuple, pep_mod_seq: str, user_PTMs: list, old_pep_seq: s
     Returns:
         str -- the cleaned peptide
     """
-    #print(user_PTMs)
     # Puts break points for unmodified sequence in a list
     breaks = finditer(rule[0], old_pep_seq)
     cut_unmod_sites = []
@@ -158,7 +154,6 @@ def clean_pep_seq(rule: tuple, pep_mod_seq: str, user_PTMs: list, old_pep_seq: s
             cut_peptides.append(pep_mod_seq[last_site:i])
             last_site = i
         cut_peptides.append(pep_mod_seq[last_site:])
-    #print(cut_peptides)
 
     # This gets the range of the first and last pep_slice with a PTM
     start = 0
@@ -190,11 +185,9 @@ def clean_pep_seq(rule: tuple, pep_mod_seq: str, user_PTMs: list, old_pep_seq: s
     if start == end:
         new_pep_mod_seq = cut_peptides[start]
         new_pep_seq = cut_unmod_peptides[start]
-        #print(new_pep_mod_seq)
     else:
         new_pep_mod_seq = ''.join(cut_peptides[start:end+1])
         new_pep_seq = ''.join(cut_unmod_peptides[start:end+1])
-        #print(new_pep_mod_seq)
     new_start = start
     while len(new_pep_seq) < 6:
         if new_start <= 0:
@@ -224,10 +217,7 @@ def parse_maxquant_summary(infile: str) -> list:
         int -- the maximum allowed number of missed cleavages
     """
     mqfile = open(infile, 'r')
-    #outfile = open("mq_parsed.csv", 'w', newline='')
-    #assert infile.endswith(".txt")
     tsvReader = csv.reader(mqfile, delimiter='\t', quotechar='"')
-    #csvWriter = csv.writer(outfile)
     protease = ""
     PTMs = []
     maxMissedCleaves = 0
@@ -238,7 +228,6 @@ def parse_maxquant_summary(infile: str) -> list:
     row = next(tsvReader)
     protease = row[header.index("Enzyme")]
     assert protease != ""
-    #PTMs = row[header.index("Variable modifications")].split(';')  # I might just do this in the evidence file
     maxMissedCleaves = int(row[header.index("Max. missed cleavages")])
     mqfile.close()
     return protease.lower(), maxMissedCleaves
@@ -252,7 +241,7 @@ def parse_mascot(in_file: str) -> list:
         list -- protease {str}, quant_range {tuple}, var_mod_map {dict},
         missed_cleaves {int}
     """
-# We need to parse Mascot file first, because raw Mascot output is difficult to work with
+    # We need to parse Mascot file first, because raw Mascot output is difficult to work with
     print(f"Parsing file {in_file}.")
     with open(in_file) as f, \
         open('quant_parsed.csv', 'w', newline='') as out_file:
@@ -280,8 +269,6 @@ def parse_mascot(in_file: str) -> list:
                     header = row
                     header = [i for i in header if i]
                     second_row = next(file_reader)  # need to normalize headers
-                    #print(header)
-                    #print(second_row)
                     quant_range = (len(header), len(second_row)-1)  #range where there will be quant; appears to skip some
                     header.extend(['SampleQuant' 
                                    for i in range(len(second_row) - len(header))])
@@ -322,7 +309,7 @@ def load_pepdict(proteome_fasta_filepath: str, protease: str, missed_cleavages: 
     return pep_dict
 
 
-def digest_if_needed(proteome_fasta_filepath: str, protease: str, missed_cleavages: int, minlen=5, maxlen=55, 
+def digest_if_needed(proteome_fasta_filepath: str, protease: str, missed_cleavages: int, minlen=6, maxlen=55, 
                      m_excise="Both"):
     """Runs digest and dumps pickle file (dict)"""
     seq_list = []  # (gene, organism, sequence, unpid)

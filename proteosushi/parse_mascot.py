@@ -27,38 +27,36 @@ def __create_mod_dict(filename: str, mod_ids: list, var_mod_map: dict, cleave_ru
         file_reader = csv.reader(mascot_output, quotechar='"')
         header = next(file_reader)
         sequence = header.index("pep_seq")
-        #pep_mod_seq_index = header.index("")
         var_mods = header.index("pep_var_mod_pos")
 
         for row in file_reader:
             #Mascot has duplicate rows; check for these
-                
             pep_seq = row[sequence].replace("L","I")
-                
+            if len(pep_seq) < 6:  # Skip any peptides smaller than 6
+                continue
+            #print(row[sequence])
             mods = row[var_mods]
-
             if not mods:
                 continue
-            new_seq = pep_seq
             pep_mod_seq = mods.split('.')[1]
             i = len(pep_mod_seq) - 1
             inv_mod_dict = {v:k for k, v in var_mod_map.items()}
             while i >= 0:
                 if pep_mod_seq[i] != "0":  # If there is a mod
-                    new_seq = new_seq[:i+1] + '(' + inv_mod_dict[pep_mod_seq[i]] + ')' + new_seq[i+1:]
+                    new_seq = row[sequence][:i+1] + '(' + inv_mod_dict[pep_mod_seq[i]] + ')' + row[sequence][i+1:]
                 i -= 1
             pep_mod_seq = new_seq
             new_mod_seq, new_pep_seq, missed_cleave_fix = clean_pep_seq(cleave_rule, pep_mod_seq, PTMs, row[sequence])
-
             if mods:
                 n, center, c = [x for x in mods.split(".")]
                 for i, aa in enumerate(list(center)): #split mods; note this excludes termini
                     if aa in mod_ids:
                         try:
                             if not tuple((str(aa), i)) in modDict[pep_mod_seq]:
-                                modDict[new_mod_seq].append(tuple((inv_mod_map[aa], i)))
+                                modDict[new_mod_seq].append(tuple((inv_mod_map[aa], i-missed_cleave_fix)))
                         except KeyError:
-                            modDict[new_mod_seq] = [tuple((inv_mod_map[aa], i))]
+                            modDict[new_mod_seq] = [tuple((inv_mod_map[aa], i-missed_cleave_fix))]
+    #print("2.5")
     return modDict
 
 
@@ -91,7 +89,7 @@ def compile_data_mascot(search_engine_filepath: str, PTMs: list, cleave_rule: tu
     var_mods = header.index('pep_var_mod_pos')
 
     mod_dict = __create_mod_dict(input_filename, [var_mod_map[mod] for mod in mods_for_quant], var_mod_map, cleave_rule, PTMs)
-
+    #print("3")
     if quant_range[1] <= quant_range[0]:
         return sequence, var_mods, mod_dict, None, input_filename, var_mod_map
 
