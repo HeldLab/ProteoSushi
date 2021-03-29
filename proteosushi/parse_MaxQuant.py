@@ -93,17 +93,19 @@ def parse_evidence_localization(filename: str, user_PTMs: list, cleave_rule: tup
                 j = 0
                 # Go through each of the PTM sites
                 while j < len(loc_probs):
+                    #if row[seq_index] == "KACLNPASPIVK":
+                    #    input("numbers: "+  str(loc_indices[j])+" - "+str(index_correction)+" - 1 - "+str(missed_cleave_fix))
                     # Skips sites below the threshold
                     if float(loc_probs[j][1].replace('(','').replace(')','').replace('[','').replace(']','')) < localization_threshold:
                         index_correction += len(loc_probs[j][1])
                         j += 1
                         continue
                     try:  # The - 1 is a hotfix as I'm not sure why it is just 1 off.
-                        mod_dict[new_mod_seq].append(tuple((PTMs[index], loc_indices[j] - index_correction - 1)))
+                        mod_dict[new_mod_seq].append(tuple((PTMs[index], loc_indices[j] - index_correction - 1)))# - missed_cleave_fix)))
                         index_correction += len(loc_probs[j][1])
                         j += 1
                     except KeyError:
-                        mod_dict[new_mod_seq] = [tuple((PTMs[index], loc_indices[j] - index_correction - 1))]
+                        mod_dict[new_mod_seq] = [tuple((PTMs[index], loc_indices[j] - index_correction - 1))]# - missed_cleave_fix))]
                         index_correction += len(loc_probs[j][1])
                         j += 1
                 index += 1
@@ -139,33 +141,33 @@ def parse_evidence(filename: str, user_PTMs: list, cleave_rule: tuple) -> dict:
                 # Grabs the first two letters of PTM that maxquant uses in mod_seq
                 abr_ptm = PTM[:2].lower()  # NOTE: I could possibly imagine this not working in certain circumstances...
                 # while this PTM is in the sequence we are looking at and listed among the PTMs for this peptide
-                while PTM in row[mods_index] and abr_ptm in modified_sequence:  # This seems a little sketchy. What if there are two different PTMs with the same first 2 letters?
+                while PTM in row[mods_index] and abr_ptm in new_mod_seq:  # This seems a little sketchy. What if there are two different PTMs with the same first 2 letters?
                     other_PTMs = PTMs.copy()
                     other_PTMs.remove(PTM)
                     # Gets the index of the PTM within the sequence (that is right here XX(|ptm)XX)
                     for other_ptm in other_PTMs:
-                        mod_index = modified_sequence.index(abr_ptm)
+                        mod_index = new_mod_seq.index(abr_ptm)
                         abr_other_ptm = other_ptm[:2].lower()
-                        while (abr_other_ptm in modified_sequence and 
-                               modified_sequence.index(abr_other_ptm) < mod_index):
+                        while (abr_other_ptm in new_mod_seq and 
+                               new_mod_seq.index(abr_other_ptm) < mod_index):
                             #This takes the ptms, one by one, until each before is removed
                             mods_B4_mod += 1
-                            ptm_index = modified_sequence.index(abr_other_ptm)
-                            modified_sequence = (modified_sequence[:ptm_index]
-                                               + modified_sequence[ptm_index + len(abr_other_ptm):])  # NOTE: removes the mod, but not the parenthesis
-                    mod_index = modified_sequence.index(abr_ptm)
-                    pep_mods[modified_sequence.index(abr_ptm) - (mods_B4_mod * 2)] = PTM
-                    modified_sequence = (modified_sequence[:mod_index]
-                                       + modified_sequence[mod_index + len(abr_ptm):])
+                            ptm_index = new_mod_seq.index(abr_other_ptm)
+                            new_mod_seq = (new_mod_seq[:ptm_index]
+                                               + new_mod_seq[ptm_index + len(abr_other_ptm):])  # NOTE: removes the mod, but not the parenthesis
+                    mod_index = new_mod_seq.index(abr_ptm)
+                    pep_mods[new_mod_seq.index(abr_ptm) - (mods_B4_mod * 2)] = PTM
+                    new_mod_seq = (new_mod_seq[:mod_index]
+                                       + new_mod_seq[mod_index + len(abr_ptm):])
                     mods_B4_mod += 1
             for loc in sorted(pep_mods):
                 try:
-                    if not tuple((pep_mods[loc], loc - 2)) in mod_dict[row[modified_index].strip('_')]:
-                        mod_dict[row[modified_index].strip('_')].append(tuple((pep_mods[loc],
-                                                        loc - 2)))
+                    if not tuple((pep_mods[loc], loc - 2)) in mod_dict[new_mod_seq]:
+                        mod_dict[new_mod_seq].append(tuple((pep_mods[loc],
+                                                     loc - 2 - missed_cleave_fix)))
                 except KeyError:
-                    mod_dict[row[modified_index].strip('_')] = [tuple((pep_mods[loc],
-                                                loc - 2))]
+                    mod_dict[new_mod_seq] = [tuple((pep_mods[loc],
+                                             loc - 2 - missed_cleave_fix))]
     return mod_dict, PTMs
 
 def compile_localization_data_maxquant(search_engine_filepath: str, user_PTMs: list, 

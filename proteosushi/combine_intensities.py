@@ -658,7 +658,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                     missing_PTM += 1
                     continue
                 mods = mod_dict[new_pep_mod_seq]
-                #if raw_seq == "WDICAGNAILK":
+                #if new_pep_seq == "ACLNPASPIVK":
                 #    input(mods)
                 # Skip any peptide sequences without a user-chosen PTM
                 if not (any(mods) and set([m[0] for m in mods]) & set(user_PTMs)): 

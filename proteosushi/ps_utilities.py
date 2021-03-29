@@ -45,6 +45,8 @@ def clean_localization_pep_seq(rule: tuple, pep_mod_seqs: list, user_PTMs: list,
             cut_unmod_peptides.append(old_pep_seq[last_site:i])
             last_site = i
         cut_unmod_peptides.append(old_pep_seq[last_site:])
+    #if old_pep_seq == "KACLNPASPIVK":
+    #    input("peptide split " + str(cut_unmod_peptides))
 
     PTM_cut_peptides = []
     for pep_mod_seq in pep_mod_seqs:
@@ -70,14 +72,17 @@ def clean_localization_pep_seq(rule: tuple, pep_mod_seqs: list, user_PTMs: list,
                 last_site = i
             cut_peptides.append(pep_mod_seq[last_site:])
         PTM_cut_peptides.append(cut_peptides)
-        
+    #if old_pep_seq == "KACLNPASPIVK":
+    #    input("peptide split " + str(PTM_cut_peptides))
     try:
         cut_peptides = [s for s in PTM_cut_peptides if s != ""][0]
     except IndexError:
         return None, None, None
-    early_start = len(cut_peptides)
-    late_end = 0
-    for cut_peptides in PTM_cut_peptides:
+    #if old_pep_seq == "KACLNPASPIVK":
+    #    print(cut_peptides)
+    first_start = len(cut_peptides)
+    last_end = 0
+    for cut_peptides in [s for s in PTM_cut_peptides if s != ""]:
     # This gets the range of the first and last pep_slice with a PTM
         start = 0
         while start < len(cut_peptides):
@@ -85,8 +90,8 @@ def clean_localization_pep_seq(rule: tuple, pep_mod_seqs: list, user_PTMs: list,
                 break
             else:
                 start += 1
-        if start < early_start:
-            early_start = start
+        if start < first_start:
+            first_start = start
 
         end = len(cut_peptides) - 1
         while end > start:
@@ -94,16 +99,17 @@ def clean_localization_pep_seq(rule: tuple, pep_mod_seqs: list, user_PTMs: list,
                 break
             else:
                 end -= 1
-        if end > late_end:
-            late_end = end
-
-    if early_start == late_end:
-        new_pep_mod_seqs = [peptide[early_start] for peptide in PTM_cut_peptides if peptide != '']
-        new_pep_seq = cut_unmod_peptides[early_start]
+        if end > last_end:
+            last_end = end
+    #if old_pep_seq == "KACLNPASPIVK":
+    #    input("start end " + str(first_start) + ' ' + str(last_end))
+    if first_start == last_end:
+        new_pep_mod_seqs = [peptide[first_start] for peptide in PTM_cut_peptides if peptide != '']
+        new_pep_seq = cut_unmod_peptides[first_start]
     else:
-        new_pep_mod_seqs = [''.join(peptide[early_start:late_end+1]) for peptide in PTM_cut_peptides if peptide != '']
-        new_pep_seq = ''.join(cut_unmod_peptides[early_start:late_end+1])
-    return new_pep_mod_seqs, new_pep_seq, len(''.join(cut_unmod_peptides[0:early_start]))
+        new_pep_mod_seqs = [''.join(peptide[first_start:last_end+1]) for peptide in PTM_cut_peptides if peptide != '']
+        new_pep_seq = ''.join(cut_unmod_peptides[first_start:last_end+1])
+    return new_pep_mod_seqs, new_pep_seq, len(''.join(cut_unmod_peptides[0:first_start]))
 
 def clean_pep_seq(rule: tuple, pep_mod_seq: str, user_PTMs: list, old_pep_seq: str, is_MQ = False) -> str:
     """Removes the missed cleavages without selected PTMs
