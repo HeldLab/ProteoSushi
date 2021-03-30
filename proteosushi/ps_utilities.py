@@ -212,6 +212,7 @@ def clean_pep_seq(rule: tuple, pep_mod_seq: str, user_PTMs: list, old_pep_seq: s
             end += 1
             new_pep_mod_seq = ''.join(cut_peptides[new_start:end+1])
             new_pep_seq = ''.join(cut_unmod_peptides[new_start:end+1])
+    #input(f"old {pep_mod_seq}, new {new_pep_mod_seq}")
     return new_pep_mod_seq, new_pep_seq, len(''.join(cut_unmod_peptides[0:start]))
 
 def parse_maxquant_summary(infile: str) -> list:

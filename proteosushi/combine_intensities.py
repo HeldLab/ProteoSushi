@@ -618,7 +618,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                 if pep_mod_seq == "":
                     missing_PTM += 1
                     continue
-                new_seq = pep_seq
+                new_seq = raw_seq
                 pep_mod_seq = pep_mod_seq.split('.')[1]
                 i = len(pep_mod_seq) - 1
                 inv_mod_dict = {v:k for k, v in var_mod_dict.items()}
@@ -649,8 +649,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                 new_user_PTMs = [ptm.lower()[:2] for ptm in user_PTMs]
             
             new_pep_mod_seq, new_pep_seq, missed_cleave_fix = clean_pep_seq(cleave_rules[protease], pep_mod_seq, new_user_PTMs, raw_seq)
-            #if raw_seq == "WDICAGNAILK":
-            #    input(genes_positions)
+            #input("old " + pep_mod_seq + ", new " + new_pep_mod_seq)
             if genes_positions and len(genes_positions) == 1:
                 gene, start_pos, unpid, protein_name = list(genes_positions)[0]
                 if not new_pep_mod_seq in mod_dict:

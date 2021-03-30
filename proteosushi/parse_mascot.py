@@ -41,9 +41,10 @@ def __create_mod_dict(filename: str, mod_ids: list, var_mod_map: dict, cleave_ru
             pep_mod_seq = mods.split('.')[1]
             i = len(pep_mod_seq) - 1
             inv_mod_dict = {v:k for k, v in var_mod_map.items()}
+            new_seq = row[sequence]
             while i >= 0:
                 if pep_mod_seq[i] != "0":  # If there is a mod
-                    new_seq = row[sequence][:i+1] + '(' + inv_mod_dict[pep_mod_seq[i]] + ')' + row[sequence][i+1:]
+                    new_seq = row[sequence][:i+1] + '(' + inv_mod_dict[pep_mod_seq[i]] + ')' + new_seq[i+1:]
                 i -= 1
             pep_mod_seq = new_seq
             new_mod_seq, new_pep_seq, missed_cleave_fix = clean_pep_seq(cleave_rule, pep_mod_seq, PTMs, row[sequence])
@@ -56,7 +57,8 @@ def __create_mod_dict(filename: str, mod_ids: list, var_mod_map: dict, cleave_ru
                                 modDict[new_mod_seq].append(tuple((inv_mod_map[aa], i-missed_cleave_fix)))
                         except KeyError:
                             modDict[new_mod_seq] = [tuple((inv_mod_map[aa], i-missed_cleave_fix))]
-    #print("2.5")
+            #if row[sequence] == "AAFTECCQAADK":
+            #    input(f"old {row[sequence]}, new {new_mod_seq}")
     return modDict
 
 
