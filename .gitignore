@@ -236,3 +236,8 @@ proteosushi/.~lock.test_min_AA.csv#
 proteosushi/test_min_AA.csv
 proteosushi/test_wrong_dup.csv
 proteosushi/.~lock.test_wrong_dup.csv#
+proteosushi/mascot_output_annotated.csv
+.gitignore
+proteosushi/maxquant_output_loc_fdr.csv
+proteosushi/skyline_output_annotated.csv
+proteosushi/mascot_output_fdr.csv
