@@ -487,6 +487,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     Returns:
         int -- possible error flag
     """
+    print("Preparing data for rollup...\n")
     if search_engine == "generic":
         sequence_index, modified_sequence_index, mod_dict, intensity_start, data_filename, \
             var_mod_dict = compile_data_generic(search_engine_filepath, user_PTMs, cleave_rules[protease])
@@ -546,6 +547,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     batch_size = 100
     unmatched_sequences = []
 
+    print("Beginning PTM site rollup")
+
     # Prints out the completed rollup with annotations from Uniprot (if requested)
     with open(output_filename, 'w', newline = '') as w1:
         out_writer = csv.writer(w1)
@@ -585,6 +588,9 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                 continue
             total_seqs += 1
             raw_seq = row[sequence_index]
+            if len(raw_seq) < 6:
+                continue
+            #print(raw_seq)
             pep_mod_seq = row[modified_sequence_index]
             pep_seq = row[sequence_index].replace("L","I")
             if pep_seq is None:
@@ -612,7 +618,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                 if pep_mod_seq == "":
                     missing_PTM += 1
                     continue
-                new_seq = pep_seq
+                new_seq = raw_seq
                 pep_mod_seq = pep_mod_seq.split('.')[1]
                 i = len(pep_mod_seq) - 1
                 inv_mod_dict = {v:k for k, v in var_mod_dict.items()}
@@ -643,8 +649,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                 new_user_PTMs = [ptm.lower()[:2] for ptm in user_PTMs]
             
             new_pep_mod_seq, new_pep_seq, missed_cleave_fix = clean_pep_seq(cleave_rules[protease], pep_mod_seq, new_user_PTMs, raw_seq)
-            #if raw_seq == "AHEILPNLVCCSAK":
-            #    input(new_pep_mod_seq + ' ' + new_pep_seq + ' ' + str(missed_cleave_fix))
+            #input("old " + pep_mod_seq + ", new " + new_pep_mod_seq)
             if genes_positions and len(genes_positions) == 1:
                 gene, start_pos, unpid, protein_name = list(genes_positions)[0]
                 if not new_pep_mod_seq in mod_dict:
@@ -652,6 +657,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                     missing_PTM += 1
                     continue
                 mods = mod_dict[new_pep_mod_seq]
+                #if new_pep_seq == "ACLNPASPIVK":
+                #    input(mods)
                 # Skip any peptide sequences without a user-chosen PTM
                 if not (any(mods) and set([m[0] for m in mods]) & set(user_PTMs)): 
                     missing_PTM += 1

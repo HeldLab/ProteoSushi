@@ -113,6 +113,8 @@ def create_mod_dict(sky_filename: str, user_PTMs: list, cleave_rule: tuple) -> d
             #if sequence == "FACAVVCIQK":
             #    print("here")
             mod_seq = row[mod_index]
+            if len(row[seq_index]) < 6:
+                continue
             mods = findall(r"(\w?\[.+?\])|(\w?\(.+?\(?.\)?\))", mod_seq)
             if len(mods) < 1:
                 raise ValueError("A sequence in the Peptide Modified Sequence column is missing PTMs")

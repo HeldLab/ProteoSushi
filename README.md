@@ -256,7 +256,7 @@ Results will be returned as a CSV spreadsheet with the name and location based o
 
 The resulting file will include information for each modified residue of interest including:
 
-- Peptide (Note that each cleaved peptide must have a minimum length of 5 and a maximum length of 55)
+- Peptide (Note that each cleaved peptide must have a minimum length of 6 and a maximum length of 55)
 
 - Uniprot ID
 
