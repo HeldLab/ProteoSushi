@@ -256,14 +256,138 @@ Results will be returned as a CSV spreadsheet with the name and location based o
 
 The resulting file will include information for each modified residue of interest including:
 
-- Peptide (Note that each cleaved peptide must have a minimum length of 5 and a maximum length of 55)
+- **Gene Name**
 
-- Uniprot ID
+- **Site**
 
-- Gene Name
+  - This is the site of the PTM referenced in this line
 
-- Secondary structure at residue
+- **Protein_Name**
 
-- Whether the residue is involved in a binding site
+- **Shared_Genes**
 
-- Cellular location of the protein
+  - The other gene names that also match up with this site. They also have a separate entry in the output.
+
+- Target_Genes
+
+  - If the user provided a list of genes to prioritize matching and at least one of those genes matched for this site, it is displayed here. *Note that the annotation score rule is overidden if a target gene is present.*
+
+- **Peptide_Sequence**
+
+  - *Note that each cleaved peptide displayed must have a minimum length of 6 and a maximum length of 55. If the peptide is too short, the shortest cleaved version 6 amino acids or longer will be shown.*
+
+- **Peptide_Modified_Sequence**
+
+  - This is the peptide sequence with the PTM(s) inserted in parentheses `()` or brackets `[]` after the amino acid it is attached to
+
+- **Annotation_Score**
+
+  - The score provided by Uniprot for this Uniprot entry out of 5, with 5 being the highest score (or highest quality annotation), and 1 being the lowest score (or lowest quality annotation)
+
+- **Uniprot_Accession_ID**
+
+  - The unique identifier by Uniprot for a specific protein entry. Information about the protein entry can be accessed by with the URL `www.uniprot.org/uniprot/[Uniprot_Accession_ID]`
+
+- Intensit(y|ies) (sum|average)
+
+  - Column(s) showing either the summed or averaged quantification value for the site, if provided and chosen by the user
+
+- Length_Of_Sequence
+
+  - The length of the protein
+
+- Range_of_Interest
+
+  - The number range(s) of relevant peptide sequence(s) for this PTM site
+
+- Region_of_Interest
+
+  - The actual sequence(s) of the same relevant peptide sequence(s) in the last column
+
+- Subcellular_Location
+
+  - The location(s) within the cell where this protein is typically found
+
+- Enzyme_Class
+
+  - The type of enzyme that this protein functions as (if applicable)
+
+- rhea
+
+  - Hyperlinks to the [RHEA database](www.rhea-db.org)
+
+- Secondary_Structure
+
+  - The protein secondary structure that this PTM site is a part of, if applicable. For example, (alpha) Helix, Beta_Strand, or (beta) Turn.
+
+- Active_Site_Annotation
+
+  - Annotation if the PTM site is an active site
+  
+- Alternative_Sequence_Annotation
+
+  - Annotation related to protein isoforms
+
+- Chain_Annotation
+  
+  - Annotation for the chain in the mature protein after processing at the PTM site
+
+- Compositional_Bias_Annotation
+
+  - Annotation indicating overrepresentation of certain amino acids
+  
+- Disulfide_Bond_Annotation
+
+  - Annotation if the PTM site part of a disulfide bond
+
+- Domain_Extent_Annotation
+
+  - Description of the domain
+
+- Lipidation_Annotation
+
+  - Annotation if the residue is known to be lipidated
+  
+- Metal_Binding_Annotation
+
+  - Type of metal binding at the PTM site
+  
+- Modified_Residue_Annotation
+
+  - Known type of PTM at site 
+
+- Motif_Annotation
+
+  - Description of a short, conserved sequence motif of biological significance
+
+- Mutagenesis_Annotation
+
+  - Mutations and known effect on protein function at the site
+
+- Natural_Variant_Annotation
+
+  - Known natural variant at the PTM site (if there is one)
+
+- NP_Binding_Annotation
+
+  - If the site is a known nucleotide binding site
+
+- Other
+
+  - If there is an annotation different than the other _Annotation columns
+
+- Region_Annotation
+  
+  - Annotation related to the ‘Region_of_Interest’ column
+
+- Repeat_Annotation
+
+  - The types of repeated sequence motifs or repeated domains
+
+- Topological_Domain_Annotation
+
+  - Orientation in the plasma membrane (cytosolic or extracellular)
+
+- Zinc_Finger_Annotation
+
+  - If the modified site is within a zinc finger domain
