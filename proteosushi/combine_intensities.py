@@ -366,7 +366,8 @@ def __compress_annotations(annotation_list: list) -> list:
 
 
 def batch_write(batch_results: list, search_engine: str, user_PTMs: list, use_quant: bool,
-                intensity_method: str, intensity_dict: dict, add_annotation: bool, sparql_input: list):
+                intensity_method: str, intensity_dict: dict, add_annotation: bool, sparql_input: list,
+                use_target_list: bool):
     """Write a batch to the output to save memory (RAM)
     Arguments:
         batch_results {list} -- a portion of the results to be written
@@ -376,6 +377,8 @@ def batch_write(batch_results: list, search_engine: str, user_PTMs: list, use_qu
         intensity_method {str} -- whether to sum or average the quant
         intensity_dict {dict} -- a dictionary that connects site info to quant
         add_annotation {bool} -- whether to provide uniprot annotations to the results
+        sparql_input {list} -- data needed to get uniprot annotations
+        use_target_list {bool} -- whether the user chose to use a gene list to affect matches
     Returns:
         list -- row to write
     """
@@ -398,6 +401,8 @@ def batch_write(batch_results: list, search_engine: str, user_PTMs: list, use_qu
                 N = intensity_dict[f"{i[6]}|{i[0].upper()}|{i[1]}"][-1]
                 intensities = intensity_dict[f"{i[6]}|{i[0].upper()}|{i[1]}"][:-1]
                 writable_row += [float(x)/N for x in intensities]
+        if not use_target_list:
+            writable_row = writable_row[:4] + writable_row[5:]
         if add_annotation:
             try:
                 compressed_annotations = __compress_annotations(sparql_dict[i[8].split(' ')[0] + '|' + str(i[1])])
@@ -549,8 +554,11 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     # Prints out the completed rollup with annotations from Uniprot (if requested)
     with open(output_filename, 'w', newline = '') as w1:
         out_writer = csv.writer(w1)
-        header2 = ["Gene", "Site", "Protein_Name", "Shared_Genes", "Target_Genes", "Peptide_Sequence", 
-            "Peptide_Modified_Sequence", "Annotation_Score", "Uniprot_Accession_ID"]
+        header2 = ["Gene", "Site", "Protein_Name", "Shared_Genes"]
+        if use_target_list:
+            header2 += ["Target_Genes"] 
+        header2 += ["Peptide_Sequence", "Peptide_Modified_Sequence", "Annotation_Score", 
+                    "Uniprot_Accession_ID"]
         if use_quant:
             if search_engine == "mascot":
                 header2 += [header[intensity_start] + f" ({intensity_method})"]
@@ -573,7 +581,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         for row in tsv_reader:
             if len(gene_results) >= batch_size:
                 writable_rows = batch_write(gene_results, search_engine, user_PTMs, use_quant, 
-                                                intensity_method, intensity_dict, add_annotation, sparql_input)
+                                            intensity_method, intensity_dict, add_annotation, 
+                                            sparql_input, use_target_list)
                 for writable_row in writable_rows:
                     out_writer.writerow(writable_row)
                 gene_results = list()
@@ -838,7 +847,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         # Adds in the last few results
         if len(gene_results) >= 1:
             writable_rows = batch_write(gene_results, search_engine, user_PTMs, use_quant, 
-                                            intensity_method, intensity_dict, add_annotation, sparql_input)
+                                        intensity_method, intensity_dict, add_annotation, 
+                                        sparql_input, use_target_list)
             for writable_row in writable_rows:
                 out_writer.writerow(writable_row)
             print("\033[92m {}\033[00m".format(f"\n{total_sites} sites rolled-up and written"), end='')
