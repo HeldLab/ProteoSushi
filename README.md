@@ -288,7 +288,7 @@ The resulting file will include information for each modified residue of interes
 
   - The unique identifier by Uniprot for a specific protein entry. Information about the protein entry can be accessed by with the URL `www.uniprot.org/uniprot/[Uniprot_Accession_ID]`
 
-- Intensit(y|ies) (sum|average)
+- Intensit(y|ies) ... (sum|average)
 
   - Column(s) showing either the summed or averaged quantification value for the site, if provided and chosen by the user
 
@@ -306,7 +306,7 @@ The resulting file will include information for each modified residue of interes
 
 - Subcellular_Location
 
-  - The location(s) within the cell where this protein is typically found
+  - The location(s) within the cell where this protein is typically found. For example, mitochondria, nucleus, endoplasmic reticulum, etc.
 
 - Enzyme_Class
 
@@ -391,3 +391,6 @@ The resulting file will include information for each modified residue of interes
 - Zinc_Finger_Annotation
 
   - If the modified site is within a zinc finger domain
+
+
+More detailed information on any of the above annotations is available on the help section of the [UniProt website](https://www.uniprot.org/help).
