@@ -678,7 +678,6 @@ class App(QMainWindow):
             
             # If a valid species ID has been entered in
             species_id = self.species_id_edit.text()
-            #print(species_id)
             if len(species_id) > 0 and not species_id in self.species_id_dict:
                 self.statusBar().showMessage("ERROR: Not a valid species ID!")
                 self.statusBar().setStyleSheet("background-color : red")
