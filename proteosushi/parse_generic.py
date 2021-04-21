@@ -13,7 +13,7 @@ try:
     from .proteoSushi_constants import cleave_rules
     from .ps_utilities import load_pepdict
 except ImportError:
-    from ps_utilities import clean_pep_seq
+    from ps_utilities import clean_pep_seq, clean_localization_pep_seq
     from proteoSushi_constants import cleave_rules
     from ps_utilities import load_pepdict
 
@@ -71,12 +71,117 @@ def get_PTMs(sky_filename: str) -> list:
                     mod_list.append(stripped_mod)
     return mod_list
 
+def create_loc_mod_dict(sky_filename: str, user_PTMs: list, cleave_rule: tuple, 
+                        localization_threshold: float) -> dict:
+    """Parses the generic output to retrieve the modification info
+
+    Arguments:
+        sky_filename {str} -- the name of the generic output file
+        user_PTMs {list} -- a list of PTMs that the user wants to analyze
+        cleave_rule {tuple} -- information needed to cleave peptides
+        localization_threshold {float} -- the threshold for the lowest allowed localization
+        probability; all localization prob is above this number
+    Returns:
+        dict -- a dictionary of sequences with the type and location of modifications
+    """
+    mod_dict = {}
+    with open(sky_filename, 'r') as sky_output:
+        tsv_reader = csv.reader(sky_output, quotechar='"')
+        header = next(tsv_reader)
+        header_lower = [s.lower() for s in header]
+        try:
+            seq_index = header_lower.index("peptide sequence")
+        except ValueError:
+            try:
+                seq_index = header_lower.index("peptide")
+            except ValueError:
+                return -4
+        mod_indices = [i for i, s in enumerate(header_lower) if "probabilities" in s]
+        PTMs = [ptm.split(" Probabilities")[0] for ptm in header if "Probabilities" in ptm]
+        mod_index = -1
+        try:
+            mod_index = header_lower.index("peptide modified sequence") #NOTE: apparently, this changes, so check here.
+        except ValueError:
+            try:
+                mod_index = header_lower.index("modified sequence")
+            except ValueError:
+                try:
+                    mod_index = header_lower.index("modified peptide")
+                except ValueError:
+                    print("\033[91m {}\033[00m".format("No peptide modified sequence column detected in the generic output file."))
+                    print("\033[91m {}\033[00m".format("Please add or modify header with the name \"Peptide Modified Sequence\"\n"))
+                    return -4
+        
+        for row in tsv_reader:
+            #print(row)
+            # This grabs the PTMs in each sequence and builds a list of all of them
+            #sequence = row[seq_index].replace("L","I")
+            #if sequence == "FACAVVCIQK":
+            #    print("here")
+            mod_seq = row[mod_index]
+            if len(row[seq_index]) < 6:
+                continue
+            loc_seqs = [row[i] if header[i].split(" Probabilities")[0] in user_PTMs else "" for i in mod_indices]
+            new_mod_seq, new_pep_seq, missed_cleave_fix = clean_pep_seq(cleave_rule, 
+                                                                        mod_seq, 
+                                                                        user_PTMs, 
+                                                                        row[seq_index],
+                                                                        True)
+            new_loc_seqs, new_pep_seq, missed_cleave_fix = clean_localization_pep_seq(cleave_rule, 
+                                                                                      loc_seqs, 
+                                                                                      user_PTMs, 
+                                                                                      row[seq_index])
+            mods = findall(r"(\w?\[.+?\])|(\w?\(.+?\(?.\)?\))", mod_seq)
+            if len(mods) < 1:
+                raise ValueError("A sequence in the Peptide Modified Sequence column is missing PTMs")
+            
+            if new_loc_seqs is None:
+                continue
+            # Go through each of the PTM localization sequences
+            index = 0
+            while index < len(new_loc_seqs):
+                if new_loc_seqs[index] == "":
+                    index += 1
+                    continue
+                loc_iter = finditer(r"(\[.+?\])|(\(.+?\))", new_loc_seqs[index])
+                loc_indices = []
+                for loc_i in loc_iter:
+                    loc_indices.append(loc_i.start())
+                
+                try:
+                    loc_probs = findall(r"(\[.+?\])|(\(.+?\))", new_loc_seqs[index]).remove('')
+                except ValueError:
+                    loc_probs = findall(r"(\[.+?\])|(\(.+?\))", new_loc_seqs[index])
+
+                index_correction = 0
+                j = 0
+                # Go through each of the PTM sites
+                while j < len(loc_probs):
+                    #if row[seq_index] == "KACLNPASPIVK":
+                    #    input("numbers: "+  str(loc_indices[j])+" - "+str(index_correction)+" - 1 - "+str(missed_cleave_fix))
+                    # Skips sites below the threshold
+                    if float(loc_probs[j][1].replace('(','').replace(')','').replace('[','').replace(']','')) < localization_threshold:
+                        index_correction += len(loc_probs[j][1])
+                        j += 1
+                        continue
+                    try:  # The - 1 is a hotfix as I'm not sure why it is just 1 off.
+                        mod_dict[new_mod_seq].append(tuple((PTMs[index], loc_indices[j] - index_correction - 1)))# - missed_cleave_fix)))
+                        index_correction += len(loc_probs[j][1])
+                        j += 1
+                    except KeyError:
+                        mod_dict[new_mod_seq] = [tuple((PTMs[index], loc_indices[j] - index_correction - 1))]# - missed_cleave_fix))]
+                        index_correction += len(loc_probs[j][1])
+                        j += 1
+                index += 1
+    return mod_dict
+
 def create_mod_dict(sky_filename: str, user_PTMs: list, cleave_rule: tuple) -> dict:
     """Parses the generic output to retrieve the modification info
 
     Arguments:
         sky_filename {str} -- the name of the generic output file
         user_PTMs {list} -- a list of PTMs that the user wants to analyze
+        cleave_rule {tuple} -- information needed to cleave peptides
     Returns:
         dict -- a dictionary of sequences with the type and location of modifications
     """
@@ -245,6 +350,58 @@ def __chooseTup(tuples: list, annotDict: dict) -> list:
                 return None, None'''
 
 
+def compile_localization_data_generic(search_engine_filepath: str, user_PTMs: list, 
+                                      cleave_rule: tuple, localization_threshold: float) -> list:
+    """Takes the lists and dictionaries needed to parse files
+
+    Arguments:
+        search_engine_filepath {str} -- the filepath for the generic search engine output
+        user_PTMs {list} -- the list of PTMs that the user will use for the analysis
+        cleave_rule {tuple} -- information for how to cleave peptides
+        localization_threshold {float} -- the threshold for the lowest allowed localization
+        probability; all localization prob is above this number
+    Returns:
+        int -- index of unmodified sequence
+        int -- index of modified sequence
+        dict -- pep_dict
+        dict -- mod_dict
+        int -- intensity_values
+        file -- mito_genes (file)
+        str -- sky_filename
+        dict -- mascot var mod dict (blank)
+    """
+    sky_filename = search_engine_filepath
+    mod_dict = create_loc_mod_dict(sky_filename, user_PTMs, cleave_rule, localization_threshold)
+    skyFile = open(sky_filename, 'r')
+    tsv_reader = csv.reader(skyFile, quotechar='"')
+    header = next(tsv_reader)
+    header_lower = [s.lower() for s in header]
+    try:
+        sequence = header_lower.index("peptide sequence")
+    except ValueError:
+        try:
+            sequence = header_lower.index("peptide")
+        except ValueError:
+            return -4
+    pms = -1
+    try:
+        pms = header_lower.index("peptide modified sequence") #NOTE: apparently, this changes, so check here.
+    except ValueError:
+        try:
+            pms = header_lower.index("modified sequence")
+        except ValueError:
+            try:
+                pms = header_lower.index("modified peptide")
+            except ValueError:
+                print("\033[91m {}\033[00m".format("No peptide modified sequence column detected in the generic output file."))
+                print("\033[91m {}\033[00m".format("Please add or modify header with the name \"Peptide Modified Sequence\"\n"))
+                return -4
+    localization_indices = [i for i, h in enumerate(header) if " probabilities" in h.lower()]
+    intensity_values = [i for i, h in enumerate(header) if "intensit" in h.lower()]  # NOTE: This makes the assumption that the intensity columns are directly after the charge column
+    if len(intensity_values) == 0:
+        intensity_values = None
+    return sequence, pms, localization_indices, mod_dict, intensity_values, sky_filename, None
+
 def compile_data_generic(search_engine_filepath: str, user_PTMs: list, cleave_rule: tuple) -> list:
     """Takes the lists and dictionaries needed to parse files
 
@@ -261,18 +418,8 @@ def compile_data_generic(search_engine_filepath: str, user_PTMs: list, cleave_ru
         str -- sky_filename
         dict -- mascot var mod dict (blank)
     """
-    sky_filename = search_engine_filepath #__prompt_file()
+    sky_filename = search_engine_filepath
     mod_dict = create_mod_dict(sky_filename, user_PTMs, cleave_rule)
-    #PTMs = user_PTMs#__prompt_PTMs(mod_list)
-    #Collecting the PTM analysis list from the user
-    # NOTE: is it possible to not use PTMs for this analysis?
-    #cleave_rule, maxMissed = __promptCleavenMissed()
-    #pep_dict = load_pepdict(cleave_rule, maxMissed)  # TODO: make it find the max missed from file
-    #annotDict = __load_annotDict("uniprot_rat_annotScore_ids.csv")
-    #annotDict = __load_annotDict("uniprot-proteome_human_annotScore.tsv")
-    #gene_results = []
-    #dup_check_set = set()
-    #threshold = 0.01 #What should this be?
     skyFile = open(sky_filename, 'r')
     tsv_reader = csv.reader(skyFile, quotechar='"')
     header = next(tsv_reader)
@@ -314,5 +461,3 @@ def compile_data_generic(search_engine_filepath: str, user_PTMs: list, cleave_ru
     #intensity_dict = dict()
     return sequence, pms, mod_dict, intensity_values, sky_filename, None
 #EOF
-
-#/home/rob/Documents/Held_Lab/191010_Rollup/SkylineOutput_GloCys055_EXP0107u_RED.csv

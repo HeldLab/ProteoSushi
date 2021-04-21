@@ -315,11 +315,14 @@ WHERE {
         del(extras_annot)
         full_annot = full_annot.merge(comment_annot, how="outer", on=["entry", " position"])
         del(comment_annot)
-    except KeyError:
+    except KeyError:  # The proper columns are missing in one of the query results; usually means uniprot isn't working correctly
         print(full_annot)
         #print(isinstance(full_annot, pd.DataFrame))
         if isinstance(full_annot, pd.DataFrame) and "502 Proxy Error" in full_annot.iloc[1][0]:
+            print("502 ERROR: try Uniprot annotations later")
             return 502
+        print("Uniprot data formatting error: please notify ProteoSushi administrator")
+        print(list(full_annot.columns))
         sys.exit()
     return full_annot
 

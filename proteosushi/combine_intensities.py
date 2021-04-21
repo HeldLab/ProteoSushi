@@ -11,7 +11,7 @@ try:
     from .download_uniprot_AS import download_AS_file
     from .parse_mascot import compile_data_mascot
     from .parse_MaxQuant import compile_data_maxquant, compile_localization_data_maxquant, get_MQ_PTMs
-    from .parse_generic import compile_data_generic, get_PTMs
+    from .parse_generic import compile_data_generic, compile_localization_data_generic, get_PTMs
     from .sparql import process_sparql_output, sparql_request
     from .proteoSushi_constants import cleave_rules, annotation_type_dict, secondary_annotations
     from .ps_utilities import clean_localization_pep_seq, clean_pep_seq, parse_mascot, load_pepdict, parse_maxquant_summary
@@ -19,7 +19,7 @@ except ImportError:
     from download_uniprot_AS import download_AS_file
     from parse_mascot import compile_data_mascot
     from parse_MaxQuant import compile_data_maxquant, compile_localization_data_maxquant, get_MQ_PTMs
-    from parse_generic import compile_data_generic, get_PTMs
+    from parse_generic import compile_data_generic, compile_localization_data_generic, get_PTMs
     from sparql import process_sparql_output, sparql_request
     from proteoSushi_constants import cleave_rules, annotation_type_dict, secondary_annotations
     from ps_utilities import clean_localization_pep_seq, clean_pep_seq, parse_mascot, load_pepdict, parse_maxquant_summary
@@ -385,6 +385,8 @@ def batch_write(batch_results: list, search_engine: str, user_PTMs: list, use_qu
     writable_rows = list()
     if add_annotation:
         sparql_dict = batch_annotate(sparql_input)
+        if isinstance(sparql_dict, int) and sparql_dict == 502:
+            return 502
     # This builds the rollup output file depending on what the user chose
     for i in sorted(batch_results, key=lambda r: r[0]):
         if search_engine == "maxquant":
@@ -494,8 +496,15 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     """
     print("Preparing data for rollup...\n")
     if search_engine == "generic":
-        sequence_index, modified_sequence_index, mod_dict, intensity_start, data_filename, \
-            var_mod_dict = compile_data_generic(search_engine_filepath, user_PTMs, cleave_rules[protease])
+        if not localization_threshold is None:
+            sequence_index, modified_sequence_index, localization_indices, mod_dict, intensity_start, \
+                data_filename = compile_localization_data_generic(search_engine_filepath, 
+                                                                  user_PTMs, 
+                                                                  cleave_rules[protease],
+                                                                  localization_threshold)
+        else:
+            sequence_index, modified_sequence_index, mod_dict, intensity_start, data_filename, \
+                var_mod_dict = compile_data_generic(search_engine_filepath, user_PTMs, cleave_rules[protease])
         data_file = open(data_filename, 'r')
         tsv_reader = csv.reader(data_file, quotechar='"')
         if intensity_start is None and use_quant:
@@ -586,6 +595,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                 writable_rows = batch_write(gene_results, search_engine, user_PTMs, use_quant, 
                                             intensity_method, intensity_dict, add_annotation, 
                                             sparql_input, use_target_list)
+                if isinstance(writable_rows, int) and writable_rows == 502:
+                    return 502
                 for writable_row in writable_rows:
                     out_writer.writerow(writable_row)
                 gene_results = list()
