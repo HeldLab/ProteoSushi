@@ -264,40 +264,28 @@ WHERE {
 
     # Grabs the annotation by parts to maximize the amount we receive from the uniprot server
     region_annot = request_annot(new_entry_length_pos_query)
-    #print(region_annot.head(15))
-    #if region_annot.empty:
     region_annot_stripped = request_annot(query_stripped_entry_pos)
-    #print(region_annot_stripped.head(15))
     if len(region_annot.index) < len(region_annot_stripped.index):  # This should check to see if there are rows missing in the full query
         region_annot = region_annot.append(region_annot_stripped)
-        #print(region_annot.head(30))
         region_annot.drop_duplicates(subset=["entry", " position", " begin", " end"], keep="first", inplace=True)
-    #print(region_annot.head(15))
-    #catalytic_annot = request_annot(query_catalytic)
     subcell_annot = request_annot(query_entry_subcellular)
-    #print(subcell_annot.head(15))
     extras_annot = request_annot(query_ec_rhea_type)
     comment_annot = request_annot(query_comment)
-    #print(comment_annot.head(15))
     # Creates blank dataframes if uniprot did not return that info
-    if region_annot is None:
+    if region_annot is None or list(region_annot.columns) != ["entry", " position", " lengthOfSequence", " begin", " end", " regionOfInterest"]:
         region_annot = pd.DataFrame(columns=["entry", " position", " lengthOfSequence", " begin", " end", " regionOfInterest"])
     else:
         region_annot.dropna(how="all", inplace=True)
-    #if catalytic_annot is None:
-    #    catalytic_annot = pd.DataFrame(columns=["entry", " position", " catalyticActivity"])
-    #else:
-    #    catalytic_annot.dropna(how="any", inplace=True)
-    if subcell_annot is None:
+    if subcell_annot is None or list(subcell_annot.columns) != ["entry", " location"]:
         subcell_annot = pd.DataFrame(columns=["entry", " location"])
     else:
         subcell_annot.dropna(how="any", inplace=True)
-    if extras_annot is None:
+    if extras_annot is None or list(extras_annot.columns) != ["entry", " position", " ec", " rhea"]:
        extras_annot = pd.DataFrame(columns=["entry", " position", " ec", " rhea"])
     else:
         extras_annot.dropna(how="all", inplace=True)  # TODO: I will likely need to change this back to all later
     
-    if comment_annot is None:
+    if comment_annot is None or list(comment_annot.columns) != ["entry", " position", " type", " comment"]:
         comment_annot = pd.DataFrame(columns=["entry", " position", " type", " comment"])
     else:
         comment_annot.dropna(how="all", inplace=True)
@@ -306,10 +294,7 @@ WHERE {
     full_annot = region_annot
     del(region_annot)
     try:
-        #full_annot = full_annot.merge(catalytic_annot, how="outer", on=["entry", " position"])
-        #del(catalytic_annot)
         full_annot = full_annot.merge(subcell_annot, how="outer", on="entry")
-        #print(full_annot.head(15))
         del(subcell_annot)
         full_annot = full_annot.merge(extras_annot, how="outer", on=["entry", " position"])
         del(extras_annot)
@@ -317,7 +302,6 @@ WHERE {
         del(comment_annot)
     except KeyError:  # The proper columns are missing in one of the query results; usually means uniprot isn't working correctly
         print(full_annot)
-        #print(isinstance(full_annot, pd.DataFrame))
         if isinstance(full_annot, pd.DataFrame) and "502 Proxy Error" in full_annot.iloc[1][0]:
             print("502 ERROR: try Uniprot annotations later")
             return 502
