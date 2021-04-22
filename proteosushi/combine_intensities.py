@@ -387,6 +387,9 @@ def batch_write(batch_results: list, search_engine: str, user_PTMs: list, use_qu
         sparql_dict = batch_annotate(sparql_input)
         if isinstance(sparql_dict, int) and sparql_dict == 502:
             return 502
+        if isinstance(sparql_dict, int) and sparql_dict == 4:
+            return 4
+        
     # This builds the rollup output file depending on what the user chose
     for i in sorted(batch_results, key=lambda r: r[0]):
         if search_engine == "maxquant":
@@ -446,6 +449,8 @@ def batch_annotate(sparql_input: list) -> dict:
 
         # This processes and combines the annotations to 1 per site
         sparql_output, sparql_dict = process_sparql_output(batch_output, sparql_dict)
+        if isinstance(sparql_output, int) and sparql_output == 4:
+            return 4
         if not sparql_output:
             #print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+batch+1} not annotated!"))
             i += batch
@@ -463,6 +468,8 @@ def batch_annotate(sparql_input: list) -> dict:
         pass
     else:
         sparql_output, sparql_dict = process_sparql_output(batch_output, sparql_dict)
+        if isinstance(sparql_output, int) and sparql_output == 4:
+            return 4
         if not sparql_output:
             #print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+batch+1} not annotated!"))
             pass
@@ -597,6 +604,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                             sparql_input, use_target_list)
                 if isinstance(writable_rows, int) and writable_rows == 502:
                     return 502
+                if isinstance(writable_rows, int) and writable_rows == 4:
+                    return 4
                 for writable_row in writable_rows:
                     out_writer.writerow(writable_row)
                 gene_results = list()

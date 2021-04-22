@@ -268,6 +268,36 @@ The pep_expect column in Mascot is the [Expectation value of the protein match (
 
 Once all of the necessary options are included, click on the **Rollup!** button to start the analysis.
 
+### Running Examples
+
+A quick overview to run the examples in ProteoSushi.
+
+Example files must be downloaded from [GitHub](https://github.com/HeldLab/ProteoSushi/tree/master/proteosushi/examples).
+
+Install and run ProteoSushi following the instructions listed in **Installation** and **Using ProteoSushi**. 
+
+Select any of the 3 options for search engine and click on the button that appears on the right.
+
+  - For Maxquant, choose the txt folder listed in the examples folder
+
+  - For Mascot, choose the MascotEGFR.csv file
+
+  - For Generic, choose the EGFR_Skyline_data.csv file
+
+At this point, the "PTMs for Current Analysis" section will pop up and show checkboxes where you can choose any or all of the PTMs as listed. I personally recommend clicking on the carbamidomethyl or c[+57] PTM
+
+Click on the "Uniprot Proteome FASTA" button and choose the "Uni-Hum-Ref-20141022.fasta" file.
+
+The next 3 lines should autofill unless you chose the Generic option earlier. In that case, put 3 in the "Max Missed Cleavages" box.
+
+Choose the output location and filename. Click on the "Output Name and Location" button to pop open the window and type in the filename once it is in the folder you want. Click save.
+
+Anything in the **Options** section can be ignored unless you want to use one of the specific functions. If so, please refer to the appropriate section in **Using ProteoSushi**
+
+Click the "Rollup!" button once you are ready.
+
+Updates as ProteoSushi is running are displayed in the Terminal/Command Prompt.
+
 ## Results
 
 Results will be returned as a CSV spreadsheet with the name and location based on what the user chose earlier.

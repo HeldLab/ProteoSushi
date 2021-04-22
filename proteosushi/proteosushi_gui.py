@@ -582,7 +582,7 @@ class App(QMainWindow):
                             self.output_filepath.text(),
                             None)
             # If there is a 502 proxy error (server side error)
-            if self.uniprot_annot_CB.isChecked() and output == 502:
+            if self.uniprot_annot_CB.isChecked() and (output == 502 or output == 4):
                 self.statusBar().showMessage("ERROR: Uniprot server error! Please try again later.")
                 self.statusBar().setStyleSheet("background-color : red")
                 return
