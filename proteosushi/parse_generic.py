@@ -212,11 +212,7 @@ def create_mod_dict(sky_filename: str, user_PTMs: list, cleave_rule: tuple) -> d
                     return -4
         
         for row in tsv_reader:
-            #print(row)
             # This grabs the PTMs in each sequence and builds a list of all of them
-            #sequence = row[seq_index].replace("L","I")
-            #if sequence == "FACAVVCIQK":
-            #    print("here")
             mod_seq = row[mod_index]
             if len(row[seq_index]) < 6:
                 continue
@@ -225,29 +221,25 @@ def create_mod_dict(sky_filename: str, user_PTMs: list, cleave_rule: tuple) -> d
                 raise ValueError("A sequence in the Peptide Modified Sequence column is missing PTMs")
             
             new_mod_seq, new_pep_seq, missed_cleave_fix = clean_pep_seq(cleave_rule, mod_seq, user_PTMs, row[seq_index])
-            #print(new_mod_seq)
-            mods = findall(r"(\w?\[.+?\])|(\w?\(.+?\(?.\)?\))", new_mod_seq)
+            mods = findall(r"(\w?\[.+?\])|(\w?\(.+?\(?.\)?\))", new_mod_seq)  # NOTE that these grab the AA as well
             breaks = finditer(r"(\w?\[.+?\])|(\w?\(.+?\(?.\)?\))", new_mod_seq)
             cut_sites = []
             for breakp in breaks:
                 cut_sites.append(breakp.start())
-            #print(cut_sites)
             # This fixes the indices of each mod to connect with the unmodified sequence
             correction = 0
             fixed_indices = []
             num_of_mods = 0
             for site in cut_sites:
                 fixed_indices.append(site - correction)  # TODO: Check this!
-                correction += len(mods[num_of_mods][0]) - 1
+                correction += len(mods[num_of_mods][0]) - 1  # The -1 is because of the AA connected
                 num_of_mods += 1
             
             i = 0
             while i < len(cut_sites):
-                #print(new_mod_seq)
                 if not mods[i][0] in user_PTMs:
                     i += 1
                     continue
-                #print(new_mod_seq)
                 try:
                     mod_dict[new_mod_seq].append(tuple((mods[i][0], fixed_indices[i])))  # TODO: Check This!
                 except KeyError:
@@ -255,99 +247,6 @@ def create_mod_dict(sky_filename: str, user_PTMs: list, cleave_rule: tuple) -> d
                 i += 1
     return mod_dict
 
-def __chooseHit(genes_positions: list, mito_genes: list, annotDict: dict) -> list:
-    """chooses which of the matched sequences to use. If there is one mito gene, it will be that one.
-    If there are more than one non-mito, annotation score decides. If there are more than one mito, annotation score decides.
-    Arguments:
-        genes_positions {list} -- a list of tuples with gene and position info
-        mito_genes {list} -- a list of strings of mito gene names
-        annotDict {dict} -- a dictionary connecting genes to annotation scores
-    Returns:
-        bool -- whether the match(es) is(are) target genes
-        *and*
-        str -- the gene name of the chosen match
-        int -- the start position of the chosen match
-        *or*
-        list -- a list of tuples with the gene name and start position of each match
-    """
-    mitoTups = list()
-    nonMitoTups = list()
-    for tup in genes_positions:
-        if tup[0].upper() + '\n' in mito_genes:
-            #print("Mito gene prioritized!")
-            mitoTups.append(tup)
-        else:
-            nonMitoTups.append(tup)
-    if len(mitoTups) == 1:
-        return True, mitoTups[0]
-    elif len(mitoTups) > 1:
-        return True, __chooseTup(mitoTups, annotDict)
-    elif len(nonMitoTups) == 1:
-        return False, nonMitoTups[0]
-    elif len(nonMitoTups) > 1:  # Only non-mito proteins (and more than 1)
-        return False, __chooseTup(nonMitoTups, annotDict)
-    assert False, "ERROR: chooseHit had 0 tuples sent in!"
-    #return False, None, None
-
-def __chooseTup(tuples: list, annotDict: dict) -> list:
-    """chooses which tuple to return from a list
-    Arguments:
-        tuples {list} -- a list of tuples with gene and start position info
-        annotDict {dict} -- a dictionary connecting genes to annotation scores
-    Returns:
-        str -- the gene name of the chosen match
-        int -- the start position of the chosen match
-    """
-    highestScore = 0
-    high2Score = 0
-    highest = None
-    #print(f"third {annotDict["MUG2"]}")
-    for tup in tuples:
-        if not tup[2] in annotDict:
-            continue
-        if int(annotDict[tup[2]]) > highestScore:  # If the current match is has the highest score, set it
-            highestScore = int(annotDict[tup[2]])
-            highest = tup
-        elif int(annotDict[tup[2]]) > high2Score:  # If the current match is 2nd highest score, set it
-            high2Score = int(annotDict[tup[2]])
-    if highestScore > high2Score:
-        return highest
-    else:  # If there are tied high scores for annotation
-        sharedPeps = list()
-        sharedPeps.append(highest)
-        for tup in tuples:  # Cycles through the matches and chooses the ones with the highest annotation score
-            if not tup[2] in annotDict:
-                continue
-            elif int(annotDict[tup[2]]) == highestScore and tup[2] != highest[2]:
-                sharedPeps.append(tup)
-        if len(sharedPeps) == 1:
-            return sharedPeps[0]
-        return sharedPeps
-        ### Here is the paralog code - Not running currently ###
-        '''with open("Paralogs_rat_UniprotIDs_genes.csv", 'r') as par:
-            paralogDict = dict()
-            par.readline()
-            for line in par:  # Make the paralog dictionary so we can check whether ties are paralogs
-                if line.split(',')[0] in paralogDict:
-                    paralogDict[line.split(',')[0]].append(line.strip().split(',')[1])
-                else:
-                    paralogDict[line.split(',')[0]] = [line.strip().split(',')[1]]
-                if line.split(',')[1] in paralogDict:
-                    paralogDict[line.split(',')[1]].append(line.strip().split(',')[0])
-                else:
-                    paralogDict[line.split(',')[1]] = [line.strip().split(',')[0]]
-            paralogs = list()
-            paralogs.append(highest)
-            for tup in tuples:  # Cycles through the matches and chooses the ones with the highest annotation score if they are paralogs
-                if not tup[0] in annotDict:
-                    continue
-                elif int(annotDict[tup[0]]) == highestScore and tup[0] != highest[0]:
-                    if tup[0] in paralogDict and highest[0] in paralogDict[tup[0]]:
-                        paralogs.append(tup)
-            if len(paralogs) > 1:
-                return paralogs
-            else:
-                return None, None'''
 
 
 def compile_localization_data_generic(search_engine_filepath: str, user_PTMs: list, 
