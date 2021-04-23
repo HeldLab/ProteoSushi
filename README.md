@@ -245,7 +245,7 @@ After that, choose the ProteoSushi output file name and location. Click the "Out
 Following this is the **Options** section with some settings that can be added or ignored based on your analysis. If 
 
 First, if using MaxQuant, a **localization threshold** can be set as a number between 0 and 1. 
-In the maxquant *evidence.txt* file, the localization probab.0..................................2ility is in the columns "*PTM* Probabilities". 
+In the maxquant *evidence.txt* file, the localization probability is in the columns "*PTM* Probabilities". 
 The localization probability indicates the likelihood that the PTM referenced in the header is at the indicated site. 
 Any PTM sites with a localization probability below the provided threshold will not be rolled up. 
 If this is not provided, ProteoSushi will use the localization determination by MaxQuant.
@@ -364,7 +364,7 @@ The resulting file will include information for each modified residue of interes
 
 - rhea
 
-  - Hyperlinks to the [RHEA database](www.rhea-db.org)
+  - Hyperlinks to the [RHEA database](https://www.rhea-db.org)
 
 - Secondary_Structure
 
