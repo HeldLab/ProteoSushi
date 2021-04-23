@@ -45,6 +45,7 @@ def sparql_request(unpid_site_list: list):
     Arguments:
         unpidSiteList {list} -- a list of tuples with uniprot ID and site of PTM
     Returns:
+        pandas.DataFrame -- the complete annotated dataframe to be applied to the rolled-up PTM sites
     """
     unpid_site_list_str = ""
     if not unpid_site_list:
@@ -62,28 +63,6 @@ def sparql_request(unpid_site_list: list):
     #print(unpid_site_list_str)
 
 
-    '''
-SELECT
-    ?entry
-    ?position
-	?type
-FROM <http://sparql.uniprot.org/uniprot>
-WHERE {
-    VALUES (?entry ?position) {(uniprotkb:P01375 44)
-    (uniprotkb:P00533 41)
-    (uniprotkb:P15692 39)
-    (uniprotkb:P02649 50)
-    (uniprotkb:P04637 100)
-    (uniprotkb:P08887 41)
-    (uniprotkb:P42898 41)
-    (uniprotkb:P03372 41)
-    }
-    ?entry up:annotation ?annotation .
-    ?annotation up:range ?range ;
-               a ?type 
-  #FILTER ( REGEX(STR(?annotation), "Similarity_Annotation"))
-} ORDER BY DESC(?entry) ASC(?position)
-    '''
 
     prefix="""PREFIX uniprotkb: <http://purl.uniprot.org/uniprot/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -105,8 +84,7 @@ FROM <http://sparql.uniprot.org/uniprot>
 WHERE {
     VALUES (?entry ?position) {""" + unpid_site_list_str + """}
     ?entry up:sequence ?sequence .
-    ?annotation up:range ?range ;
-               a ?type .
+    ?annotation up:range ?range .
     ?range faldo:begin
         [ faldo:position ?begin ; faldo:reference ?sequence ] ;
             faldo:end
@@ -140,34 +118,6 @@ WHERE {
      ?sequence rdf:value ?iupac .
 } ORDER BY DESC(?entry) ASC(?position)"""
 
-    query_entry_length_position = prefix + """
-SELECT
-    ?entry
-    ?position ### New the position of the C that was given in the values
-    ?lengthOfSequence
-    ?begin
-    ?end
-    ?regionOfInterest ### subsequence of the annotation that had the C
-FROM <http://sparql.uniprot.org/uniprot>
-WHERE {
-    VALUES (?entry ?position) {""" + unpid_site_list_str + """
-    }
-    ?entry up:sequence ?sequence .
-    ?annotation up:range ?range ;
-               a ?type .
-    ?range faldo:begin
-        [ faldo:position ?begin ; faldo:reference ?sequence ] ;
-            faldo:end
-        [ faldo:position ?end ; faldo:reference ?sequence ] .
-    FILTER (?begin <= ?position && ?position <= ?end)
-    # get the IUPAC AAs associated with the identifier
-    ?sequence rdf:value ?iupac .
-    # get the AA subsequence of the annotation as a new variable
-    BIND(SUBSTR(?iupac, ?begin, ?end - ?begin + 1) AS ?regionOfInterest)
-    # get length
-    ?sequence rdf:value ?iupac .
-    BIND(strlen(?iupac) AS ?lengthOfSequence)
-} ORDER BY DESC(?entry) ASC(?position)"""
 
 
     query_entry_subcellular = prefix + """
@@ -184,20 +134,6 @@ WHERE {
 } ORDER BY DESC(?entry)"""
 
 
-    query_catalytic = prefix + """
-SELECT
-    ?entry
-    ?position
-    ?catalyicActivity
-FROM <http://sparql.uniprot.org/uniprot>
-WHERE {
-    VALUES (?entry ?position) {""" + unpid_site_list_str + """
-    }
-   ?entry up:sequence ?sequence .
-    ?entry up:annotation ?caAnnotation .
-    ?caAnnotation a up:Catalytic_Activity_Annotation .
-    ?caAnnotation up:catalyticActivity ?ca .
-} ORDER BY DESC(?entry) ASC(?position)"""
 
 
     query_ec_rhea_type = prefix + """
@@ -211,16 +147,7 @@ WHERE {
     VALUES (?entry ?position) {""" + unpid_site_list_str + """
     }
     ?entry up:sequence ?sequence .
-    ?entry up:annotation ?annotation .
-    ?annotation up:range ?range ;
-               a ?type .
-    ?range faldo:begin
-        [ faldo:position ?begin ; faldo:reference ?sequence ] ;
-            faldo:end
-        [ faldo:position ?end ; faldo:reference ?sequence ] .
-    FILTER (?begin <= ?position && ?position <= ?end)
     ?entry up:annotation ?caAnnotation .
-    ?caAnnotation a up:Catalytic_Activity_Annotation .
     ?caAnnotation up:catalyticActivity ?ca .
 
     OPTIONAL {
@@ -228,15 +155,11 @@ WHERE {
     }
 
     OPTIONAL {
-    ?ca up:catalyzedReaction ?rhea .
-    }
-
-    OPTIONAL {
-        ?annotation rdfs:comment ?comment .
+        ?ca up:catalyzedReaction ?rhea .
     }
 
 #Order desc by entry and ascending by position afterwards
-} ORDER BY DESC(?entry) ASC(?position)"""
+} ORDER BY DESC(?entry) ASC(?position)"""  # NOTE: remove the ordering to help reduce time for query
 
     query_comment = prefix + """
 SELECT
@@ -264,40 +187,28 @@ WHERE {
 
     # Grabs the annotation by parts to maximize the amount we receive from the uniprot server
     region_annot = request_annot(new_entry_length_pos_query)
-    #print(region_annot.head(15))
-    #if region_annot.empty:
     region_annot_stripped = request_annot(query_stripped_entry_pos)
-    #print(region_annot_stripped.head(15))
     if len(region_annot.index) < len(region_annot_stripped.index):  # This should check to see if there are rows missing in the full query
         region_annot = region_annot.append(region_annot_stripped)
-        #print(region_annot.head(30))
         region_annot.drop_duplicates(subset=["entry", " position", " begin", " end"], keep="first", inplace=True)
-    #print(region_annot.head(15))
-    #catalytic_annot = request_annot(query_catalytic)
     subcell_annot = request_annot(query_entry_subcellular)
-    #print(subcell_annot.head(15))
     extras_annot = request_annot(query_ec_rhea_type)
     comment_annot = request_annot(query_comment)
-    #print(comment_annot.head(15))
     # Creates blank dataframes if uniprot did not return that info
-    if region_annot is None:
+    if region_annot is None or list(region_annot.columns) != ["entry", " position", " lengthOfSequence", " begin", " end", " regionOfInterest"]:
         region_annot = pd.DataFrame(columns=["entry", " position", " lengthOfSequence", " begin", " end", " regionOfInterest"])
     else:
         region_annot.dropna(how="all", inplace=True)
-    #if catalytic_annot is None:
-    #    catalytic_annot = pd.DataFrame(columns=["entry", " position", " catalyticActivity"])
-    #else:
-    #    catalytic_annot.dropna(how="any", inplace=True)
-    if subcell_annot is None:
+    if subcell_annot is None or list(subcell_annot.columns) != ["entry", " location"]:
         subcell_annot = pd.DataFrame(columns=["entry", " location"])
     else:
         subcell_annot.dropna(how="any", inplace=True)
-    if extras_annot is None:
+    if extras_annot is None or list(extras_annot.columns) != ["entry", " position", " ec", " rhea"]:
        extras_annot = pd.DataFrame(columns=["entry", " position", " ec", " rhea"])
     else:
         extras_annot.dropna(how="all", inplace=True)  # TODO: I will likely need to change this back to all later
     
-    if comment_annot is None:
+    if comment_annot is None or list(comment_annot.columns) != ["entry", " position", " type", " comment"]:
         comment_annot = pd.DataFrame(columns=["entry", " position", " type", " comment"])
     else:
         comment_annot.dropna(how="all", inplace=True)
@@ -306,20 +217,19 @@ WHERE {
     full_annot = region_annot
     del(region_annot)
     try:
-        #full_annot = full_annot.merge(catalytic_annot, how="outer", on=["entry", " position"])
-        #del(catalytic_annot)
         full_annot = full_annot.merge(subcell_annot, how="outer", on="entry")
-        #print(full_annot.head(15))
         del(subcell_annot)
         full_annot = full_annot.merge(extras_annot, how="outer", on=["entry", " position"])
         del(extras_annot)
         full_annot = full_annot.merge(comment_annot, how="outer", on=["entry", " position"])
         del(comment_annot)
-    except KeyError:
+    except KeyError:  # The proper columns are missing in one of the query results; usually means uniprot isn't working correctly
         print(full_annot)
-        #print(isinstance(full_annot, pd.DataFrame))
         if isinstance(full_annot, pd.DataFrame) and "502 Proxy Error" in full_annot.iloc[1][0]:
+            print("502 ERROR: try Uniprot annotations later")
             return 502
+        print("Uniprot data formatting error: please notify ProteoSushi administrator")
+        print(list(full_annot.columns))
         sys.exit()
     return full_annot
 
@@ -411,9 +321,14 @@ def process_sparql_output(output_df, sparql_dict: dict) -> list:
         return output_list, sparql_dict
 
     # get the subcellular location from UniProt
-    def retrieve_uniprot_subcellular_location():
+    def retrieve_uniprot_subcellular_location(attempts_left=5):
         '''Retrieve subcellular location information from UniProt directly'''
-        r = requests.get('https://www.uniprot.org/locations/?format=tab')
+        if attempts_left <= 0:
+            return 4
+        try:
+            r = requests.get('https://www.uniprot.org/locations/?format=tab')
+        except ConnectionError:
+            return retrieve_uniprot_subcellular_location(attempts_left-1)
         subcellular_location_df = pd.read_csv(StringIO(r.text), sep = '\t')  # TODO: potential ParserError
         try:
             subcellular_location_df["location_id_reformatted"] = (
@@ -426,6 +341,8 @@ def process_sparql_output(output_df, sparql_dict: dict) -> list:
         return subcellular_location_df
     
     subcellular_location_df = retrieve_uniprot_subcellular_location()
+    if isinstance(subcellular_location_df, int) and subcellular_location_df == 4:
+        return 4, None  # This is an error related to uniprots's 
     subcellular_location_dict = dict(subcellular_location_df[["location_id_reformatted", "Alias"]].values.tolist())
 
     # Fetches a file from expasy to deal with the 'ec' column

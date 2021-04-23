@@ -11,7 +11,7 @@ try:
     from .download_uniprot_AS import download_AS_file
     from .parse_mascot import compile_data_mascot
     from .parse_MaxQuant import compile_data_maxquant, compile_localization_data_maxquant, get_MQ_PTMs
-    from .parse_generic import compile_data_generic, get_PTMs
+    from .parse_generic import compile_data_generic, compile_localization_data_generic, get_PTMs
     from .sparql import process_sparql_output, sparql_request
     from .proteoSushi_constants import cleave_rules, annotation_type_dict, secondary_annotations
     from .ps_utilities import clean_localization_pep_seq, clean_pep_seq, parse_mascot, load_pepdict, parse_maxquant_summary
@@ -19,7 +19,7 @@ except ImportError:
     from download_uniprot_AS import download_AS_file
     from parse_mascot import compile_data_mascot
     from parse_MaxQuant import compile_data_maxquant, compile_localization_data_maxquant, get_MQ_PTMs
-    from parse_generic import compile_data_generic, get_PTMs
+    from parse_generic import compile_data_generic, compile_localization_data_generic, get_PTMs
     from sparql import process_sparql_output, sparql_request
     from proteoSushi_constants import cleave_rules, annotation_type_dict, secondary_annotations
     from ps_utilities import clean_localization_pep_seq, clean_pep_seq, parse_mascot, load_pepdict, parse_maxquant_summary
@@ -385,6 +385,11 @@ def batch_write(batch_results: list, search_engine: str, user_PTMs: list, use_qu
     writable_rows = list()
     if add_annotation:
         sparql_dict = batch_annotate(sparql_input)
+        if isinstance(sparql_dict, int) and sparql_dict == 502:
+            return 502
+        if isinstance(sparql_dict, int) and sparql_dict == 4:
+            return 4
+        
     # This builds the rollup output file depending on what the user chose
     for i in sorted(batch_results, key=lambda r: r[0]):
         if search_engine == "maxquant":
@@ -444,6 +449,8 @@ def batch_annotate(sparql_input: list) -> dict:
 
         # This processes and combines the annotations to 1 per site
         sparql_output, sparql_dict = process_sparql_output(batch_output, sparql_dict)
+        if isinstance(sparql_output, int) and sparql_output == 4:
+            return 4
         if not sparql_output:
             #print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+batch+1} not annotated!"))
             i += batch
@@ -461,6 +468,8 @@ def batch_annotate(sparql_input: list) -> dict:
         pass
     else:
         sparql_output, sparql_dict = process_sparql_output(batch_output, sparql_dict)
+        if isinstance(sparql_output, int) and sparql_output == 4:
+            return 4
         if not sparql_output:
             #print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+batch+1} not annotated!"))
             pass
@@ -494,8 +503,15 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     """
     print("Preparing data for rollup...\n")
     if search_engine == "generic":
-        sequence_index, modified_sequence_index, mod_dict, intensity_start, data_filename, \
-            var_mod_dict = compile_data_generic(search_engine_filepath, user_PTMs, cleave_rules[protease])
+        if not localization_threshold is None:
+            sequence_index, modified_sequence_index, localization_indices, mod_dict, intensity_start, \
+                data_filename = compile_localization_data_generic(search_engine_filepath, 
+                                                                  user_PTMs, 
+                                                                  cleave_rules[protease],
+                                                                  localization_threshold)
+        else:
+            sequence_index, modified_sequence_index, mod_dict, intensity_start, data_filename, \
+                var_mod_dict = compile_data_generic(search_engine_filepath, user_PTMs, cleave_rules[protease])
         data_file = open(data_filename, 'r')
         tsv_reader = csv.reader(data_file, quotechar='"')
         if intensity_start is None and use_quant:
@@ -586,6 +602,10 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                 writable_rows = batch_write(gene_results, search_engine, user_PTMs, use_quant, 
                                             intensity_method, intensity_dict, add_annotation, 
                                             sparql_input, use_target_list)
+                if isinstance(writable_rows, int) and writable_rows == 502:
+                    return 502
+                if isinstance(writable_rows, int) and writable_rows == 4:
+                    return 4
                 for writable_row in writable_rows:
                     out_writer.writerow(writable_row)
                 gene_results = list()
@@ -662,7 +682,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             if genes_positions and len(genes_positions) == 1:
                 gene, start_pos, unpid, protein_name = list(genes_positions)[0]
                 if not new_pep_mod_seq in mod_dict:
-                    print("\033[91m {}\033[00m".format(f"\n{raw_seq} does not have the PTM(s) selected!"), end='')
+                    #print("\033[91m {}\033[00m".format(f"\n{raw_seq} does not have the PTM(s) selected!"), end='')
                     missing_PTM += 1
                     continue
                 mods = mod_dict[new_pep_mod_seq]
@@ -730,7 +750,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                     if isinstance(match, tuple):  # Checks if this is just a single match.
                         gene = match[0]
                         if not new_pep_mod_seq in mod_dict:
-                            print("\033[91m {}\033[00m".format(f"\n{raw_seq} does not have the PTM(s) selected!"), end='')
+                            #print("\033[91m {}\033[00m".format(f"\n{raw_seq} does not have the PTM(s) selected!"), end='')
                             missing_PTM += 1
                             continue
                         mods = mod_dict[new_pep_mod_seq]
@@ -785,7 +805,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                                         sparql_input.append(tuple((match[2], site, gene)))
                     else:  # There are multiple matches
                         if not new_pep_mod_seq in mod_dict:
-                            print("\033[91m {}\033[00m".format(f"\n{raw_seq} does not have the PTM(s) selected!"), end='')
+                            #print("\033[91m {}\033[00m".format(f"\n{raw_seq} does not have the PTM(s) selected!"), end='')
                             missing_PTM += 1
                             continue
                         mods = mod_dict[new_pep_mod_seq]

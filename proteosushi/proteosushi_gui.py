@@ -5,6 +5,7 @@
 import importlib.resources as pkg_resources
 import os
 import sys
+from time import time
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import (QApplication, QWidget, QMainWindow, QPushButton, 
                              QMessageBox, QLineEdit, QLabel, QGroupBox, 
@@ -214,9 +215,14 @@ class App(QMainWindow):
         if self.generic_RB.isChecked():
             self.generic_filepath.setHidden(False)
             self.generic_button.setHidden(False)
+            self.localization_checkbox.setHidden(False)
+            if self.localization_checkbox.isChecked():
+                self.localization_edit.setHidden(False)
         else:
             self.generic_filepath.setHidden(True)
             self.generic_button.setHidden(True)
+            self.localization_checkbox.setHidden(True)
+            self.localization_edit.setHidden(True)
 
     def checkTargetBox(self, state):
         if state == QtCore.Qt.Checked:
@@ -241,7 +247,7 @@ class App(QMainWindow):
             self.fdr_edit.setHidden(True)
 
     def check_localization_checkbox(self, state):
-        if state == QtCore.Qt.Checked and self.maxquant_RB.isChecked():
+        if state == QtCore.Qt.Checked and (self.maxquant_RB.isChecked() or self.generic_RB.isChecked()):
             self.localization_edit.setHidden(False)
         else:
             self.localization_edit.setHidden(True)
@@ -494,6 +500,7 @@ class App(QMainWindow):
         """Function that runs the backend on a separate thread"""
         # If the maxquant option was chosen, it sends that info to be run
         if self.maxquant_RB.isChecked() and os.path.exists(self.maxquant_filepath.text()):
+            start_time = time()
             self.statusBar().showMessage("Analysis in Progress")
             self.statusBar().setStyleSheet("background-color : white")
             output = rollup("maxquant", 
@@ -519,8 +526,10 @@ class App(QMainWindow):
             self.statusBar().showMessage("Analysis Complete!")
             self.statusBar().setStyleSheet("background-color : green")
             print("\033[92m {}\033[00m".format("\nAnalysis Complete!"))
+            print("\033[96m {}\033[00m".format(f"Rollup took {time() - start_time} seconds"))
             #sys.exit()
         elif self.mascot_RB.isChecked() and os.path.exists(self.mascot_filepath.text()):
+            start_time = time()
             self.statusBar().showMessage("Analysis in Progress")
             self.statusBar().setStyleSheet("background-color : white")
             output = rollup("mascot", 
@@ -551,8 +560,10 @@ class App(QMainWindow):
             self.statusBar().showMessage("Analysis Complete!")
             self.statusBar().setStyleSheet("background-color : green")
             print("\033[92m {}\033[00m".format("\nAnalysis Complete!"))
+            print("\033[96m {}\033[00m".format(f"Rollup took {time() - start_time} seconds"))
             #sys.exit()
         elif self.generic_RB.isChecked() and os.path.exists(self.generic_filepath.text()):
+            start_time = time()
             self.statusBar().showMessage("Analysis in Progress")
             self.statusBar().setStyleSheet("background-color : white")
             output = rollup("generic", 
@@ -571,7 +582,7 @@ class App(QMainWindow):
                             self.output_filepath.text(),
                             None)
             # If there is a 502 proxy error (server side error)
-            if self.uniprot_annot_CB.isChecked() and output == 502:
+            if self.uniprot_annot_CB.isChecked() and (output == 502 or output == 4):
                 self.statusBar().showMessage("ERROR: Uniprot server error! Please try again later.")
                 self.statusBar().setStyleSheet("background-color : red")
                 return
@@ -583,6 +594,7 @@ class App(QMainWindow):
             self.statusBar().showMessage("Analysis Complete!")
             self.statusBar().setStyleSheet("background-color : green")
             print("\033[92m {}\033[00m".format("\nAnalysis Complete!"))
+            print("\033[96m {}\033[00m".format(f"Rollup took {time() - start_time} seconds"))
             #sys.exit()
         else:
             self.statusBar().showMessage("ERROR: Missing Search Engine Output!")

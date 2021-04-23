@@ -43,6 +43,8 @@ While in the command prompt, run ProteoSushi with the command:
 
 `py -m proteosushi`
 
+*Tip: If the py command doesn't work, try replacing py with python*
+
 **In MacOS/Linux:**
 
 Open the terminal in MacOS by either searching for it in spotlight or manually finding it in the application list.
@@ -120,6 +122,8 @@ and the dir command to list the contents of the current folder, as in
 
 to run ProteoSushi.
 
+*Again, if the command isn't working, try replacing py with python*
+
 ## Files Needed
 
 In order to run ProteoSushi, there are some required files in specific formats. Example files are included in the 'examples' folder in the downloaded files:
@@ -172,25 +176,39 @@ First, choose the **search engine** used and select the output to use with the w
 
     - Choose the MaxQuant output folder with the evidence.txt and summary.txt files inside (any extra files will not be used)
 
+    - In the example files from [GitHub](https://github.com/HeldLab/ProteoSushi/tree/master/proteosushi/examples), the maxquant folder is located in `Proteosushi-master/proteosushi/examples` and named "txt".
+
 - Mascot
 
     - Choose the annotated Mascot output file, should be a CSV file
+
+    - The example file from [GitHub](https://github.com/HeldLab/ProteoSushi/tree/master/proteosushi/examples) is located in `Proteosushi-master/proteosushi/examples` and named "MascotEGFR.csv"
 
 - Generic
 
     - Choose the output from any search engine, however, it must have a peptide sequence and peptide modified sequence columns (along with a quantitation column labeled “Intensity” if you choose that option)
 
+    - The example file from [GitHub](https://github.com/HeldLab/ProteoSushi/tree/master/proteosushi/examples) is located in `Proteosushi-master/proteosushi/examples` and named "EGFR_Skyline_data.csv"
+
 ProteoSushi will then parse the file to autofill some information (Species ID, Max missed cleavages, protease) and add the option to choose the PTM(s) to use in the analysis
 
 ![GUI with Search Engine Selected](search_engine_gui.png)
 
-Choose the PTM(s) that will be used in the analysis. The options available are dynamic and will change based on the file provided. (Note: If there are many different PTMs in the file, you may need to move the ProteoSushi window horizontally as they will all be in the same line)
+**Choose the PTM(s)** that will be used in the analysis. The options available are dynamic and will change based on the file provided. (Note: If there are many different PTMs in the file, you may need to move the ProteoSushi window horizontally as they will all be in the same line)
+
+For the example files, the PTMs that appear are different
+- For Maxquant, choose the "Carbamidomethyl (C)" PTM 
+- For Mascot, choose the "carbamidomethyl (c)" PTM
+- For Generic, choose the "C[+57]" PTM
 
 Next, choose the FASTA Uniprot proteome to use in ProteoSushi.
+
+The example files are based on the "Uni-Hum-Ref-20141022.fasta" file located in "Proteosushi-master/proteosushi/examples/fastas", so this is the file that should be used.
 
 If not already filled in, specify the number of **maximum allowed missed cleavages** for a given peptide (usually about 3). 
 A higher number will cause the analysis to take longer, but can allow for more matches (possibly). 
 It is usually best to stay consistent with what was chosen for the search engine originally.
+The Generic search engine option will not fill in the missed cleavages, so for the example, use 3.
 
 If not correctly filled in, specify the **protease** used in the sample digestion step. 
 Possible proteases are specified if you hover the cursor over the text here. 
@@ -220,12 +238,14 @@ These include:
 
     - Cleaves before Lysine (K)
 
-After that, choose the ProteoSushi output file name and location.
+The examples should use trypsin/p
 
-Following this is the **Options** section with some settings that can be added or ignored based on your analysis.
+After that, choose the ProteoSushi output file name and location. Click the "Output name and location" button and a window will pop up to choose the location (folder/directory) and type in the name. The output will be saved as a CSV file that can be easily opened in any spreadsheet program.
+
+Following this is the **Options** section with some settings that can be added or ignored based on your analysis. If 
 
 First, if using MaxQuant, a **localization threshold** can be set as a number between 0 and 1. 
-In the maxquant *evidence.txt* file, the localization probability is in the columns "*PTM* Probabilities". 
+In the maxquant *evidence.txt* file, the localization probab.0..................................2ility is in the columns "*PTM* Probabilities". 
 The localization probability indicates the likelihood that the PTM referenced in the header is at the indicated site. 
 Any PTM sites with a localization probability below the provided threshold will not be rolled up. 
 If this is not provided, ProteoSushi will use the localization determination by MaxQuant.
@@ -247,6 +267,36 @@ More specifically, the PEP column in maxquant means Posterior Error Probability 
 The pep_expect column in Mascot is the [Expectation value of the protein match (PMF only)](https://www.matrixscience.com/help/csv_headers.html).
 
 Once all of the necessary options are included, click on the **Rollup!** button to start the analysis.
+
+### Running Examples
+
+A quick overview to run the examples in ProteoSushi.
+
+Example files must be downloaded from [GitHub](https://github.com/HeldLab/ProteoSushi/tree/master/proteosushi/examples).
+
+Install and run ProteoSushi following the instructions listed in **Installation** and **Using ProteoSushi**. 
+
+Select any of the 3 options for search engine and click on the button that appears on the right.
+
+  - For Maxquant, choose the txt folder listed in the examples folder
+
+  - For Mascot, choose the MascotEGFR.csv file
+
+  - For Generic, choose the EGFR_Skyline_data.csv file
+
+At this point, the "PTMs for Current Analysis" section will pop up and show checkboxes where you can choose any or all of the PTMs as listed. I personally recommend clicking on the carbamidomethyl or c[+57] PTM
+
+Click on the "Uniprot Proteome FASTA" button and choose the "Uni-Hum-Ref-20141022.fasta" file.
+
+The next 3 lines should autofill unless you chose the Generic option earlier. In that case, put 3 in the "Max Missed Cleavages" box.
+
+Choose the output location and filename. Click on the "Output Name and Location" button to pop open the window and type in the filename once it is in the folder you want. Click save.
+
+Anything in the **Options** section can be ignored unless you want to use one of the specific functions. If so, please refer to the appropriate section in **Using ProteoSushi**
+
+Click the "Rollup!" button once you are ready.
+
+Updates as ProteoSushi is running are displayed in the Terminal/Command Prompt.
 
 ## Results
 

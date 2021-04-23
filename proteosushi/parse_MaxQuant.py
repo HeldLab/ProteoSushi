@@ -93,19 +93,17 @@ def parse_evidence_localization(filename: str, user_PTMs: list, cleave_rule: tup
                 j = 0
                 # Go through each of the PTM sites
                 while j < len(loc_probs):
-                    #if row[seq_index] == "KACLNPASPIVK":
-                    #    input("numbers: "+  str(loc_indices[j])+" - "+str(index_correction)+" - 1 - "+str(missed_cleave_fix))
                     # Skips sites below the threshold
                     if float(loc_probs[j][1].replace('(','').replace(')','').replace('[','').replace(']','')) < localization_threshold:
                         index_correction += len(loc_probs[j][1])
                         j += 1
                         continue
                     try:  # The - 1 is a hotfix as I'm not sure why it is just 1 off.
-                        mod_dict[new_mod_seq].append(tuple((PTMs[index], loc_indices[j] - index_correction - 1)))# - missed_cleave_fix)))
+                        mod_dict[new_mod_seq].append(tuple((PTMs[index], loc_indices[j] - index_correction - 1)))
                         index_correction += len(loc_probs[j][1])
                         j += 1
                     except KeyError:
-                        mod_dict[new_mod_seq] = [tuple((PTMs[index], loc_indices[j] - index_correction - 1))]# - missed_cleave_fix))]
+                        mod_dict[new_mod_seq] = [tuple((PTMs[index], loc_indices[j] - index_correction - 1))]
                         index_correction += len(loc_probs[j][1])
                         j += 1
                 index += 1
@@ -134,6 +132,41 @@ def parse_evidence(filename: str, user_PTMs: list, cleave_rule: tuple) -> dict:
         PTMs = header[start_index:end_index]
         for row in tsv_reader:
             pep_mods = dict()
+            modified_sequence = row[modified_index].strip('_')
+            new_mod_seq, new_pep_seq, missed_cleave_fix = clean_pep_seq(cleave_rule, modified_sequence, user_PTMs, row[seq_index])
+            abr_ptms = [PTM[:2].lower() for PTM in user_PTMs]
+
+            mods = findall(r"(\[.+?\])|(\(.+?\))", new_mod_seq)
+            breaks = finditer(r"(\[.+?\])|(\(.+?\))", new_mod_seq)
+            cut_sites = []
+            for breakp in breaks:
+                cut_sites.append(breakp.start())
+            # This fixes the indices of each mod to connect with the unmodified sequence
+            correction = 0
+            fixed_indices = []
+            num_of_mods = 0
+            for site in cut_sites:
+                fixed_indices.append(site - correction - 1)  # TODO: Check this!
+                correction += len(mods[num_of_mods][1])
+                num_of_mods += 1
+
+            #if row[seq_index] == "AASCVLLHTGQK":
+            #    input(str(mods))
+            i = 0
+            while i < len(cut_sites):
+                if not mods[i][1][1:-1] in abr_ptms:
+                    #print(f"{mods[i][1][1:-1]} not in {abr_ptms}")
+                    i += 1
+                    continue
+                try:
+                    mod_dict[new_mod_seq].append(tuple(([ptm for ptm in user_PTMs if mods[i][1][1:-1] == ptm[:2].lower()][0], 
+                                                        fixed_indices[i])))
+                except KeyError:
+                    mod_dict[new_mod_seq] = [tuple(([ptm for ptm in user_PTMs if mods[i][1][1:-1] == ptm[:2].lower()][0], 
+                                                    fixed_indices[i]))]
+                i += 1
+
+            '''
             for PTM in PTMs:
                 modified_sequence = row[modified_index].strip('_')
                 new_mod_seq, new_pep_seq, missed_cleave_fix = clean_pep_seq(cleave_rule, modified_sequence, user_PTMs, row[seq_index])
@@ -160,6 +193,7 @@ def parse_evidence(filename: str, user_PTMs: list, cleave_rule: tuple) -> dict:
                     new_mod_seq = (new_mod_seq[:mod_index]
                                        + new_mod_seq[mod_index + len(abr_ptm):])
                     mods_B4_mod += 1
+            
             for loc in sorted(pep_mods):
                 try:
                     if not tuple((pep_mods[loc], loc - 2)) in mod_dict[new_mod_seq]:
@@ -168,6 +202,7 @@ def parse_evidence(filename: str, user_PTMs: list, cleave_rule: tuple) -> dict:
                 except KeyError:
                     mod_dict[new_mod_seq] = [tuple((pep_mods[loc],
                                              loc - 2 - missed_cleave_fix))]
+            '''
     return mod_dict, PTMs
 
 def compile_localization_data_maxquant(search_engine_filepath: str, user_PTMs: list, 
