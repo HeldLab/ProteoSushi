@@ -1,6 +1,7 @@
 """download_uniprot_AS.py: downloads a file from uniprot with the annotation score for proteins of 
 a species"""
 
+import logging
 import os
 import urllib.parse
 import urllib.request
@@ -27,6 +28,7 @@ def download_AS_file(species: str, attempts_left = 5) -> str:
     }
     '''
     if attempts_left <= 0:
+        logging.warning("Uniprot Annotation Score could not be retrieved")
         print("\033[91m {}\033[00m".format("Unable to retrieve Uniprot Annotation Score! Proceeding regardless..."))
         return ""
     url = "https://www.uniprot.org/uniprot/?query=organism:" + species + "&columns=id,genes,annotation_score&format=tab"
@@ -46,7 +48,7 @@ def download_AS_file(species: str, attempts_left = 5) -> str:
                 else:
                     return "ERROR: Invalid identifier"
             #print(response.decode('utf-8'))
-    except urllib.error.URLError:
+    except (urllib.error.URLError, ConnectionResetError):
         return download_AS_file(species, attempts_left-1)
     return os.path.join(os.getcwd(), annot_score_filename)
 

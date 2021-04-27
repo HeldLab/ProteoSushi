@@ -4,10 +4,12 @@
 
 from collections import defaultdict
 import csv
+import logging
 import os.path
 from re import findall, finditer, match
 import sys
 from time import sleep
+
 try:
     from .ps_utilities import clean_pep_seq
     from .proteoSushi_constants import cleave_rules
@@ -108,6 +110,7 @@ def create_loc_mod_dict(sky_filename: str, user_PTMs: list, cleave_rule: tuple,
                 try:
                     mod_index = header_lower.index("modified peptide")
                 except ValueError:
+                    logging.error("no generic peptide modified sequence")
                     print("\033[91m {}\033[00m".format("No peptide modified sequence column detected in the generic output file."))
                     print("\033[91m {}\033[00m".format("Please add or modify header with the name \"Peptide Modified Sequence\"\n"))
                     return -4
@@ -207,6 +210,7 @@ def create_mod_dict(sky_filename: str, user_PTMs: list, cleave_rule: tuple) -> d
                 try:
                     mod_index = header_lower.index("modified peptide")
                 except ValueError:
+                    logging.error("generic file had no peptide modified sequence column")
                     print("\033[91m {}\033[00m".format("No peptide modified sequence column detected in the generic output file."))
                     print("\033[91m {}\033[00m".format("Please add or modify header with the name \"Peptide Modified Sequence\"\n"))
                     return -4
@@ -292,6 +296,7 @@ def compile_localization_data_generic(search_engine_filepath: str, user_PTMs: li
             try:
                 pms = header_lower.index("modified peptide")
             except ValueError:
+                logging.error("generic file had no peptide modified sequence")
                 print("\033[91m {}\033[00m".format("No peptide modified sequence column detected in the generic output file."))
                 print("\033[91m {}\033[00m".format("Please add or modify header with the name \"Peptide Modified Sequence\"\n"))
                 return -4
@@ -340,6 +345,7 @@ def compile_data_generic(search_engine_filepath: str, user_PTMs: list, cleave_ru
             try:
                 pms = header_lower.index("modified peptide")
             except ValueError:
+                logging.error("generic file had no peptide modified sequence")
                 print("\033[91m {}\033[00m".format("No peptide modified sequence column detected in the generic output file."))
                 print("\033[91m {}\033[00m".format("Please add or modify header with the name \"Peptide Modified Sequence\"\n"))
                 return -4

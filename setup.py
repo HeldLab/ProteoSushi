@@ -7,7 +7,7 @@ with codecs.open("README.md", mode='r', encoding="utf-8") as fh:
 
 setuptools.setup(
     name="proteosushi",
-    version="1.3.5",
+    version="1.4.0",
     author="Rob Seymour",
     author_email="rseymour@wustl.edu",
     description="",

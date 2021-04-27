@@ -580,7 +580,7 @@ class App(QMainWindow):
                             self.uniprot_annot_CB.isChecked(),
                             species_id,
                             self.output_filepath.text(),
-                            None)
+                            localization)
             # If there is a 502 proxy error (server side error)
             if self.uniprot_annot_CB.isChecked() and (output == 502 or output == 4):
                 self.statusBar().showMessage("ERROR: Uniprot server error! Please try again later.")

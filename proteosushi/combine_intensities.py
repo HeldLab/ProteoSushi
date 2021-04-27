@@ -3,10 +3,12 @@
 """combine_intensities.py: takes data from the parser and combines the mods and intensities"""
 
 import csv
+import logging
 import os
 import pandas as pd
 from re import finditer, match, findall
 from time import sleep
+
 try:
     from .download_uniprot_AS import download_AS_file
     from .parse_mascot import compile_data_mascot
@@ -435,6 +437,8 @@ def batch_annotate(sparql_input: list) -> dict:
     # Separates the input into batches then sends those batches
     while i + batch <= len(sparql_input):
         # Makes the request and sends it to uniprot
+        #print(f"\nInput range: {i}-{i+batch},\nInput list = {sparql_input[i:i+batch]}")
+        logging.debug(f"Input range: {i}-{i+batch},\nInput list = {sparql_input[i:i+batch]}")
         batch_output = sparql_request(sparql_input[i:i+batch])
 
         #If there is a 502 error, send that to the GUI to display
@@ -446,9 +450,13 @@ def batch_annotate(sparql_input: list) -> dict:
             #print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+batch+1} not annotated!"))
             i += batch
             continue
-
+        #print(f"\nannotations are:\n{batch_output}")
+        logging.debug(f"Annotations are:\n{batch_output}")
         # This processes and combines the annotations to 1 per site
+        #print(f"\nIn batch_annotate uniprot annotation is {type(batch_output)}")
+        logging.debug(f"In batch_annotate uniprot annotation is {type(batch_output)}")
         sparql_output, sparql_dict = process_sparql_output(batch_output, sparql_dict)
+        #print(sparql_output)
         if isinstance(sparql_output, int) and sparql_output == 4:
             return 4
         if not sparql_output:
@@ -457,6 +465,8 @@ def batch_annotate(sparql_input: list) -> dict:
             continue
         i += batch
         results_annotated += batch
+        #print("\nBatch processed successfully!")
+        logging.debug("Batch processed successfully!")
     batch_output = sparql_request(sparql_input[i:])
 
     #If there is a 502 error, send that to the GUI to display
@@ -623,6 +633,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
             pep_mod_seq = row[modified_sequence_index]
             pep_seq = row[sequence_index].replace("L","I")
             if pep_seq is None:
+                logging.error(f"{search_engine} file is missing pep_seq")
                 print("HALT!")  # A handled exception would be preferable here
                 break
             genes_positions = pep_dict.get(pep_seq)

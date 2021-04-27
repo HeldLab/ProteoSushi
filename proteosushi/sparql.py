@@ -5,6 +5,7 @@ __email__ = "rseymour@wustl.edu"
 
 from io import StringIO
 import json
+import logging
 
 import csv
 import pandas as pd
@@ -49,7 +50,7 @@ def sparql_request(unpid_site_list: list):
     """
     unpid_site_list_str = ""
     if not unpid_site_list:
-        return ""
+        return None
     for tup in unpid_site_list:
         if len(tup) >= 2 and tup[1] == '0':
             tup[1] = '1'
@@ -224,13 +225,16 @@ WHERE {
         full_annot = full_annot.merge(comment_annot, how="outer", on=["entry", " position"])
         del(comment_annot)
     except KeyError:  # The proper columns are missing in one of the query results; usually means uniprot isn't working correctly
-        print(full_annot)
+        #print(full_annot)
         if isinstance(full_annot, pd.DataFrame) and "502 Proxy Error" in full_annot.iloc[1][0]:
+            logging.exception("502 Error")
             print("502 ERROR: try Uniprot annotations later")
             return 502
+        logging.exception("Uniprot data formatting error: See sparql_request function in sparql.py")
         print("Uniprot data formatting error: please notify ProteoSushi administrator")
         print(list(full_annot.columns))
         sys.exit()
+    #print(full_annot.columns)
     return full_annot
 
 def request_annot(query: str, attempts_left=10):
@@ -275,6 +279,8 @@ def process_sparql_output(output_df, sparql_dict: dict) -> list:
     Returns:
         list -- a list of annotations with the data properly separated
     """
+    #print(f"\nIn process_sparql_output beginning uniprot annotation is {type(output_df)}")
+    logging.debug(f"\nIn process_sparql_output beginning uniprot annotation is {type(output_df)}")
 
     def __parse_sparql_line(line: str) -> str:
         """changes the complicated uniprot annotation output into a cleaner line
@@ -309,15 +315,17 @@ def process_sparql_output(output_df, sparql_dict: dict) -> list:
     output_list = list()
     comments_dict = dict()
     #sparql_dict = dict()  # This gets used by the main program to connect these annotations to the rest of the data.
-    output_lines = output_df
-    if len(output_lines) == 1 or (not isinstance(output_lines, str) and output_lines.empty):
+    if len(output_df) == 1 or (not isinstance(output_df, str) and output_df.empty):
         print("\nUniprot Error: Failed to get annotations", end='')
         return output_list, sparql_dict
     
     try:
-        position_index = output_lines.columns.get_loc(" position")
+        position_index = output_df.columns.get_loc(" position")
     except (AttributeError, KeyError):
+        logging.exception("Uniprot annotations missing position column or wrong format")
         print("\nUniprot Error: Missing the Position column", end='')
+        logging.debug(f"In process_sparql_output error uniprot annotation is {type(output_df)}")
+        #print(f"\nIn process_sparql_output error uniprot annotation is {type(output_df)}")
         return output_list, sparql_dict
 
     # get the subcellular location from UniProt
@@ -327,7 +335,7 @@ def process_sparql_output(output_df, sparql_dict: dict) -> list:
             return 4
         try:
             r = requests.get('https://www.uniprot.org/locations/?format=tab')
-        except ConnectionError:
+        except requests.exceptions.ConnectionError:
             return retrieve_uniprot_subcellular_location(attempts_left-1)
         subcellular_location_df = pd.read_csv(StringIO(r.text), sep = '\t')  # TODO: potential ParserError
         try:
@@ -368,7 +376,7 @@ def process_sparql_output(output_df, sparql_dict: dict) -> list:
     #i = 1
     repeat_index = 3
     #while i < len(output_lines):
-    for output_line in output_lines.iterrows():  # TODO: optimize by vectorizing
+    for output_line in output_df.iterrows():  # TODO: optimize by vectorizing
         output_line = __parse_sparql_line(output_line)
         # This should only have 1 iteration and is used to properly split the tsv type line
         for output_split in csv.reader([output_line], delimiter='\t', quotechar='"'):
