@@ -512,6 +512,8 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         int -- possible error flag
     """
     print("Preparing data for rollup...\n")
+    logging.info(f"Search Engine is {search_engine}")
+    logging.info(f"Localization threshold is {str(localization_threshold)}")
     if search_engine == "generic":
         if not localization_threshold is None:
             sequence_index, modified_sequence_index, localization_indices, mod_dict, intensity_start, \
