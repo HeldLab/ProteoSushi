@@ -248,9 +248,7 @@ proteosushi/output/maxquant_output_loc.csv
 proteosushi/output/maxquant_output_quant_loc_annotated.csv
 proteosushi/examples/.~lock.EGFR_Skyline_data_loc.csv#
 proteosushi/output/mascot_output_annotated.csv
-proteosushi/output/mascot_output.csv
 proteosushi/output/maxquant_testslow.csv
-proteosushi/output/skyline_output.csv
 proteosushi/output/skyline_output_loc_annotated.csv
 proteosushi/output/skyline_output_annotated.csv
 proteosushi/output/.~lock.skyline_output_loc_0.csv#
@@ -258,5 +256,4 @@ proteosushi/output/skyline_output_loc_0.csv
 proteosushi/output/skyline_output_loc.csv
 proteosushi/parse_MaxQuant.py
 proteosushi/output/mascot_output_loc_0.csv
-proteosushi/output/maxquant_output.csv
 dist/proteosushi-1.4.0.tar.gz
