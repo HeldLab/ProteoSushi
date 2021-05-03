@@ -268,13 +268,15 @@ The pep_expect column in Mascot is the [Expectation value of the protein match (
 
 Once all of the necessary options are included, click on the **Rollup!** button to start the analysis.
 
+After the analysis finishes, you can compare your results to the example files provided in the **[output folder](https://github.com/HeldLab/ProteoSushi/tree/master/proteosushi/output)**.
+
 ### Running Examples
 
 A quick overview to run the examples in ProteoSushi.
 
 Example files must be downloaded from [GitHub](https://github.com/HeldLab/ProteoSushi/tree/master/proteosushi/examples).
 
-Install and run ProteoSushi following the instructions listed in **Installation** and **Using ProteoSushi**. 
+Install and run ProteoSushi following the instructions listed in **[Installation](https://github.com/HeldLab/ProteoSushi#installation)** and **[Using ProteoSushi](https://github.com/HeldLab/ProteoSushi#using-proteosushi)**. 
 
 Select any of the 3 options for search engine and click on the button that appears on the right.
 
@@ -297,6 +299,8 @@ Anything in the **Options** section can be ignored unless you want to use one of
 Click the "Rollup!" button once you are ready.
 
 Updates as ProteoSushi is running are displayed in the Terminal/Command Prompt.
+
+Once you have the results, you can compare to the example files in the [output folder](https://github.com/HeldLab/ProteoSushi/tree/master/proteosushi/output)
 
 ## Results
 

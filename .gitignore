@@ -257,3 +257,6 @@ proteosushi/output/skyline_output_loc.csv
 proteosushi/parse_MaxQuant.py
 proteosushi/output/mascot_output_loc_0.csv
 dist/proteosushi-1.4.0.tar.gz
+README.md
+.gitignore
+dist/proteosushi-1.4.1.tar.gz
