@@ -608,6 +608,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                         "NP_Binding_Annotation", "Other", "Region_Annotation", "Repeat_Annotation", 
                         "Topological_Domain_Annotation", "Zinc_Finger_Annotation"]
         out_writer.writerow(header2)
+        logging.debug("Header written to output file")
 
         for row in tsv_reader:
             if len(gene_results) >= batch_size:

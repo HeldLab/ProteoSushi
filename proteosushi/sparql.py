@@ -54,15 +54,9 @@ def sparql_request(unpid_site_list: list):
     for tup in unpid_site_list:
         if len(tup) >= 2 and tup[1] == '0':
             tup[1] = '1'
-        #if tup[0] == "P60709" or tup[0] == "P63261":
-        #    print("Multiple")
         if len(tup[0]) >= 5:
             unpid_site_list_str += f"(uniprotkb:{tup[0]} {tup[1]})\n"
-    # TODO: Delete this later
-    #with open("sparqllist.tsv", 'w') as sparqllist:
-    #    sparqllist.write(unpid_site_list_str)
-    #print(unpid_site_list_str)
-
+    logging.debug(f"Formatted Input String: {unpid_site_list_str}")
 
 
     prefix="""PREFIX uniprotkb: <http://purl.uniprot.org/uniprot/>
@@ -197,19 +191,25 @@ WHERE {
     comment_annot = request_annot(query_comment)
     # Creates blank dataframes if uniprot did not return that info
     if region_annot is None or list(region_annot.columns) != ["entry", " position", " lengthOfSequence", " begin", " end", " regionOfInterest"]:
+        logging.debug(f"If the header is similar to expected, Uniprot may have changed their database.\n{str(list(region_annot.columns))}")
         region_annot = pd.DataFrame(columns=["entry", " position", " lengthOfSequence", " begin", " end", " regionOfInterest"])
     else:
         region_annot.dropna(how="all", inplace=True)
+
     if subcell_annot is None or list(subcell_annot.columns) != ["entry", " location"]:
+        logging.debug(f"If the header is similar to expected, Uniprot may have changed their database.\n{str(list(subcell_annot.columns))}")
         subcell_annot = pd.DataFrame(columns=["entry", " location"])
     else:
         subcell_annot.dropna(how="any", inplace=True)
+
     if extras_annot is None or list(extras_annot.columns) != ["entry", " position", " ec", " rhea"]:
-       extras_annot = pd.DataFrame(columns=["entry", " position", " ec", " rhea"])
+        logging.debug(f"If the header is similar to expected, Uniprot may have changed their database.\n{str(list(extras_annot.columns))}")
+        extras_annot = pd.DataFrame(columns=["entry", " position", " ec", " rhea"])
     else:
         extras_annot.dropna(how="all", inplace=True)  # TODO: I will likely need to change this back to all later
     
     if comment_annot is None or list(comment_annot.columns) != ["entry", " position", " type", " comment"]:
+        logging.debug(f"If the header is similar to expected, Uniprot may have changed their database.\n{str(list(comment_annot.columns))}")
         comment_annot = pd.DataFrame(columns=["entry", " position", " type", " comment"])
     else:
         comment_annot.dropna(how="all", inplace=True)
@@ -234,7 +234,6 @@ WHERE {
         print("Uniprot data formatting error: please notify ProteoSushi administrator")
         print(list(full_annot.columns))
         sys.exit()
-    #print(full_annot.columns)
     return full_annot
 
 def request_annot(query: str, attempts_left=10):
@@ -249,8 +248,10 @@ def request_annot(query: str, attempts_left=10):
     headers = {"user-agent": "rseymour@wustl.edu"}
     time_to_sleep = 5
     try:
+        logging.debug("Attempting post to sparql.uniprot.org")
         r = requests.post(ENDPOINT, data = {"format": "csv", "query": query}, headers = headers)
         if "<!DOCTYPE html SYSTEM \"about:legacy-compat\">" in r.text:  # This just means it returned a 500 error
+            logging.warning("Query had a 500 error")
             if attempts_left > 0:
                 sleep(time_to_sleep)
                 print("\033[93m {}\033[00m".format(f"\nAttempts used: {11 - attempts_left}"), end='')
@@ -261,6 +262,7 @@ def request_annot(query: str, attempts_left=10):
         csv_file = StringIO(r.text)
         sparql_from_csv_df = pd.read_csv(csv_file)
     except (pd.errors.ParserError, requests.exceptions.ConnectionError):
+        logging.warning("Query had a connection/parser error")
         if attempts_left > 0:
             sleep(time_to_sleep)
             print("\033[93m {}\033[00m".format(f"\nAttempts used: {11 - attempts_left}"), end='')
@@ -325,7 +327,6 @@ def process_sparql_output(output_df, sparql_dict: dict) -> list:
         logging.exception("Uniprot annotations missing position column or wrong format")
         print("\nUniprot Error: Missing the Position column", end='')
         logging.debug(f"In process_sparql_output error uniprot annotation is {type(output_df)}")
-        #print(f"\nIn process_sparql_output error uniprot annotation is {type(output_df)}")
         return output_list, sparql_dict
 
     # get the subcellular location from UniProt

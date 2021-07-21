@@ -11,7 +11,7 @@ except ImportError:  # Allows the program to be run not as a module
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.WARNING, filename=os.path.join("logs","ps.log"), filemode='w')
+    logging.basicConfig(level=logging.DEBUG, filename=os.path.join("logs","ps.log"), filemode='w')
     run_gui()
     '''
     rollup(

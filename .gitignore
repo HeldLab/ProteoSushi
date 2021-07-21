@@ -260,3 +260,8 @@ dist/proteosushi-1.4.0.tar.gz
 README.md
 .gitignore
 dist/proteosushi-1.4.1.tar.gz
+proteosushi/logs/ps.log
+proteosushi/output/ps_test_150721.csv
+proteosushi/output/ps_test_190721.csv
+proteosushi/9606_annot_score.tsv
+proteosushi/logs/ps.log

@@ -1,0 +1,61 @@
+INFO:root:Search Engine is generic
+INFO:root:Localization threshold is None
+DEBUG:root:Header written to output file
+DEBUG:root:Input range: 0-50,
+Input list = [('P01023', 1243, 'A2M'), ('Q7Z7G0', 892, 'ABI3BP'), ('Q7Z7G0', 904, 'ABI3BP'), ('Q7Z7G0', 900, 'ABI3BP'), ('P12821', 695, 'ACE'), ('P12821', 690, 'ACE'), ('Q8IZF2', 256, 'ADGRF5'), ('Q8IZF2', 625, 'ADGRF5'), ('Q8IZF2', 248, 'ADGRF5'), ('Q8IZF2', 627, 'ADGRF5'), ('Q8NI99', 145, 'ANGPTL6'), ('Q13790', 139, 'APOF'), ('O75882', 416, 'ATRN'), ('O75882', 419, 'ATRN'), ('P25311', 127, 'AZGP1'), ('P25311', 128, 'AZGP1'), ('P06276', 45, 'BCHE'), ('P06681', 112, 'C2'), ('P0C0L4', 1337, 'C4A'), ('P0C0L4', 1347, 'C4A'), ('P0C0L4', 1348, 'C4A'), ('P0C0L5', 1348, 'C4B'), ('P0C0L5', 1347, 'C4B'), ('P0C0L5', 1337, 'C4B'), ('P04003', 221, 'C4BPA'), ('P02748', 420, 'C9'), ('P02748', 415, 'C9'), ('P54289', 608, 'CACNA2D1'), ('P28906', 194, 'CD34'), ('P08603', 1095, 'CFH'), ('P08603', 434, 'CFH'), ('P08603', 1093, 'CFH'), ('Q03591', 1093, 'CFHR1'), ('Q03591', 1095, 'CFHR1'), ('P27918', 428, 'CFP'), ('O00533', 767, 'CHL1'), ('Q12860', 457, 'CNTN1'), ('Q8IWV2', 191, 'CNTN4'), ('Q8IWV2', 198, 'CNTN4'), ('Q8IWV2', 202, 'CNTN4'), ('Q01459', 299, 'CTBS'), ('Q01459', 305, 'CTBS'), ('Q9H4A9', 111, 'DPEP2'), ('Q9H4A9', 176, 'DPEP2'), ('Q9H4A9', 108, 'DPEP2'), ('P27487', 685, 'DPP4'), ('P27487', 679, 'DPP4'), ('Q13822', 411, 'ENPP2'), ('P11362', 317, 'FGFR1'), ('P11362', 264, 'FGFR1')]
+DEBUG:root:Formatted Input String: (uniprotkb:P01023 1243)
+(uniprotkb:Q7Z7G0 892)
+(uniprotkb:Q7Z7G0 904)
+(uniprotkb:Q7Z7G0 900)
+(uniprotkb:P12821 695)
+(uniprotkb:P12821 690)
+(uniprotkb:Q8IZF2 256)
+(uniprotkb:Q8IZF2 625)
+(uniprotkb:Q8IZF2 248)
+(uniprotkb:Q8IZF2 627)
+(uniprotkb:Q8NI99 145)
+(uniprotkb:Q13790 139)
+(uniprotkb:O75882 416)
+(uniprotkb:O75882 419)
+(uniprotkb:P25311 127)
+(uniprotkb:P25311 128)
+(uniprotkb:P06276 45)
+(uniprotkb:P06681 112)
+(uniprotkb:P0C0L4 1337)
+(uniprotkb:P0C0L4 1347)
+(uniprotkb:P0C0L4 1348)
+(uniprotkb:P0C0L5 1348)
+(uniprotkb:P0C0L5 1347)
+(uniprotkb:P0C0L5 1337)
+(uniprotkb:P04003 221)
+(uniprotkb:P02748 420)
+(uniprotkb:P02748 415)
+(uniprotkb:P54289 608)
+(uniprotkb:P28906 194)
+(uniprotkb:P08603 1095)
+(uniprotkb:P08603 434)
+(uniprotkb:P08603 1093)
+(uniprotkb:Q03591 1093)
+(uniprotkb:Q03591 1095)
+(uniprotkb:P27918 428)
+(uniprotkb:O00533 767)
+(uniprotkb:Q12860 457)
+(uniprotkb:Q8IWV2 191)
+(uniprotkb:Q8IWV2 198)
+(uniprotkb:Q8IWV2 202)
+(uniprotkb:Q01459 299)
+(uniprotkb:Q01459 305)
+(uniprotkb:Q9H4A9 111)
+(uniprotkb:Q9H4A9 176)
+(uniprotkb:Q9H4A9 108)
+(uniprotkb:P27487 685)
+(uniprotkb:P27487 679)
+(uniprotkb:Q13822 411)
+(uniprotkb:P11362 317)
+(uniprotkb:P11362 264)
+
+DEBUG:root:Attempting post to sparql.uniprot.org
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): sparql.uniprot.org:443
+DEBUG:urllib3.connectionpool:https://sparql.uniprot.org:443 "POST / HTTP/1.1" 502 380
+DEBUG:root:Attempting post to sparql.uniprot.org
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): sparql.uniprot.org:443
