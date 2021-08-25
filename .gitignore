@@ -265,3 +265,5 @@ proteosushi/output/ps_test_150721.csv
 proteosushi/output/ps_test_190721.csv
 proteosushi/9606_annot_score.tsv
 proteosushi/logs/ps.log
+proteosushi/output/.~lock.ps_test_190721.csv#
+proteosushi/output/ps_test_210825.csv

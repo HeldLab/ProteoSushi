@@ -5,9 +5,7 @@
 import csv
 import logging
 import os
-import pandas as pd
-from re import finditer, match, findall
-from time import sleep
+from re import findall
 
 try:
     from .download_uniprot_AS import download_AS_file
@@ -16,7 +14,7 @@ try:
     from .parse_generic import compile_data_generic, compile_localization_data_generic, get_PTMs
     from .sparql import process_sparql_output, sparql_request
     from .proteoSushi_constants import cleave_rules, annotation_type_dict, secondary_annotations
-    from .ps_utilities import clean_localization_pep_seq, clean_pep_seq, parse_mascot, load_pepdict, parse_maxquant_summary
+    from .ps_utilities import clean_pep_seq, parse_mascot, load_pepdict, parse_maxquant_summary
 except ImportError:
     from download_uniprot_AS import download_AS_file
     from parse_mascot import compile_data_mascot
@@ -24,7 +22,7 @@ except ImportError:
     from parse_generic import compile_data_generic, compile_localization_data_generic, get_PTMs
     from sparql import process_sparql_output, sparql_request
     from proteoSushi_constants import cleave_rules, annotation_type_dict, secondary_annotations
-    from ps_utilities import clean_localization_pep_seq, clean_pep_seq, parse_mascot, load_pepdict, parse_maxquant_summary
+    from ps_utilities import clean_pep_seq, parse_mascot, load_pepdict, parse_maxquant_summary
 
 
 def __chooseHit(genes_positions: list, target_genes: list, annot_dict: dict, use_target: bool) -> list:
@@ -47,7 +45,6 @@ def __chooseHit(genes_positions: list, target_genes: list, annot_dict: dict, use
     nontarget_tups = list()
     for tup in genes_positions:
         if use_target and tup[0].upper() + '\n' in target_genes:
-            #print("Mito gene prioritized!")
             target_tups.append(tup)
         else:
             nontarget_tups.append(tup)
@@ -60,7 +57,6 @@ def __chooseHit(genes_positions: list, target_genes: list, annot_dict: dict, use
     elif len(nontarget_tups) > 1:  # Only non-target proteins (and more than 1)
         return False, __chooseTup(nontarget_tups, annot_dict)
     assert False, "ERROR: chooseHit had 0 tuples sent in!"
-    #return False, None, None
 
 def __chooseTup(tuples: list, annot_dict: dict) -> list:
     """chooses which tuple to return from a list
@@ -74,7 +70,6 @@ def __chooseTup(tuples: list, annot_dict: dict) -> list:
     highestScore = 0
     high2Score = 0
     highest = None
-    #print(f"third {annotDict["MUG2"]}")
     for tup in tuples:
         if not tup[2] in annot_dict:
             continue

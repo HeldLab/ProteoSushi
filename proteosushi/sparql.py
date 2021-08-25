@@ -8,6 +8,7 @@ import json
 import logging
 
 import csv
+from datetime import datetime
 import pandas as pd
 from re import findall
 import requests
@@ -88,7 +89,7 @@ WHERE {
     # get the IUPAC AAs associated with the identifier
     ?sequence rdf:value ?iupac .
     # get the AA subsequence of the annotation as a new variable
-} ORDER BY DESC(?entry) ASC(?position)"""
+}"""
 
     query_stripped_entry_pos = prefix + """
 SELECT
@@ -111,22 +112,55 @@ WHERE {
      FILTER (?begin <= ?position && ?position <= ?end)
      # get the IUPAC AAs associated with the identifier
      ?sequence rdf:value ?iupac .
-} ORDER BY DESC(?entry) ASC(?position)"""
+}"""
 
+    alt_query_entry_len_pos = prefix + """
+SELECT
+    ?entry
+    ?position
+    ?begin
+    ?end
+    (STRLEN(?iupac) AS ?lengthOfSequence)
+    (SUBSTR(?iupac, ?begin, ?end - ?begin + 1) AS ?regionOfInterest)
+WHERE {
+    {
+        SELECT ?entry ?position ?sequence ?begin ?end
+        WHERE {
+            VALUES (?entry ?position) {""" + unpid_site_list_str + """}
+            GRAPH <http://sparql.uniprot.org/uniprot> {
+                ?entry up:sequence ?sequence .
+                ?range1 faldo:begin  ?bp .
+                ?bp faldo:position ?begin ;
+                    faldo:reference ?sequence .
+                    FILTER (?begin <= ?position) .
+                ?range1 faldo:end ?ep .
+                ?ep  faldo:position ?end ; faldo:reference ?sequence .
+                    FILTER (?position <= ?end) .
+            }
+        }
+    }
+    GRAPH <http://sparql.uniprot.org/uniprot> {
+        ?sequence rdf:value ?iupac .
+        # ?annotation up:range ?range1;
+        # a ?type .
+        # ?annotation value does not seem to be used at all,
+        # is this now retrieved in a different query?
+    }
+}"""
 
 
     query_entry_subcellular = prefix + """
 SELECT
-    ?entry 
+    ?entry
     ?location
-FROM <http://sparql.uniprot.org/uniprot>
 WHERE {
-    VALUES (?entry ?position) {""" + unpid_site_list_str + """
+    GRAPH <http://sparql.uniprot.org/uniprot> {
+        VALUES (?entry ?position) {""" + unpid_site_list_str + """}
+        ?entry up:annotation ?subAnnotation .
+        ?subAnnotation a up:Subcellular_Location_Annotation .
+        ?subAnnotation up:locatedIn/up:cellularComponent ?location .
     }
-    ?entry up:annotation ?subAnnotation .
-    ?subAnnotation a up:Subcellular_Location_Annotation .
-    ?subAnnotation up:locatedIn/up:cellularComponent ?location .
-} ORDER BY DESC(?entry)"""
+}"""
 
 
 
@@ -139,8 +173,7 @@ SELECT
     ?rhea
 FROM <http://sparql.uniprot.org/uniprot>
 WHERE {
-    VALUES (?entry ?position) {""" + unpid_site_list_str + """
-    }
+    VALUES (?entry ?position) {""" + unpid_site_list_str + """}
     ?entry up:sequence ?sequence .
     ?entry up:annotation ?caAnnotation .
     ?caAnnotation up:catalyticActivity ?ca .
@@ -154,7 +187,7 @@ WHERE {
     }
 
 #Order desc by entry and ascending by position afterwards
-} ORDER BY DESC(?entry) ASC(?position)"""  # NOTE: remove the ordering to help reduce time for query
+}"""  # NOTE: remove the ordering to help reduce time for query
 
     query_comment = prefix + """
 SELECT
@@ -178,40 +211,62 @@ WHERE {
         ?annotation rdfs:comment ?comment .
     }
 #Order desc by entry and ascending by position afterwards
-} ORDER BY DESC(?entry) ASC(?position)"""
+}"""
 
     # Grabs the annotation by parts to maximize the amount we receive from the uniprot server
-    region_annot = request_annot(new_entry_length_pos_query)
-    region_annot_stripped = request_annot(query_stripped_entry_pos)
-    if len(region_annot.index) < len(region_annot_stripped.index):  # This should check to see if there are rows missing in the full query
-        region_annot = region_annot.append(region_annot_stripped)
-        region_annot.drop_duplicates(subset=["entry", " position", " begin", " end"], keep="first", inplace=True)
+    #region_annot = request_annot(new_entry_length_pos_query)
+    logging.debug("Starting entry_len_pos query")
+    region_annot = request_annot(alt_query_entry_len_pos)
+    #region_annot_stripped = request_annot(query_stripped_entry_pos)
+    #if len(region_annot.index) < len(region_annot_stripped.index):  # This should check to see if there are rows missing in the full query
+    #    region_annot = region_annot.append(region_annot_stripped)
+    #    region_annot.drop_duplicates(subset=["entry", " position", " begin", " end"], keep="first", inplace=True)
+    logging.debug("Starting subcellular query")
     subcell_annot = request_annot(query_entry_subcellular)
+    logging.debug("Starting ec_rhea_type query")
     extras_annot = request_annot(query_ec_rhea_type)
+    logging.debug("Starting comment query")
     comment_annot = request_annot(query_comment)
     # Creates blank dataframes if uniprot did not return that info
     if region_annot is None or list(region_annot.columns) != ["entry", " position", " lengthOfSequence", " begin", " end", " regionOfInterest"]:
-        logging.debug(f"If the header is similar to expected, Uniprot may have changed their database.\n{str(list(region_annot.columns))}")
-        region_annot = pd.DataFrame(columns=["entry", " position", " lengthOfSequence", " begin", " end", " regionOfInterest"])
+        logging.debug(f"If the region header is similar to expected, Uniprot may have changed their database.\n{str(list(region_annot.columns))}")
+        #columns=["entry", " position", " lengthOfSequence", " begin", " end", " regionOfInterest"]
+        region_annot = pd.DataFrame(data = {"entry": pd.Series([], dtype="object"),
+                                            " position": pd.Series([], dtype="object"),
+                                            " lengthOfSequence": pd.Series([], dtype="object"),
+                                            " begin": pd.Series([], dtype="object"),
+                                            " end": pd.Series([], dtype="object"),
+                                            " regionOfInterest": pd.Series([], dtype="object")})
     else:
+        logging.debug(f"region data types are {region_annot.dtypes}")
         region_annot.dropna(how="all", inplace=True)
 
     if subcell_annot is None or list(subcell_annot.columns) != ["entry", " location"]:
-        logging.debug(f"If the header is similar to expected, Uniprot may have changed their database.\n{str(list(subcell_annot.columns))}")
-        subcell_annot = pd.DataFrame(columns=["entry", " location"])
+        logging.debug(f"If the subcell header is similar to expected, Uniprot may have changed their database.\n{str(list(subcell_annot.columns))}")
+        subcell_annot = pd.DataFrame(data = {"entry": pd.Series([], dtype="object"), 
+                                             " location": pd.Series([], dtype="object")})
     else:
+        logging.debug(f"subcell data types are {subcell_annot.dtypes}")
         subcell_annot.dropna(how="any", inplace=True)
 
     if extras_annot is None or list(extras_annot.columns) != ["entry", " position", " ec", " rhea"]:
-        logging.debug(f"If the header is similar to expected, Uniprot may have changed their database.\n{str(list(extras_annot.columns))}")
-        extras_annot = pd.DataFrame(columns=["entry", " position", " ec", " rhea"])
+        logging.debug(f"If the extras header is similar to expected, Uniprot may have changed their database.\n{str(list(extras_annot.columns))}")
+        extras_annot = pd.DataFrame(data = {"entry": pd.Series([], dtype="object"), 
+                                            " position": pd.Series([], dtype="object"), 
+                                            " ec": pd.Series([], dtype="object"), 
+                                            " rhea": pd.Series([], dtype="object")})
     else:
+        logging.debug(f"extras data types are {extras_annot.dtypes}")
         extras_annot.dropna(how="all", inplace=True)  # TODO: I will likely need to change this back to all later
     
     if comment_annot is None or list(comment_annot.columns) != ["entry", " position", " type", " comment"]:
-        logging.debug(f"If the header is similar to expected, Uniprot may have changed their database.\n{str(list(comment_annot.columns))}")
-        comment_annot = pd.DataFrame(columns=["entry", " position", " type", " comment"])
+        logging.debug(f"If the comment header is similar to expected, Uniprot may have changed their database.\n{str(list(comment_annot.columns))}")
+        comment_annot = pd.DataFrame(data={"entry": pd.Series([], dtype="object"), 
+                                           " position": pd.Series([], dtype="object"), 
+                                           " type": pd.Series([], dtype="object"), 
+                                           " comment": pd.Series([], dtype="object")})
     else:
+        logging.debug(f"comment data types are {comment_annot.dtypes}")
         comment_annot.dropna(how="all", inplace=True)
 
     # Full outer joins the annotations to preserve all info possible
@@ -248,19 +303,25 @@ def request_annot(query: str, attempts_left=10):
     headers = {"user-agent": "rseymour@wustl.edu"}
     time_to_sleep = 5
     try:
-        logging.debug("Attempting post to sparql.uniprot.org")
+        logging.debug(f"{datetime.now()} -- Attempting post to sparql.uniprot.org")
         r = requests.post(ENDPOINT, data = {"format": "csv", "query": query}, headers = headers)
         if "<!DOCTYPE html SYSTEM \"about:legacy-compat\">" in r.text:  # This just means it returned a 500 error
             logging.warning("Query had a 500 error")
             if attempts_left > 0:
+                print(r.text)
                 sleep(time_to_sleep)
                 print("\033[93m {}\033[00m".format(f"\nAttempts used: {11 - attempts_left}"), end='')
                 return request_annot(query, attempts_left - 1)
             else:
                 return None  # TODO: remove this once Uniprot fixes their stuff
                 raise pd.errors.ParserError("Ran out of Uniprot accession attempts")
+        logging.debug(f"{datetime.now()} -- Received response from sparql.uniprot.org")
         csv_file = StringIO(r.text)
-        sparql_from_csv_df = pd.read_csv(csv_file)
+        # channels the data into a pandas dataframe and sorts it on the computer
+        try:
+            sparql_from_csv_df = pd.read_csv(csv_file).sort_values(by=["entry", " position"], ascending=[False, True])
+        except KeyError:
+            sparql_from_csv_df = pd.read_csv(csv_file).sort_values(by=["entry"], ascending=False)
     except (pd.errors.ParserError, requests.exceptions.ConnectionError):
         logging.warning("Query had a connection/parser error")
         if attempts_left > 0:
