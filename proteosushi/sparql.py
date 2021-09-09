@@ -68,52 +68,6 @@ PREFIX up: <http://purl.uniprot.org/core/>
 PREFIX ec: <http://purl.uniprot.org/enzyme/>"""
 
     #TODO: Add up:Similarity_Annotation, 
-    new_entry_length_pos_query = prefix + """
-SELECT
-    ?entry
-    ?position ### New the position of the C that was given in the values
-    (STRLEN(?iupac) AS ?lengthOfSequence)
-    ?begin
-    ?end
-    (SUBSTR(?iupac, ?begin, ?end - ?begin + 1) AS ?regionOfInterest)
-FROM <http://sparql.uniprot.org/uniprot>
-WHERE {
-    VALUES (?entry ?position) {""" + unpid_site_list_str + """}
-    ?entry up:sequence ?sequence .
-    ?annotation up:range ?range .
-    ?range faldo:begin
-        [ faldo:position ?begin ; faldo:reference ?sequence ] ;
-            faldo:end
-        [ faldo:position ?end ; faldo:reference ?sequence ] .
-    FILTER (?begin <= ?position && ?position <= ?end)
-    # get the IUPAC AAs associated with the identifier
-    ?sequence rdf:value ?iupac .
-    # get the AA subsequence of the annotation as a new variable
-}"""
-
-    query_stripped_entry_pos = prefix + """
-SELECT
-    ?entry
-    ?position ### New the position of the C that was given in the values
-    ?lengthOfSequence
-    ?begin
-    ?end
-    ?regionOfInterest ### subsequence of the annotation that had the C
-FROM <http://sparql.uniprot.org/uniprot>
-WHERE {
-     VALUES (?entry ?position) {""" + unpid_site_list_str + """}
-     ?entry up:sequence ?sequence .
-     ?annotation up:range ?range1, ?range2;
-                a ?type .
-     ?range1 faldo:begin
-         [ faldo:position ?begin ; faldo:reference ?sequence ] .
-     ?range2 faldo:end
-         [ faldo:position ?end ; faldo:reference ?sequence ] .
-     FILTER (?begin <= ?position && ?position <= ?end)
-     # get the IUPAC AAs associated with the identifier
-     ?sequence rdf:value ?iupac .
-}"""
-
     alt_query_entry_len_pos = prefix + """
 SELECT
     ?entry
@@ -171,22 +125,21 @@ SELECT
     ?position
     ?ec
     ?rhea
-FROM <http://sparql.uniprot.org/uniprot>
 WHERE {
-    VALUES (?entry ?position) {""" + unpid_site_list_str + """}
-    ?entry up:sequence ?sequence .
-    ?entry up:annotation ?caAnnotation .
-    ?caAnnotation up:catalyticActivity ?ca .
+    GRAPH <http://sparql.uniprot.org/uniprot> {
+        VALUES (?entry ?position) {""" + unpid_site_list_str + """}
+        ?entry up:sequence ?sequence .
+        ?entry up:annotation ?caAnnotation .
+        ?caAnnotation up:catalyticActivity ?ca .
 
-    OPTIONAL {
-        ?ca up:enzymeClass ?ec .
+        OPTIONAL {
+            ?ca up:enzymeClass ?ec .
+        }
+
+        OPTIONAL {
+            ?ca up:catalyzedReaction ?rhea .
+        }
     }
-
-    OPTIONAL {
-        ?ca up:catalyzedReaction ?rhea .
-    }
-
-#Order desc by entry and ascending by position afterwards
 }"""  # NOTE: remove the ordering to help reduce time for query
 
     query_comment = prefix + """
@@ -201,7 +154,7 @@ WHERE {
     ?entry up:sequence ?sequence .
     ?entry up:annotation ?annotation .
     ?annotation up:range ?range ;
-               a ?type .
+        a ?type .
     ?range faldo:begin
         [ faldo:position ?begin ; faldo:reference ?sequence ] ;
             faldo:end
@@ -210,7 +163,48 @@ WHERE {
 	OPTIONAL {
         ?annotation rdfs:comment ?comment .
     }
-#Order desc by entry and ascending by position afterwards
+}"""
+
+    #TODO: Integrate the new fields in the parsing
+    alt_query_comment = prefix + """
+SELECT
+    ?entry
+    ?position
+    ?type
+    ?comment
+    ?begin 
+    ?end
+    ?regionOfInterest
+WHERE {
+    {
+        # Force the query to always first find specific annotations
+        # before finding out the type of the annotation and the comment .
+        SELECT 
+            ?entry 
+            ?position 
+            ?begin
+            ?end
+            (SUBSTR(?iupac, ?begin, ?end - ?begin + 1) AS ?regionOfInterest)
+            ?range
+        WHERE {
+            VALUES (?entry ?position) {""" + unpid_site_list_str + """}
+            GRAPH <http://sparql.uniprot.org/uniprot> {
+                ?entry up:sequence ?sequence .
+                ?range faldo:begin
+                   [ faldo:position ?begin ; faldo:reference ?sequence ] ;
+                      faldo:end
+                   [ faldo:position ?end ; faldo:reference ?sequence ] .
+                FILTER (?begin <= ?position && ?position <= ?end)
+                ?sequence rdf:value ?iupac
+            }
+        }
+    }
+    ?entry up:annotation ?annotation .
+    ?annotation up:range ?range ;
+               a ?type .
+	OPTIONAL {
+        ?annotation rdfs:comment ?comment .
+    }
 }"""
 
     # Grabs the annotation by parts to maximize the amount we receive from the uniprot server
@@ -226,7 +220,7 @@ WHERE {
     logging.debug("Starting ec_rhea_type query")
     extras_annot = request_annot(query_ec_rhea_type)
     logging.debug("Starting comment query")
-    comment_annot = request_annot(query_comment)
+    comment_annot = request_annot(alt_query_comment)  # entry, position, type, comment, begin, end, regionOfInterest
     # Creates blank dataframes if uniprot did not return that info
     if region_annot is None or list(region_annot.columns) != ["entry", " position", " lengthOfSequence", " begin", " end", " regionOfInterest"]:
         logging.debug(f"If the region header is similar to expected, Uniprot may have changed their database.\n{str(list(region_annot.columns))}")

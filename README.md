@@ -1,3 +1,7 @@
+# IMPORTANT NOTE: UNIPROT ANNOTATIONS AREN'T WORKING
+
+I am currently working with Uniprot to figure out the issue, but for the moment, uniprot annotations aren't working correctly. I do not have an estimate of when they will be working either, but I will update once a solution has been found.
+
 # ProteoSushi
 
 ProteoSushi transforms peptide-centric, PTM-enriched peptide data into condensed and annotated PTM site output that is easy to understand and analyze.
