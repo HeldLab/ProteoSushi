@@ -220,6 +220,8 @@ def __load_annot_dict(annot_file: str) -> dict:
     annot_dict = {}
     if annot_file == "":
         return annot_dict
+    if annot_file == "ERROR: Invalid identifier":
+        return None
     with open(annot_file, 'r') as r1:
         tsv_reader = csv.reader(r1, delimiter='\t')
         header = next(tsv_reader)
@@ -519,6 +521,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         else:
             sequence_index, modified_sequence_index, mod_dict, intensity_start, data_filename, \
                 var_mod_dict = compile_data_generic(search_engine_filepath, user_PTMs, cleave_rules[protease])
+        logging.debug("Reading in data file")
         data_file = open(data_filename, 'r')
         tsv_reader = csv.reader(data_file, quotechar='"')
         if intensity_start is None and use_quant:
@@ -547,11 +550,14 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
 
 
     if species_id != "":
+        logging.debug("Downloading AS file")
         annot_filename = download_AS_file(species_id)
     else:
         annot_filename = ""
 
+    logging.debug("Loading in pep_dict")
     pep_dict = load_pepdict(proteome_fasta_filepath, protease, max_missed_cleavages)
+    logging.debug("Loading in annot_dict")
     annotDict = __load_annot_dict(annot_filename)
 
     if use_target_list:
@@ -576,6 +582,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     unmatched_sequences = []
 
     print("Beginning PTM site rollup")
+    logging.debug("Beginning PTM site rollup")
 
     # Prints out the completed rollup with annotations from Uniprot (if requested)
     with open(output_filename, 'w', newline = '') as w1:

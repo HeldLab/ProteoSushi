@@ -201,7 +201,7 @@ WHERE {
     }
     ?entry up:annotation ?annotation .
     ?annotation up:range ?range ;
-               a ?type .
+                a ?type .
 	OPTIONAL {
         ?annotation rdfs:comment ?comment .
     }
