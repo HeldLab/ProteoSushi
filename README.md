@@ -1,6 +1,6 @@
-# IMPORTANT NOTE: UNIPROT ANNOTATIONS AREN'T WORKING
+# IMPORTANT NOTE: GUI may not work on your computer
 
-I am currently working with Uniprot to figure out the issue, but for the moment, uniprot annotations aren't working correctly. All other functions of ProteoSushi do work, however. I do not have an estimate of when they will be working either, but I will update once a solution has been found.
+ProteoSushi now currently works as long as you do not start it through the GUI. Instead, you must download the code from GitHub and edit the run_proteosushi.py file to change the parameters directly. As long as you do this correctly, it should work. If you need help, feel free to email me at rseymour@wustl.edu. 
 
 # ProteoSushi
 
