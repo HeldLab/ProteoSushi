@@ -274,8 +274,10 @@ def __compress_annotations(annotation_list: list) -> list:
     Returns:
         list -- the compressed list of annotations
     """
+    #entry,position,lengthOfSequence,location,ec,rhea,type,comment,begin,end,regionOfInterest
     #entry,position,lengthOfSequence,begin,end,regionOfInterest,location,ec,rhea,type,comment(,begin,end,...)
     # NOTE: you may need to update these numbers if you add or delete a column
+
     begin_index = 3
     end_index = 4
     type_index = 9
@@ -393,9 +395,9 @@ def batch_write(batch_results: list, search_engine: str, user_PTMs: list, use_qu
     for i in sorted(batch_results, key=lambda r: r[0]):
         gene = i[0].upper()
         pos = i[1]
-        target_index = 4  # NOTE: this might be wrong
-        pep_mod_seq = i[6]#i[6 if use_target_list else 5]
-        uniprot_id = i[8]#i[8 if use_target_list else 7]
+        target_index = 4
+        pep_mod_seq = i[6]
+        uniprot_id = i[8]
 
         if search_engine == "maxquant":
             if not any(ptm[:2].lower() in pep_mod_seq for ptm in user_PTMs):
@@ -417,6 +419,7 @@ def batch_write(batch_results: list, search_engine: str, user_PTMs: list, use_qu
             try:
                 compressed_annotations = __compress_annotations(sparql_dict[uniprot_id.split(' ')[0] + '|' + str(pos)])
                 writable_row += compressed_annotations[2:]
+                logging.debug(compressed_annotations)
                 #print("\033[96m {}\033[00m" .format(f"{round(float(results_annotated)/len(sparql_input)*100, 2)}% of results annotated"))
             except KeyError:
                 pass

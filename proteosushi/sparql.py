@@ -283,6 +283,14 @@ WHERE {
         print("Uniprot data formatting error: please notify ProteoSushi administrator")
         print(list(full_annot.columns))
         sys.exit()
+    try:  # ['entry', ' position', ' lengthOfSequence', ' location', ' ec', ' rhea', ' type', ' comment', ' begin', ' end', ' regionOfInterest']
+        # [0, 1, 2, 8, 9, 10, 3, 4, 5, 6, 7]
+        full_annot = full_annot[["entry"," position"," lengthOfSequence"," begin",
+                                                 " end"," regionOfInterest"," location"," ec",
+                                                 " rhea"," type"," comment"]]
+        #sparql_from_csv_df = sparql_from_csv_df[[0, 1, 2, 8, 9, 10, 3, 4, 5, 6, 7]]
+    except Exception as e:
+        logging.debug(f"Couldn't reorder columns due to error {e}")
     return full_annot
 
 def request_annot(query: str, attempts_left=10):
