@@ -72,10 +72,10 @@ PREFIX ec: <http://purl.uniprot.org/enzyme/>"""
 SELECT
     ?entry
     ?position
-    ?begin
-    ?end
+    #?begin
+    #?end
     (STRLEN(?iupac) AS ?lengthOfSequence)
-    (SUBSTR(?iupac, ?begin, ?end - ?begin + 1) AS ?regionOfInterest)
+    #(SUBSTR(?iupac, ?begin, ?end - ?begin + 1) AS ?regionOfInterest)
 WHERE {
     {
         SELECT ?entry ?position ?sequence ?begin ?end
@@ -222,15 +222,12 @@ WHERE {
     logging.debug("Starting comment query")
     comment_annot = request_annot(alt_query_comment)  # entry, position, type, comment, begin, end, regionOfInterest
     # Creates blank dataframes if uniprot did not return that info
-    if region_annot is None or list(region_annot.columns) != ["entry", " position", " lengthOfSequence", " begin", " end", " regionOfInterest"]:
+    if region_annot is None or list(region_annot.columns) != ["entry", " position", " lengthOfSequence"]:
         logging.debug(f"If the region header is similar to expected, Uniprot may have changed their database.\n{str(list(region_annot.columns))}")
         #columns=["entry", " position", " lengthOfSequence", " begin", " end", " regionOfInterest"]
         region_annot = pd.DataFrame(data = {"entry": pd.Series([], dtype="object"),
                                             " position": pd.Series([], dtype="object"),
-                                            " lengthOfSequence": pd.Series([], dtype="object"),
-                                            " begin": pd.Series([], dtype="object"),
-                                            " end": pd.Series([], dtype="object"),
-                                            " regionOfInterest": pd.Series([], dtype="object")})
+                                            " lengthOfSequence": pd.Series([], dtype="object")})
     else:
         logging.debug(f"region data types are {region_annot.dtypes}")
         region_annot.dropna(how="all", inplace=True)
@@ -253,12 +250,15 @@ WHERE {
         logging.debug(f"extras data types are {extras_annot.dtypes}")
         extras_annot.dropna(how="all", inplace=True)  # TODO: I will likely need to change this back to all later
     
-    if comment_annot is None or list(comment_annot.columns) != ["entry", " position", " type", " comment"]:
+    if comment_annot is None or list(comment_annot.columns) != ["entry", " position", " type", " comment", " begin", " end", " regionOfInterest"]:
         logging.debug(f"If the comment header is similar to expected, Uniprot may have changed their database.\n{str(list(comment_annot.columns))}")
         comment_annot = pd.DataFrame(data={"entry": pd.Series([], dtype="object"), 
                                            " position": pd.Series([], dtype="object"), 
                                            " type": pd.Series([], dtype="object"), 
-                                           " comment": pd.Series([], dtype="object")})
+                                           " comment": pd.Series([], dtype="object"),
+                                            " begin": pd.Series([], dtype="object"),
+                                            " end": pd.Series([], dtype="object"),
+                                            " regionOfInterest": pd.Series([], dtype="object")})
     else:
         logging.debug(f"comment data types are {comment_annot.dtypes}")
         comment_annot.dropna(how="all", inplace=True)
@@ -310,12 +310,15 @@ def request_annot(query: str, attempts_left=10):
                 return None  # TODO: remove this once Uniprot fixes their stuff
                 raise pd.errors.ParserError("Ran out of Uniprot accession attempts")
         logging.debug(f"{datetime.now()} -- Received response from sparql.uniprot.org")
+        #logging.debug(f"Output is {r.text}")
         csv_file = StringIO(r.text)
+        #logging.debug(f"CSV file is {csv_file}")
         # channels the data into a pandas dataframe and sorts it on the computer
+        unsorted_pd_df = pd.read_csv(csv_file, encoding="utf-8", sep=',')
         try:
-            sparql_from_csv_df = pd.read_csv(csv_file).sort_values(by=["entry", " position"], ascending=[False, True])
+            sparql_from_csv_df = unsorted_pd_df.sort_values(by=["entry", " position"], ascending=[False, True])
         except KeyError:
-            sparql_from_csv_df = pd.read_csv(csv_file).sort_values(by=["entry"], ascending=False)
+            sparql_from_csv_df = unsorted_pd_df.sort_values(by=["entry"], ascending=False)
     except (pd.errors.ParserError, requests.exceptions.ConnectionError):
         logging.warning("Query had a connection/parser error")
         if attempts_left > 0:
@@ -425,7 +428,7 @@ def process_sparql_output(output_df, sparql_dict: dict) -> list:
             current_description = enzyme_dat_list[line_number + 1][5:]
             ec_id_to_description_dict[current_id] = current_description
 
-    #entry,position,lengthOfSequence,begin,end,regionOfInterest,location,ec,rhea,type,comment
+    #entry,position,lengthOfSequence,location,ec,rhea,type,comment,begin,end,regionOfInterest
     #header = output_lines.colnames()
     #print(output_lines.columns)
     

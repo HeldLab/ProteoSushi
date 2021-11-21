@@ -391,25 +391,31 @@ def batch_write(batch_results: list, search_engine: str, user_PTMs: list, use_qu
         
     # This builds the rollup output file depending on what the user chose
     for i in sorted(batch_results, key=lambda r: r[0]):
+        gene = i[0].upper()
+        pos = i[1]
+        target_index = 4  # NOTE: this might be wrong
+        pep_mod_seq = i[6]#i[6 if use_target_list else 5]
+        uniprot_id = i[8]#i[8 if use_target_list else 7]
+
         if search_engine == "maxquant":
-            if not any(ptm[:2].lower() in i[6] for ptm in user_PTMs):
+            if not any(ptm[:2].lower() in pep_mod_seq for ptm in user_PTMs):
                 continue
-        elif not any(ptm in i[6] for ptm in user_PTMs):  # If none of the chosen ptms are in the rollup line
+        elif not any(ptm in pep_mod_seq for ptm in user_PTMs):  # If none of the chosen ptms are in the rollup line
             continue
         # Start by adding in the base data
         writable_row = i
         if use_quant:  # Add to that the intensity data if requested
             if intensity_method == "sum":  # Reports the sum of each peak
-                writable_row += intensity_dict[f"{i[6]}|{i[0].upper()}|{i[1]}"][:-1]
+                writable_row += intensity_dict[f"{pep_mod_seq}|{gene}|{pos}"][:-1]
             elif intensity_method == "average":  # Calculates the average for each peak and reports
-                N = intensity_dict[f"{i[6]}|{i[0].upper()}|{i[1]}"][-1]
-                intensities = intensity_dict[f"{i[6]}|{i[0].upper()}|{i[1]}"][:-1]
+                N = intensity_dict[f"{pep_mod_seq}|{gene}|{pos}"][-1]
+                intensities = intensity_dict[f"{pep_mod_seq}|{gene}|{pos}"][:-1]
                 writable_row += [float(x)/N for x in intensities]
         if not use_target_list:
-            writable_row = writable_row[:4] + writable_row[5:]
+            writable_row = writable_row[:target_index] + writable_row[target_index+1:]
         if add_annotation:
             try:
-                compressed_annotations = __compress_annotations(sparql_dict[i[8].split(' ')[0] + '|' + str(i[1])])
+                compressed_annotations = __compress_annotations(sparql_dict[uniprot_id.split(' ')[0] + '|' + str(pos)])
                 writable_row += compressed_annotations[2:]
                 #print("\033[96m {}\033[00m" .format(f"{round(float(results_annotated)/len(sparql_input)*100, 2)}% of results annotated"))
             except KeyError:
@@ -447,8 +453,7 @@ def batch_annotate(sparql_input: list) -> dict:
             #print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+batch+1} not annotated!"))
             i += batch
             continue
-        #print(f"\nannotations are:\n{batch_output}")
-        logging.debug(f"Annotations are:\n{batch_output}")
+        logging.debug(f"Columns are:\n{batch_output.columns}\nAnnotations are:\n{batch_output}")
         # This processes and combines the annotations to 1 per site
         #print(f"\nIn batch_annotate uniprot annotation is {type(batch_output)}")
         logging.debug(f"In batch_annotate uniprot annotation is {type(batch_output)}")

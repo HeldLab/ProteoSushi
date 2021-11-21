@@ -12,8 +12,8 @@ except ImportError:  # Allows the program to be run not as a module
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, filename=os.path.join("logs","ps.log"), filemode='w')
-    run_gui(multithread=True)
-    '''
+    #run_gui(multithread=True)
+    #'''
     rollup(
         search_engine="generic",
         #search_engine_filepath="/home/rob/Documents/Held_Lab/ProteoSushi/proteosushi/examples/EGFR_Skyline_data.csv",
@@ -32,8 +32,8 @@ if __name__ == "__main__":
         intensity_method="",
         add_annotation=True,
         species_id="9606",
-        output_filename="/home/rob/Documents/Held_Lab/ProteoSushi/proteosushi/output/ps_test_211008.csv",
+        output_filename="/home/rob/Documents/Held_Lab/ProteoSushi/proteosushi/output/ps_test_211120.csv",
         localization_threshold=None
     )
-    '''
+    #'''
 #EOF
