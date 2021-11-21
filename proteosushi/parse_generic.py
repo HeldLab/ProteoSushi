@@ -190,6 +190,7 @@ def create_mod_dict(sky_filename: str, user_PTMs: list, cleave_rule: tuple) -> d
     """
     mod_dict = {}
     with open(sky_filename, 'r') as sky_output:
+        logging.debug("Grabbing header info from search engine file")
         tsv_reader = csv.reader(sky_output, quotechar='"')
         header = next(tsv_reader)
         header_lower = [s.lower() for s in header]
@@ -215,6 +216,7 @@ def create_mod_dict(sky_filename: str, user_PTMs: list, cleave_rule: tuple) -> d
                     print("\033[91m {}\033[00m".format("Please add or modify header with the name \"Peptide Modified Sequence\"\n"))
                     return -4
         
+        logging.debug("building a list with all PTMs in each sequence")
         for row in tsv_reader:
             # This grabs the PTMs in each sequence and builds a list of all of them
             mod_seq = row[mod_index]
@@ -227,10 +229,12 @@ def create_mod_dict(sky_filename: str, user_PTMs: list, cleave_rule: tuple) -> d
             new_mod_seq, new_pep_seq, missed_cleave_fix = clean_pep_seq(cleave_rule, mod_seq, user_PTMs, row[seq_index])
             mods = findall(r"(\w?\[.+?\])|(\w?\(.+?\(?.\)?\))", new_mod_seq)  # NOTE that these grab the AA as well
             breaks = finditer(r"(\w?\[.+?\])|(\w?\(.+?\(?.\)?\))", new_mod_seq)
+            logging.debug(f"Mods are: {mods};\nbreaks are: {breaks}")
             cut_sites = []
             for breakp in breaks:
                 cut_sites.append(breakp.start())
             # This fixes the indices of each mod to connect with the unmodified sequence
+            logging.debug(f"fixing the indices of {mod_seq}")
             correction = 0
             fixed_indices = []
             num_of_mods = 0
@@ -238,7 +242,7 @@ def create_mod_dict(sky_filename: str, user_PTMs: list, cleave_rule: tuple) -> d
                 fixed_indices.append(site - correction)  # TODO: Check this!
                 correction += len(mods[num_of_mods][0]) - 1  # The -1 is because of the AA connected
                 num_of_mods += 1
-            
+            logging.debug("Building the mod dict")
             i = 0
             while i < len(cut_sites):
                 if not mods[i][0] in user_PTMs:
@@ -249,6 +253,7 @@ def create_mod_dict(sky_filename: str, user_PTMs: list, cleave_rule: tuple) -> d
                 except KeyError:
                     mod_dict[new_mod_seq] = [tuple((mods[i][0], fixed_indices[i]))]
                 i += 1
+    logging.debug("Finished building the mod_dict")
     return mod_dict
 
 
@@ -274,7 +279,9 @@ def compile_localization_data_generic(search_engine_filepath: str, user_PTMs: li
         dict -- mascot var mod dict (blank)
     """
     sky_filename = search_engine_filepath
+    logging.debug("Reading in the mod dict")
     mod_dict = create_loc_mod_dict(sky_filename, user_PTMs, cleave_rule, localization_threshold)
+    logging.debug("Opening the search engine file")
     skyFile = open(sky_filename, 'r')
     tsv_reader = csv.reader(skyFile, quotechar='"')
     header = next(tsv_reader)
@@ -300,6 +307,7 @@ def compile_localization_data_generic(search_engine_filepath: str, user_PTMs: li
                 print("\033[91m {}\033[00m".format("No peptide modified sequence column detected in the generic output file."))
                 print("\033[91m {}\033[00m".format("Please add or modify header with the name \"Peptide Modified Sequence\"\n"))
                 return -4
+    logging.debug("Reading in localization indices and intensity values")
     localization_indices = [i for i, h in enumerate(header) if " probabilities" in h.lower()]
     intensity_values = [i for i, h in enumerate(header) if "intensit" in h.lower()]  # NOTE: This makes the assumption that the intensity columns are directly after the charge column
     if len(intensity_values) == 0:
@@ -323,7 +331,9 @@ def compile_data_generic(search_engine_filepath: str, user_PTMs: list, cleave_ru
         dict -- mascot var mod dict (blank)
     """
     sky_filename = search_engine_filepath
+    logging.debug("Creating mod dict")
     mod_dict = create_mod_dict(sky_filename, user_PTMs, cleave_rule)
+    logging.debug("opening search engine file")
     skyFile = open(sky_filename, 'r')
     tsv_reader = csv.reader(skyFile, quotechar='"')
     header = next(tsv_reader)
@@ -355,6 +365,7 @@ def compile_data_generic(search_engine_filepath: str, user_PTMs: list, cleave_ru
     #except ValueError:
     #    print("\033[91m {}\033[00m".format("No uniprot ID column detected in the Skyline output file."))
     #    print("Proceeding regardless.\n")
+    logging.debug("Reading in intensity values")
     intensity_values = [i for i, h in enumerate(header) if "intensit" in h.lower()]  # NOTE: This makes the assumption that the intensity columns are directly after the charge column
     if len(intensity_values) == 0:
         intensity_values = None
@@ -364,5 +375,6 @@ def compile_data_generic(search_engine_filepath: str, user_PTMs: list, cleave_ru
     #totalSeqs = 0
     #unmatchedSequences = []
     #intensity_dict = dict()
+    logging.debug("Finished compiling analysis data")
     return sequence, pms, mod_dict, intensity_values, sky_filename, None
 #EOF

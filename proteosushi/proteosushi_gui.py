@@ -52,13 +52,14 @@ class Worker(QRunnable):
 
 class App(QMainWindow):
 
-    def __init__(self):
+    def __init__(self, multithread: bool):
         super().__init__()
         self.title = "ProteoSushi"
         self.left = 10
         self.top = 10
         self.width = 640
         self.height = 480
+        self.multithread = multithread
         self.centralWidget = QWidget()
         self.setCentralWidget(self.centralWidget)
         self.setWindowTitle("ProteoSushi")
@@ -496,6 +497,111 @@ class App(QMainWindow):
             self.target_filepath.setText(filename)
         self.statusBar().showMessage("")
 
+    def __run_single_thread(self, fdr: float, combine_method, species_id, localization: float):
+        """Runs the background on the same thread if there are problems"""
+        # If the maxquant option was chosen, it sends that info to be run
+        if self.maxquant_RB.isChecked() and os.path.exists(self.maxquant_filepath.text()):
+            start_time = time()
+            self.statusBar().showMessage("Analysis in Progress")
+            self.statusBar().setStyleSheet("background-color : white")
+            output = rollup("maxquant", 
+                            self.maxquant_filepath.text(), 
+                            self.target_checkbox.isChecked(),  # Whether target will be used
+                            self.target_filepath.text(),
+                            int(self.max_missed_edit.text()),
+                            self.protease_combo_box.currentText(),
+                            fdr,
+                            self.quant_CB.isChecked(),
+                            self.convert_PTM_list(self.PTM_CBs),
+                            self.proteome_filepath.text(),
+                            combine_method,
+                            self.uniprot_annot_CB.isChecked(),
+                            species_id,
+                            self.output_filepath.text(),
+                            localization)
+            # If there is a 502 proxy error (server side error)
+            if self.uniprot_annot_CB.isChecked() and output == 502:
+                self.statusBar().showMessage("ERROR: Uniprot server error! Please try again later.")
+                self.statusBar().setStyleSheet("background-color : red")
+                return
+            self.statusBar().showMessage("Analysis Complete!")
+            self.statusBar().setStyleSheet("background-color : green")
+            print("\033[92m {}\033[00m".format("\nAnalysis Complete!"))
+            print("\033[96m {}\033[00m".format(f"Rollup took {time() - start_time} seconds"))
+            #sys.exit()
+        elif self.mascot_RB.isChecked() and os.path.exists(self.mascot_filepath.text()):
+            start_time = time()
+            self.statusBar().showMessage("Analysis in Progress")
+            self.statusBar().setStyleSheet("background-color : white")
+            output = rollup("mascot", 
+                            self.mascot_filepath.text(), 
+                            self.target_checkbox.isChecked(),  # Whether target will be used
+                            self.target_filepath.text(),
+                            int(self.max_missed_edit.text()),
+                            self.protease_combo_box.currentText(),
+                            fdr,
+                            self.quant_CB.isChecked(),
+                            self.convert_PTM_list(self.PTM_CBs),
+                            self.proteome_filepath.text(),
+                            combine_method,
+                            self.uniprot_annot_CB.isChecked(),
+                            species_id,
+                            self.output_filepath.text(), 
+                            None)
+            # If the mascot file has no intensity values and user tried to analyze them
+            if self.quant_CB.isChecked() and output == 2:
+                self.statusBar().showMessage("ERROR: Mascot file has no detectable intensity values!")
+                self.statusBar().setStyleSheet("background-color : red")
+                return
+            # If there is a 502 proxy error (server side error)
+            if self.uniprot_annot_CB.isChecked() and output == 502:
+                self.statusBar().showMessage("ERROR: Uniprot server error! Please try again later.")
+                self.statusBar().setStyleSheet("background-color : red")
+                return
+            self.statusBar().showMessage("Analysis Complete!")
+            self.statusBar().setStyleSheet("background-color : green")
+            print("\033[92m {}\033[00m".format("\nAnalysis Complete!"))
+            print("\033[96m {}\033[00m".format(f"Rollup took {time() - start_time} seconds"))
+            #sys.exit()
+        elif self.generic_RB.isChecked() and os.path.exists(self.generic_filepath.text()):
+            start_time = time()
+            self.statusBar().showMessage("Analysis in Progress")
+            self.statusBar().setStyleSheet("background-color : white")
+            output = rollup("generic", 
+                            self.generic_filepath.text(), 
+                            self.target_checkbox.isChecked(),  # Whether target will be used
+                            self.target_filepath.text(),
+                            int(self.max_missed_edit.text()),
+                            self.protease_combo_box.currentText(),
+                            fdr,
+                            self.quant_CB.isChecked(),
+                            self.convert_PTM_list(self.PTM_CBs),
+                            self.proteome_filepath.text(),
+                            combine_method,
+                            self.uniprot_annot_CB.isChecked(),
+                            species_id,
+                            self.output_filepath.text(),
+                            localization)
+            # If there is a 502 proxy error (server side error)
+            if self.uniprot_annot_CB.isChecked() and (output == 502 or output == 4):
+                self.statusBar().showMessage("ERROR: Uniprot server error! Please try again later.")
+                self.statusBar().setStyleSheet("background-color : red")
+                return
+            # If the generic file has no intensity values and user tried to analyze them
+            if self.quant_CB.isChecked() and output == 2:
+                self.statusBar().showMessage("ERROR: Generic file has no detectable intensity values!")
+                self.statusBar().setStyleSheet("background-color : red")
+                return
+            self.statusBar().showMessage("Analysis Complete!")
+            self.statusBar().setStyleSheet("background-color : green")
+            print("\033[92m {}\033[00m".format("\nAnalysis Complete!"))
+            print("\033[96m {}\033[00m".format(f"Rollup took {time() - start_time} seconds"))
+            #sys.exit()
+        else:
+            self.statusBar().showMessage("ERROR: Missing Search Engine Output!")
+            self.statusBar().setStyleSheet("background-color : red")
+
+
     def __run_async(self, fdr: float, combine_method, species_id, localization: float):
         """Function that runs the backend on a separate thread"""
         # If the maxquant option was chosen, it sends that info to be run
@@ -704,11 +810,15 @@ class App(QMainWindow):
                 self.maxquant_button.setEnabled(False)
                 self.mascot_button.setEnabled(False)
                 self.generic_button.setEnabled(False)
-                # Starts a new thread for the backend analysis
-                print("\033[96m {}\033[00m".format("\nAnalysis Started!"))
-                worker = Worker(self.__run_async, fdr, combine_method, species_id, localization)
-                worker.signals.end.connect(self.__cut_thread)
-                self.threadpool.start(worker)
+
+                if not self.multithread:
+                    self.__run_single_thread(fdr, combine_method, species_id, localization)
+                else:
+                    # Starts a new thread for the backend analysis; causes seg fault currently
+                    print("\033[96m {}\033[00m".format("\nAnalysis Started!"))
+                    worker = Worker(self.__run_async, fdr, combine_method, species_id, localization)
+                    worker.signals.end.connect(self.__cut_thread)
+                    self.threadpool.start(worker)
                 
             else:
                 self.statusBar().showMessage("ERROR: Protease provided is not supported!")
@@ -789,9 +899,9 @@ class App(QMainWindow):
         self.horizontalGroupBox.setLayout(self.layout)
 
 
-def run_gui():
+def run_gui(multithread: bool):
     app = QApplication(sys.argv)
-    ex = App()
+    ex = App(multithread)
     sys.exit(app.exec_())
 
 if __name__ == "__main__":

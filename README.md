@@ -65,6 +65,8 @@ While the terminal is open, run ProteoSushi with the command:
 
 2. Through **Github**
 
+**NOTE:** If you have installed ProteoSushi via pip, it will always use that version first. Even if you download the files and run `python run_proteoSushi.py`, it will STILL use your installed version through pip and not use the files you downloaded from GitHub. In this case, you will need to first uninstall the pip version of ProteoSushi with the command `pip uninstall proteosushi` to be able to use the downloaded files.
+
 Download the files directly from [GitHub](https://github.com/HeldLab/ProteoSushi). Click on the Code button and then on Download ZIP.
 
 Once unpacked (unzipped), we will need to use the terminal (command prompt in Windows) to run ProteoSushi.
@@ -112,7 +114,8 @@ and use the ls command to list the contents of the current folder as in
 
 to run ProteoSushi.
 
-Finally, in **Windows**, open the command prompt by clicking on the search bar in the toolbar at the bottom (usually) of the screen. Type in 'cmd' and click on Command Prompt when it pops up. Once Command Prompt pops up, use the command cd to change to the 'proteosushi' folder in the downloaded files, as in
+Finally, in **Windows**, first try to open the "run_proteosushi.py" file in the "proteosushi" folder by double-clicking on it. 
+In case it doesn't start, open the command prompt by clicking on the search bar in the toolbar at the bottom (usually) of the screen. Type in 'cmd' and click on Command Prompt when it pops up. Once Command Prompt pops up, use the command cd to change to the 'proteosushi' folder in the downloaded files, as in
 
 `cd Downloads/ProteoSushi-master/proteosushi`
 

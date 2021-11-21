@@ -5,9 +5,7 @@
 import csv
 import logging
 import os
-import pandas as pd
-from re import finditer, match, findall
-from time import sleep
+from re import findall
 
 try:
     from .download_uniprot_AS import download_AS_file
@@ -16,7 +14,7 @@ try:
     from .parse_generic import compile_data_generic, compile_localization_data_generic, get_PTMs
     from .sparql import process_sparql_output, sparql_request
     from .proteoSushi_constants import cleave_rules, annotation_type_dict, secondary_annotations
-    from .ps_utilities import clean_localization_pep_seq, clean_pep_seq, parse_mascot, load_pepdict, parse_maxquant_summary
+    from .ps_utilities import clean_pep_seq, parse_mascot, load_pepdict, parse_maxquant_summary
 except ImportError:
     from download_uniprot_AS import download_AS_file
     from parse_mascot import compile_data_mascot
@@ -24,7 +22,7 @@ except ImportError:
     from parse_generic import compile_data_generic, compile_localization_data_generic, get_PTMs
     from sparql import process_sparql_output, sparql_request
     from proteoSushi_constants import cleave_rules, annotation_type_dict, secondary_annotations
-    from ps_utilities import clean_localization_pep_seq, clean_pep_seq, parse_mascot, load_pepdict, parse_maxquant_summary
+    from ps_utilities import clean_pep_seq, parse_mascot, load_pepdict, parse_maxquant_summary
 
 
 def __chooseHit(genes_positions: list, target_genes: list, annot_dict: dict, use_target: bool) -> list:
@@ -47,7 +45,6 @@ def __chooseHit(genes_positions: list, target_genes: list, annot_dict: dict, use
     nontarget_tups = list()
     for tup in genes_positions:
         if use_target and tup[0].upper() + '\n' in target_genes:
-            #print("Mito gene prioritized!")
             target_tups.append(tup)
         else:
             nontarget_tups.append(tup)
@@ -60,7 +57,6 @@ def __chooseHit(genes_positions: list, target_genes: list, annot_dict: dict, use
     elif len(nontarget_tups) > 1:  # Only non-target proteins (and more than 1)
         return False, __chooseTup(nontarget_tups, annot_dict)
     assert False, "ERROR: chooseHit had 0 tuples sent in!"
-    #return False, None, None
 
 def __chooseTup(tuples: list, annot_dict: dict) -> list:
     """chooses which tuple to return from a list
@@ -74,7 +70,6 @@ def __chooseTup(tuples: list, annot_dict: dict) -> list:
     highestScore = 0
     high2Score = 0
     highest = None
-    #print(f"third {annotDict["MUG2"]}")
     for tup in tuples:
         if not tup[2] in annot_dict:
             continue
@@ -225,6 +220,8 @@ def __load_annot_dict(annot_file: str) -> dict:
     annot_dict = {}
     if annot_file == "":
         return annot_dict
+    if annot_file == "ERROR: Invalid identifier":
+        return None
     with open(annot_file, 'r') as r1:
         tsv_reader = csv.reader(r1, delimiter='\t')
         header = next(tsv_reader)
@@ -277,8 +274,10 @@ def __compress_annotations(annotation_list: list) -> list:
     Returns:
         list -- the compressed list of annotations
     """
+    #entry,position,lengthOfSequence,location,ec,rhea,type,comment,begin,end,regionOfInterest
     #entry,position,lengthOfSequence,begin,end,regionOfInterest,location,ec,rhea,type,comment(,begin,end,...)
     # NOTE: you may need to update these numbers if you add or delete a column
+
     begin_index = 3
     end_index = 4
     type_index = 9
@@ -394,26 +393,33 @@ def batch_write(batch_results: list, search_engine: str, user_PTMs: list, use_qu
         
     # This builds the rollup output file depending on what the user chose
     for i in sorted(batch_results, key=lambda r: r[0]):
+        gene = i[0].upper()
+        pos = i[1]
+        target_index = 4
+        pep_mod_seq = i[6]
+        uniprot_id = i[8]
+
         if search_engine == "maxquant":
-            if not any(ptm[:2].lower() in i[6] for ptm in user_PTMs):
+            if not any(ptm[:2].lower() in pep_mod_seq for ptm in user_PTMs):
                 continue
-        elif not any(ptm in i[6] for ptm in user_PTMs):  # If none of the chosen ptms are in the rollup line
+        elif not any(ptm in pep_mod_seq for ptm in user_PTMs):  # If none of the chosen ptms are in the rollup line
             continue
         # Start by adding in the base data
         writable_row = i
         if use_quant:  # Add to that the intensity data if requested
             if intensity_method == "sum":  # Reports the sum of each peak
-                writable_row += intensity_dict[f"{i[6]}|{i[0].upper()}|{i[1]}"][:-1]
+                writable_row += intensity_dict[f"{pep_mod_seq}|{gene}|{pos}"][:-1]
             elif intensity_method == "average":  # Calculates the average for each peak and reports
-                N = intensity_dict[f"{i[6]}|{i[0].upper()}|{i[1]}"][-1]
-                intensities = intensity_dict[f"{i[6]}|{i[0].upper()}|{i[1]}"][:-1]
+                N = intensity_dict[f"{pep_mod_seq}|{gene}|{pos}"][-1]
+                intensities = intensity_dict[f"{pep_mod_seq}|{gene}|{pos}"][:-1]
                 writable_row += [float(x)/N for x in intensities]
         if not use_target_list:
-            writable_row = writable_row[:4] + writable_row[5:]
+            writable_row = writable_row[:target_index] + writable_row[target_index+1:]
         if add_annotation:
             try:
-                compressed_annotations = __compress_annotations(sparql_dict[i[8].split(' ')[0] + '|' + str(i[1])])
+                compressed_annotations = __compress_annotations(sparql_dict[uniprot_id.split(' ')[0] + '|' + str(pos)])
                 writable_row += compressed_annotations[2:]
+                logging.debug(compressed_annotations)
                 #print("\033[96m {}\033[00m" .format(f"{round(float(results_annotated)/len(sparql_input)*100, 2)}% of results annotated"))
             except KeyError:
                 pass
@@ -450,8 +456,7 @@ def batch_annotate(sparql_input: list) -> dict:
             #print("\033[91m {}\033[00m".format(f"Lines {i+2} to {i+batch+1} not annotated!"))
             i += batch
             continue
-        #print(f"\nannotations are:\n{batch_output}")
-        logging.debug(f"Annotations are:\n{batch_output}")
+        logging.debug(f"Columns are:\n{batch_output.columns}\nAnnotations are:\n{batch_output}")
         # This processes and combines the annotations to 1 per site
         #print(f"\nIn batch_annotate uniprot annotation is {type(batch_output)}")
         logging.debug(f"In batch_annotate uniprot annotation is {type(batch_output)}")
@@ -524,6 +529,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
         else:
             sequence_index, modified_sequence_index, mod_dict, intensity_start, data_filename, \
                 var_mod_dict = compile_data_generic(search_engine_filepath, user_PTMs, cleave_rules[protease])
+        logging.debug("Reading in data file")
         data_file = open(data_filename, 'r')
         tsv_reader = csv.reader(data_file, quotechar='"')
         if intensity_start is None and use_quant:
@@ -552,11 +558,14 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
 
 
     if species_id != "":
+        logging.debug("Downloading AS file")
         annot_filename = download_AS_file(species_id)
     else:
         annot_filename = ""
 
+    logging.debug("Loading in pep_dict")
     pep_dict = load_pepdict(proteome_fasta_filepath, protease, max_missed_cleavages)
+    logging.debug("Loading in annot_dict")
     annotDict = __load_annot_dict(annot_filename)
 
     if use_target_list:
@@ -581,6 +590,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
     unmatched_sequences = []
 
     print("Beginning PTM site rollup")
+    logging.debug("Beginning PTM site rollup")
 
     # Prints out the completed rollup with annotations from Uniprot (if requested)
     with open(output_filename, 'w', newline = '') as w1:
@@ -608,6 +618,7 @@ def rollup(search_engine: str, search_engine_filepath: str, use_target_list: boo
                         "NP_Binding_Annotation", "Other", "Region_Annotation", "Repeat_Annotation", 
                         "Topological_Domain_Annotation", "Zinc_Finger_Annotation"]
         out_writer.writerow(header2)
+        logging.debug("Header written to output file")
 
         for row in tsv_reader:
             if len(gene_results) >= batch_size:
