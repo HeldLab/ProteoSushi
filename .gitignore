@@ -270,3 +270,4 @@ proteosushi/logs/ps.log
 proteosushi/output/ps_test_211008.csv
 proteosushi/output/ps_test_211120.csv
 proteosushi/9606_annot_score.tsv
+dist/proteosushi-1.5.0.tar.gz
