@@ -1,2 +1,2 @@
 from .proteosushi_gui import run_gui
-run_gui(multithread=True)
+run_gui()
