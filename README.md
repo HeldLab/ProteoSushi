@@ -1,6 +1,6 @@
-# IMPORTANT NOTE: GUI may not work on your computer; download from GitHub
+# NOTE: GUI should be working now
 
-ProteoSushi now currently works as long as you do not start it through the GUI. Instead, you must download the code from GitHub and edit the run_proteosushi.py file to change the parameters directly. As long as you do this correctly, it should work. If you need help, feel free to email me at rseymour@wustl.edu. 
+ProteoSushi GUI should now be working.
 
 # ProteoSushi
 
