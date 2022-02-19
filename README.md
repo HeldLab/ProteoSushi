@@ -1,4 +1,4 @@
-ProteoSushi GUI should now be working.
+ProteoSushi GUI should be working again.
 
 # ProteoSushi
 
