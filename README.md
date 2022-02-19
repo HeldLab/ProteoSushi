@@ -1,5 +1,3 @@
-# NOTE: GUI should be working now
-
 ProteoSushi GUI should now be working.
 
 # ProteoSushi
