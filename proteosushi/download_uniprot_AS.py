@@ -33,13 +33,13 @@ def download_AS_file(species: str, attempts_left = 5) -> str:
         logging.warning("Uniprot Annotation Score could not be retrieved")
         print("\033[91m {}\033[00m".format("Unable to retrieve Uniprot Annotation Score! Proceeding regardless..."))
         return ""
-    url = f"https://www.uniprot.org/uniprot/?query=organism:{species}&columns=id,genes,annotation_score&format=tab"
+    url = f"https://rest.uniprot.org/uniprotkb/stream?fields=accession%2Cgene_names%2Corganism_id%2Cannotation_score&format=tsv&query={species}"
     #headers = {"user-agent": "rseymour@wustl.edu"}
     #data = urllib.parse.urlencode(params)
     #data = data.encode('utf-8')
     #'''
     try:
-        logging.debug(f"Requesting AS file with URL https://www.uniprot.org/uniprot/?query=organism:{species}&columns=id,genes,annotation_score&format=tab")
+        logging.debug(f"Requesting AS file with URL https://rest.uniprot.org/uniprotkb/stream?fields=accession%2Cgene_names%2Corganism_id%2Cannotation_score&format=tsv&query={species}")
         req = urllib.request.Request(url)
         logging.debug("file requested")
         with urllib.request.urlopen(req) as f:
