@@ -7,14 +7,14 @@ with codecs.open("README.md", mode='r', encoding="utf-8") as fh:
 
 setuptools.setup(
     name="proteosushi",
-    version="1.6.0",
+    version="1.6.1",
     author="Rob Seymour",
-    author_email="rseymour@wustl.edu",
+    author_email="r27seymour@gmail.com",
     description="",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/HeldLab/ProteoSushi",
-    download_url="https://github.com/HeldLab/ProteoSushi/archive/v1.1.0.tar.gz",
+    download_url="https://github.com/HeldLab/ProteoSushi/archive/v1.6.1.tar.gz",
     include_package_data=True,
     packages=setuptools.find_packages(),
     package_dir={
