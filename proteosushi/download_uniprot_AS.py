@@ -26,20 +26,20 @@ def download_AS_file(species: str, attempts_left = 5) -> str:
     "columns": "id,genes,annotation_score",
     "compress": "no",
     "query": '',
-    "contact": "rseymour@wustl.edu"  # NOTE: not sure if this one works
+    "contact": "dalfr76@byu.edu"  # NOTE: not sure if this one works
     }
     '''
     if attempts_left <= 0:
         logging.warning("Uniprot Annotation Score could not be retrieved")
         print("\033[91m {}\033[00m".format("Unable to retrieve Uniprot Annotation Score! Proceeding regardless..."))
         return ""
-    url = f"https://rest.uniprot.org/uniprotkb/stream?fields=accession%2Cgene_names%2Corganism_id%2Cannotation_score&format=tsv&query={species}"
-    #headers = {"user-agent": "rseymour@wustl.edu"}
+    url = f"https://rest.uniprot.org/uniprotkb/stream?fields=accession%2Cid%2Cgene_names%2Corganism_id%2Cannotation_score&format=tsv&query=(organism_id%3A{species})"
+    #headers = {"user-agent": "dalfr76@byu.edu"}
     #data = urllib.parse.urlencode(params)
     #data = data.encode('utf-8')
     #'''
     try:
-        logging.debug(f"Requesting AS file with URL https://rest.uniprot.org/uniprotkb/stream?fields=accession%2Cgene_names%2Corganism_id%2Cannotation_score&format=tsv&query={species}")
+        logging.debug(f"https://rest.uniprot.org/uniprotkb/stream?fields=accession%2Cid%2Cgene_names%2Corganism_id%2Cannotation_score&format=tsv&query=(organism_id%3A{species})")
         req = urllib.request.Request(url)
         logging.debug("file requested")
         with urllib.request.urlopen(req) as f:
@@ -79,5 +79,6 @@ def download_AS_file(species: str, attempts_left = 5) -> str:
     return os.path.join(os.getcwd(), annot_score_filename)
     '''
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG, filename=os.path.join("logs","uniprot_AS.log"), filemode='w')
     print(download_AS_file("9606"))
 #EOF

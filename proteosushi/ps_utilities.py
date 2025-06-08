@@ -1,7 +1,7 @@
 """ps_utilities.py: helper functions used by parsers in proteoSushi"""
 
 __author__ = "Arshag Mooradian, Rob Seymour"
-__email__ = "rseymour@wustl.edu"
+__email__ = "dalfr76@byu.edu"
 
 import pickle
 import csv

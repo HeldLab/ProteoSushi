@@ -1,7 +1,7 @@
 """sparql.py: takes the results from proteoSushi and annotates it using the sparql API to access uniprot"""
 
 __author__ = "Rob Seymour, Arshag Mooradian"
-__email__ = "rseymour@wustl.edu"
+__email__ = "dalfr76@byu.edu"
 
 from io import StringIO
 import json
@@ -207,6 +207,24 @@ WHERE {
     }
 }"""
 
+    new_query_1 = prefix + """
+SELECT *
+WHERE
+{
+   GRAPH http://sparql.uniprot.org/uniprot {
+     BIND(3  AS ?positionOfInterest)   # site
+     BIND(uniprotkb:O43716 AS ?protein) # entry primary acc
+     ?protein up:sequence ?sequence ;
+       up:annotation ?annotation .
+     ?annotation a ?annotationType ;
+       up:range ?range .
+     ?range faldo:begin [ faldo:position ?begin; faldo:reference
+?sequence] ;
+        faldo:end [ faldo:position ?end; faldo:reference ?sequence ]
+     FILTER(?positionOfInterest >= ?begin && ?positionOfInterest <= ?end)
+   }
+}"""
+
     # Grabs the annotation by parts to maximize the amount we receive from the uniprot server
     #region_annot = request_annot(new_entry_length_pos_query)
     logging.debug("Starting entry_len_pos query")
@@ -302,7 +320,7 @@ def request_annot(query: str, attempts_left=10):
     Returns:
         pandas.dataframe -- the returned annotation
     """
-    headers = {"user-agent": "rseymour@wustl.edu"}
+    headers = {"user-agent": "dalfr76@byu.edu"}
     time_to_sleep = 5
     try:
         logging.debug(f"{datetime.now()} -- Attempting post to sparql.uniprot.org")

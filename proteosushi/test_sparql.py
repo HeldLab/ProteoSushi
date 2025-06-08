@@ -70,6 +70,12 @@ sparql_input = ["(uniprotkb:O00468 317)",
     "(uniprotkb:Q13740 270)",
     "(uniprotkb:Q8IZ83 350)"]
 
-sparql_output = sparql_request(sparql_input)
+sparql_input_short = ["(uniprotkb:O00468 317)",
+    "(uniprotkb:O00468 948)",
+    "(uniprotkb:O00468 844)",
+    "(uniprotkb:O00468 103)",
+    "(uniprotkb:O00468 296)"]
+
+sparql_output = sparql_request(sparql_input_short)
 print(sparql_output)
 #EOF

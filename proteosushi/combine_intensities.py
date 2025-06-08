@@ -435,7 +435,7 @@ def batch_annotate(sparql_input: list) -> dict:
     """
     # If the user chose, it combines the annotation onto the rollup results (eventually)
     #print("\033[95m {}\033[00m".format("\nQuerying Uniprot for Annotations!"))
-    batch = 50
+    batch = 5
     i = 0
     results_annotated = 0
     sparql_input = sorted(list(set(sparql_input)), key=lambda x: x[2])
