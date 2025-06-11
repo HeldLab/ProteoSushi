@@ -17,8 +17,8 @@ if __name__ == "__main__":
         pass
     logging.basicConfig(level=logging.DEBUG, filename=os.path.join("logs","ps.log"), filemode='w')
     print("Starting ProteoSushi")
-    # run_gui(multithread=True)
-    #'''
+    run_gui(multithread=True)
+    '''
     rollup(
         search_engine="generic",
         search_engine_filepath="./examples/EGFR_Skyline_data.csv",
@@ -40,5 +40,5 @@ if __name__ == "__main__":
         output_filename="./output/ps_test_250527.csv",
         localization_threshold=None
     )
-    #'''
+    '''
 #EOF
