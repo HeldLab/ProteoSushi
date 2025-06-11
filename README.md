@@ -1,4 +1,4 @@
-ProteoSushi GUI should be working again.
+ProteoSushi should be working as of 11 June 2025, but pip version hasn't been updated yet with the fix.
 
 # ProteoSushi
 
