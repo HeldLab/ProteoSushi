@@ -2,6 +2,7 @@
 a species"""
 
 import faulthandler; faulthandler.enable()
+import http
 import logging
 import os
 import urllib.parse
@@ -42,7 +43,7 @@ def download_AS_file(species: str, attempts_left = 5) -> str:
         logging.debug(f"https://rest.uniprot.org/uniprotkb/stream?fields=accession%2Cid%2Cgene_names%2Corganism_id%2Cannotation_score&format=tsv&query=(organism_id%3A{species})")
         req = urllib.request.Request(url)
         logging.debug("file requested")
-        with urllib.request.urlopen(req) as f:
+        with urllib.request.urlopen(req, timeout=60) as f:
             response = f.read()
             annot_score_filename = species + "_annot_score.tsv"
             logging.debug(f"Opening file {annot_score_filename} to put annotation scores")
@@ -54,7 +55,9 @@ def download_AS_file(species: str, attempts_left = 5) -> str:
                     logging.warning("ERROR: Invalid identifier in AS file")
                     return "ERROR: Invalid identifier"
             #print(response.decode('utf-8'))
-    except (urllib.error.URLError, ConnectionResetError):
+    except (urllib.error.URLError, ConnectionResetError, 
+            http.client.IncompleteRead, TimeoutError) as e:
+        logging.debug(f"exception caught {e} retrying annotation score download")
         return download_AS_file(species, attempts_left-1)
     return os.path.join(os.getcwd(), annot_score_filename)
     '''

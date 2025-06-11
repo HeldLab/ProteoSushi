@@ -11,6 +11,7 @@ import csv
 from datetime import datetime
 import pandas as pd
 from re import findall
+import re
 import requests
 import sys  # Remove later
 from time import sleep
@@ -66,6 +67,27 @@ PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX faldo: <http://biohackathon.org/resource/faldo#>
 PREFIX up: <http://purl.uniprot.org/core/>
 PREFIX ec: <http://purl.uniprot.org/enzyme/>"""
+
+    query_entry_len_pos = prefix + """
+SELECT
+        ?entry
+        ?position
+        (STRLEN(?iupac) AS ?lengthOfSequence)
+WHERE {
+   GRAPH <http://sparql.uniprot.org/uniprot> {
+     VALUES (?entry ?position) {""" + unpid_site_list_str + """}
+     ?entry up:sequence ?sequence .
+     ?range1 faldo:begin ?bp .
+     ?bp faldo:position ?begin ;
+         faldo:reference ?sequence .
+     FILTER (?begin <= ?position) .
+     ?range1 faldo:end ?ep .
+     ?ep faldo:position ?end ;
+         faldo:reference ?sequence .
+     FILTER (?position <= ?end) .
+     ?sequence rdf:value ?iupac .
+   }
+}"""
 
     #TODO: Add up:Similarity_Annotation, 
     alt_query_entry_len_pos = prefix + """
@@ -148,20 +170,27 @@ SELECT
     ?position
     ?type
     ?comment
-FROM <http://sparql.uniprot.org/uniprot>
+    ?begin 
+    ?end
+    #?regionOfInterest
+    ?iupac  # I can clean this after the query to select just the peptide, I think
 WHERE {
-    VALUES (?entry ?position) {""" + unpid_site_list_str + """}
-    ?entry up:sequence ?sequence .
-    ?entry up:annotation ?annotation .
-    ?annotation up:range ?range ;
-        a ?type .
-    ?range faldo:begin
-        [ faldo:position ?begin ; faldo:reference ?sequence ] ;
-            faldo:end
-        [ faldo:position ?end ; faldo:reference ?sequence ] .
-    FILTER (?begin <= ?position && ?position <= ?end)
-	OPTIONAL {
-        ?annotation rdfs:comment ?comment .
+    GRAPH <http://sparql.uniprot.org/uniprot> {
+        VALUES (?entry ?position) {""" + unpid_site_list_str + """}
+        ?entry up:sequence ?sequence .
+        ?entry up:annotation ?annotation .
+        ?range1 faldo:begin ?bp .
+        ?bp faldo:position ?begin ;
+            faldo:reference ?sequence .
+        FILTER (?begin <= ?position) .
+        ?range1 faldo:end ?ep .
+        ?ep faldo:position ?end ;
+            faldo:reference ?sequence .
+        FILTER (?position <= ?end) .
+        ?sequence rdf:value ?iupac
+        OPTIONAL {
+            ?annotation rdfs:comment ?comment .
+        }
     }
 }"""
 
@@ -174,7 +203,8 @@ SELECT
     ?comment
     ?begin 
     ?end
-    ?regionOfInterest
+    #?regionOfInterest
+    ?iupac
 WHERE {
     {
         # Force the query to always first find specific annotations
@@ -184,7 +214,8 @@ WHERE {
             ?position 
             ?begin
             ?end
-            (SUBSTR(?iupac, ?begin, ?end - ?begin + 1) AS ?regionOfInterest)
+            #(SUBSTR(?iupac, ?begin, ?end - ?begin + 1) AS ?regionOfInterest)
+            ?iupac
             ?range
         WHERE {
             VALUES (?entry ?position) {""" + unpid_site_list_str + """}
@@ -207,28 +238,12 @@ WHERE {
     }
 }"""
 
-    new_query_1 = prefix + """
-SELECT *
-WHERE
-{
-   GRAPH http://sparql.uniprot.org/uniprot {
-     BIND(3  AS ?positionOfInterest)   # site
-     BIND(uniprotkb:O43716 AS ?protein) # entry primary acc
-     ?protein up:sequence ?sequence ;
-       up:annotation ?annotation .
-     ?annotation a ?annotationType ;
-       up:range ?range .
-     ?range faldo:begin [ faldo:position ?begin; faldo:reference
-?sequence] ;
-        faldo:end [ faldo:position ?end; faldo:reference ?sequence ]
-     FILTER(?positionOfInterest >= ?begin && ?positionOfInterest <= ?end)
-   }
-}"""
 
     # Grabs the annotation by parts to maximize the amount we receive from the uniprot server
     #region_annot = request_annot(new_entry_length_pos_query)
     logging.debug("Starting entry_len_pos query")
-    region_annot = request_annot(alt_query_entry_len_pos)
+    region_annot = request_annot(query_entry_len_pos)
+    #print(region_annot)  #TODO deleteme
     #region_annot_stripped = request_annot(query_stripped_entry_pos)
     #if len(region_annot.index) < len(region_annot_stripped.index):  # This should check to see if there are rows missing in the full query
     #    region_annot = region_annot.append(region_annot_stripped)
@@ -238,7 +253,9 @@ WHERE
     logging.debug("Starting ec_rhea_type query")
     extras_annot = request_annot(query_ec_rhea_type)
     logging.debug("Starting comment query")
-    comment_annot = request_annot(alt_query_comment)  # entry, position, type, comment, begin, end, regionOfInterest
+    comment_annot = request_annot(query_comment)  # entry, position, type, comment, begin, end, iupac(which we'll change)
+    #print(comment_annot)  #TODO: Deleteme
+
     # Creates blank dataframes if uniprot did not return that info
     if region_annot is None or list(region_annot.columns) != ["entry", " position", " lengthOfSequence"]:
         logging.debug(f"If the region header is similar to expected, Uniprot may have changed their database.\n{str(list(region_annot.columns))}")
@@ -268,7 +285,34 @@ WHERE
         logging.debug(f"extras data types are {extras_annot.dtypes}")
         extras_annot.dropna(how="all", inplace=True)  # TODO: I will likely need to change this back to all later
     
-    if comment_annot is None or list(comment_annot.columns) != ["entry", " position", " type", " comment", " begin", " end", " regionOfInterest"]:
+    ##########
+    # Now I need to fix the iupac column to be the regionOfInterest column and subset it
+    # This speeds things up so the uniprot server doesn't have to do the work
+    ##########
+    # Extract numbers from begin and end columns first
+    comment_annot['begin_int'] = comment_annot[' begin'].apply(
+        lambda x: int(re.findall(r"(\d+?)\^", x)[0])
+    )
+    comment_annot['end_int'] = comment_annot[' end'].apply(
+        lambda x: int(re.findall(r"(\d+?)\^", x)[0])
+    )
+
+    # Now do the string slicing
+    comment_annot[' regionOfInterest'] = [
+        iupac[begin-1:end] 
+        for iupac, begin, end in zip(
+            comment_annot[' iupac'], 
+            comment_annot['begin_int'], 
+            comment_annot['end_int']
+        )
+    ]
+
+    # Clean up temporary columns if you don't need them
+    comment_annot = comment_annot.drop(['begin_int', 'end_int'], axis=1)
+    comment_annot = comment_annot.drop(' iupac', axis=1)
+
+    # Now process the comment dataframe as normal
+    if comment_annot is None or list(comment_annot.columns) != ["entry", " position", " type", " comment", ' begin', ' end', ' regionOfInterest']:
         logging.debug(f"If the comment header is similar to expected, Uniprot may have changed their database.\n{str(list(comment_annot.columns))}")
         comment_annot = pd.DataFrame(data={"entry": pd.Series([], dtype="object"), 
                                            " position": pd.Series([], dtype="object"), 
@@ -386,7 +430,8 @@ def process_sparql_output(output_df, sparql_dict: dict) -> list:
             elif isinstance(chunk, str) and "http://purl.uniprot.org/locations/" in chunk:
                 new_chunk = chunk.replace("http://purl.uniprot.org/locations/", "")
                 try:
-                    new_str.append(subcellular_location_dict[new_chunk.zfill(4)])  # Converts the number location to descriptor
+                    # Converts the number location to descriptor
+                    new_str.append(subcellular_location_dict[new_chunk.zfill(4)])  
                 except KeyError:
                     new_str.append("")
             elif isinstance(chunk, str) and "http://purl.uniprot.org/enzyme/" in chunk:
@@ -414,15 +459,17 @@ def process_sparql_output(output_df, sparql_dict: dict) -> list:
         return output_list, sparql_dict
 
     # get the subcellular location from UniProt
+    ### TODO I really only need this once, I'm pretty sure, so I should update this.
     def retrieve_uniprot_subcellular_location(attempts_left=5):
         '''Retrieve subcellular location information from UniProt directly'''
         if attempts_left <= 0:
             return 4
         try:
-            r = requests.get('https://www.uniprot.org/locations/?format=tab')
+            r = requests.get('https://rest.uniprot.org/locations/stream?fields=id%2Cname%2Cgene_ontologies&format=tsv&query=%28*%29')
         except requests.exceptions.ConnectionError:
             return retrieve_uniprot_subcellular_location(attempts_left-1)
         subcellular_location_df = pd.read_csv(StringIO(r.text), sep = '\t')  # TODO: potential ParserError
+        #print(subcellular_location_df)
         try:
             subcellular_location_df["location_id_reformatted"] = (
                                                                 subcellular_location_df["Subcellular location ID"]
@@ -430,13 +477,14 @@ def process_sparql_output(output_df, sparql_dict: dict) -> list:
                                                                 .str[1]
                                                                 )
         except KeyError:
+            logging.debug(f"The location id column name didn't match")
             subcellular_location_df["location_id_reformatted"] = ("")
         return subcellular_location_df
     
     subcellular_location_df = retrieve_uniprot_subcellular_location()
     if isinstance(subcellular_location_df, int) and subcellular_location_df == 4:
         return 4, None  # This is an error related to uniprots's 
-    subcellular_location_dict = dict(subcellular_location_df[["location_id_reformatted", "Alias"]].values.tolist())
+    subcellular_location_dict = dict(subcellular_location_df[["location_id_reformatted", "Name"]].values.tolist())
 
     # Fetches a file from expasy to deal with the 'ec' column
     try:
