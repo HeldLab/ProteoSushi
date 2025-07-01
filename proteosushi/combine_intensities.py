@@ -443,7 +443,7 @@ def batch_annotate(sparql_input: list) -> dict:
     # Separates the input into batches then sends those batches
     while i + batch <= len(sparql_input):
         # Makes the request and sends it to uniprot
-        #print(f"\nInput range: {i}-{i+batch},\nInput list = {sparql_input[i:i+batch]}")
+        print(f"\nInput range: {i}-{i+batch}")#,\nInput list = {sparql_input[i:i+batch]}")
         logging.debug(f"Input range: {i}-{i+batch},\nInput list = {sparql_input[i:i+batch]}")
         batch_output = sparql_request(sparql_input[i:i+batch])
 

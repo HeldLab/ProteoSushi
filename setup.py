@@ -1,29 +1,24 @@
 import codecs
 import setuptools
 
-#with open("README.md", "r") as fh:
 with codecs.open("README.md", mode='r', encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="proteosushi",
-    version="1.6.1",
+    version="1.7.0",
     author="Rob Seymour",
     author_email="r27seymour@gmail.com",
-    description="",
+    description="A bioinformatics tool for proteomics data analysis",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/HeldLab/ProteoSushi",
-    download_url="https://github.com/HeldLab/ProteoSushi/archive/v1.6.1.tar.gz",
+    download_url="https://github.com/HeldLab/ProteoSushi/archive/v1.7.0.tar.gz",
     include_package_data=True,
     packages=setuptools.find_packages(),
-    package_dir={
-        "lib": "proteosushi",
-        #"": "lib"
-    },
-    package_data={
-        "lib": ['spec_list_fixed.tsv']
-    },
+    #package_data={
+    #    "proteosushi": ['spec_list_fixed.tsv']
+    #},
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: X11 Applications :: Qt",
