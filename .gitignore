@@ -3,6 +3,8 @@
 *.pyc
 *.log
 
+.pypirc
+
 proteosushi/output/*.csv
 
 proteosushi/quant_parsed.csv
